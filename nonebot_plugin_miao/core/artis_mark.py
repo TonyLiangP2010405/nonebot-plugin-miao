@@ -15,10 +15,9 @@ import math
 import re
 from typing import Any
 
-import quickjs
-
 from . import meta
 from .attr_calc import artis_set_data, elem_name, is_elem, resolve_artis, same_elem
+from .jseval import eval_js
 
 # ArtisMarkCfg.js weaponCfg：特定武器携带时提高对应属性权重
 _WEAPON_CFG = {
@@ -64,7 +63,7 @@ _USEFUL_ATTR_CACHE: dict[str, dict[str, Any]] = {}
 def _useful_attr(game: str) -> dict[str, Any]:
     if game in _USEFUL_ATTR_CACHE:
         return _USEFUL_ATTR_CACHE[game]
-    mark_file = meta.RES_DIR / f"meta-{game}" / "artifact" / "artis-mark.js"
+    mark_file = meta._res_root() / f"meta-{game}" / "artifact" / "artis-mark.js"
     ret: dict[str, Any] = {}
     if mark_file.is_file():
         try:
@@ -152,7 +151,7 @@ def get_char_weight(
 
     # gs 旅行者评分规则在「旅行者」目录下（CharCfg.getArtisCfg）
     char_dir = "旅行者" if game == "gs" and char.name == "旅行者" else char.name
-    rule_file = meta.RES_DIR / f"meta-{game}" / "character" / char_dir / "artis.js"
+    rule_file = meta._res_root() / f"meta-{game}" / "character" / char_dir / "artis.js"
     if rule_file.is_file():
         attr_args = {k: v for k, v in attr.items() if not str(k).startswith("_") and k != "staticAttr"}
         code = meta._strip_esm(rule_file.read_text(encoding="utf-8"))
@@ -177,7 +176,7 @@ var __ret = __default__({{
 }})
 JSON.stringify(__ret)
 """
-        result = json.loads(quickjs.Context().eval(script))
+        result = json.loads(eval_js(script))
         if result and result.get("kind") == "rule":
             return {"title": result["title"], "attrWeight": result["attrWeight"] or {}}
         return _apply_def((result or {}).get("attrWeight"), char, weapon, abbrs, game)

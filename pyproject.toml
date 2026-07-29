@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nonebot-plugin-miao-genshin"
-version = "0.1.2"
+version = "0.1.3"
 description = "原神/星铁抽卡分析与角色面板（移植自 miao-plugin）"
 authors = ["TonyLiangP2010405"]
 license = "MIT"
@@ -32,7 +32,8 @@ nonebot-adapter-onebot = ">=2.4.0"
 httpx = ">=0.27.0"
 pillow = ">=10.0.0"
 skia-python = ">=87.5"
-quickjs = ">=1.19"
+pythonmonkey = ">=1.3.2"  # JS 引擎兜底后端（cp39~cp314 全平台 wheel；quickjs 无 cp314 wheel）
+quickjs = { version = ">=1.19", optional = true }  # 优先后端（更轻量），cp313 及以下可装
 nonebot-plugin-localstore = ">=0.7.0"
 pydantic = ">=2.0.0"
 pyyaml = ">=6.0"
@@ -43,10 +44,14 @@ numpy = [
 ]
 nonebot-plugin-apscheduler = "^0.5.0"
 
+[tool.poetry.extras]
+quickjs = ["quickjs"]
+
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.0"
 pytest-asyncio = ">=0.21"
 nonebug = ">=0.3"
+quickjs = ">=1.19"  # 开发环境装齐两个 JS 引擎后端，测试覆盖两条路径
 ruff = ">=0.1"
 respx = "^0.23.1"
 

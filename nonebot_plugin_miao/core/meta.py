@@ -12,8 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import quickjs
-
+from .jseval import eval_js
 from .store import GAMES
 
 # resources 目录：nonebot_plugin_miao/resources（打包兜底）
@@ -80,7 +79,7 @@ def _eval_esm(path: Path | str, export_names: list[str] | tuple[str, ...]) -> di
     """求值无（或有可 stub 掉的）import 的 ESM 文件，返回指定导出变量组成的 dict
 
     实现方式：读文件 → 正则剥离 import 行与 export 关键字 → 注入 lodash/Format stub
-    → 在 quickjs.Context 中 eval，脚本末尾用 JSON.stringify 收集指定变量
+    → 在 JS 引擎（core/jseval，quickjs 或 pythonmonkey）中 eval，脚本末尾用 JSON.stringify 收集指定变量
     （不存在的变量经 typeof 守卫跳过）→ Python 侧 json.loads。
     """
     path = Path(path)
@@ -89,8 +88,7 @@ def _eval_esm(path: Path | str, export_names: list[str] | tuple[str, ...]) -> di
     # 末尾用 JSON.stringify 收集导出变量；typeof 守卫让缺失的导出被 JSON 序列化时丢弃
     collect = ", ".join(f"{json.dumps(n)}: (typeof {n} === 'undefined' ? undefined : {n})" for n in export_names)
     script = f"{_JS_STUBS}\n{code}\n;JSON.stringify({{{collect}}})"
-    ctx = quickjs.Context()
-    result = ctx.eval(script)
+    result = eval_js(script)
     return json.loads(result)
 
 
