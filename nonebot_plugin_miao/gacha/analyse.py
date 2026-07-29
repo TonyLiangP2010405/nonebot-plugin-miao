@@ -6,12 +6,16 @@
 
 已知的 JS 原版行为（照抄，不修正）：
 - weaponNum / bigNum 声明后从未自增，恒为 0
-- "新版本" 兜底区间的结束时间硬编码为 2025-12-31，晚于它的记录会落入 "未知" 版本
 - stat 里池名简称用 Character.get(name)（默认 gs 优先、跨游戏兜底匹配）
+
+与 JS 版的差异（有意修正）：
+- JS 版 "新版本" 兜底区间的结束时间硬编码为 2025-12-31（上游每次手动更新，
+  过期后新记录会落入 "未知"）。本版改为 max(2025-12-31, 最后卡池结束 + 21 天)，
+  约覆盖一个卡池半期，数据未更新时新记录仍归入 "新版本" 而非 "未知"。
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
@@ -19,8 +23,10 @@ from ..core import meta, store
 
 _TIME_FMT = "%Y-%m-%d %H:%M:%S"
 
-# "新版本" 兜底区间的硬编码结束时间（照抄 JS 版）
+# "新版本" 兜底区间的最短结束时间（JS 版的硬编码值，仅作下限）
 _FALLBACK_END = "2025-12-31 23:59:59"
+# 兜底区间在最后卡池结束后再延长的天数（约一个卡池半期）
+_FALLBACK_EXTEND_DAYS = 21
 
 # 未知物品占位 id（照抄 JS 版）：武器 403 / 角色 404
 _UNKNOWN_WEAPON_ID = 403
@@ -62,15 +68,19 @@ def _build_versions(pools: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for ds in pools:
         versions.append({**ds, "start": _parse_time(ds["from"]), "end": _parse_time(ds["to"])})
     last = versions[-1]
-    # 为未知卡池做兼容（照抄 JS 版：start=最后一个卡池的结束，end 硬编码）
+    # 为未知卡池做兼容（start=最后一个卡池的结束；end 取 max(硬编码下限, 最后结束+21天)，
+    # 修正 JS 版硬编码过期后新记录落 "未知" 的问题）
+    fallback_end = max(
+        _parse_time(_FALLBACK_END), last["end"] + timedelta(days=_FALLBACK_EXTEND_DAYS)
+    )
     versions.append(
         {
             "version": "新版本",
             "half": "?",
             "from": last["to"],
-            "to": _FALLBACK_END,
+            "to": fallback_end.strftime(_TIME_FMT),
             "start": last["end"],
-            "end": _parse_time(_FALLBACK_END),
+            "end": fallback_end,
         }
     )
     return versions

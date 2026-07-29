@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nonebot-plugin-miao-genshin"
-version = "0.1.5"
+version = "0.1.6"
 description = "原神/星铁抽卡分析与角色面板（移植自 miao-plugin）"
 authors = ["TonyLiangP2010405"]
 license = "MIT"

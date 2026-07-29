@@ -24,11 +24,36 @@ CHAR_A = {"id": 99000001, "name": "测试角色", "abbr": "测角", "star": 5, "
 CHAR_B = {"id": 99000002, "name": "样例角色", "star": 4, "elem": "hydro", "weapon": "bow"}
 SR_CHAR = {"id": 9901, "name": "测试星铁", "star": 5, "weapon": "虚无"}
 
+# pool.js 含 poolDetail（比 yaml 数据新）→ update_resources 会用它派生 gacha-sim/pool.json
+POOL_JS = """
+export const poolName = {}
+export const poolDetail = [{
+  version: '6.7',
+  half: '下半',
+  from: '2026-07-21 18:00:00',
+  to: '2026-08-11 14:59:59',
+  char5: ['测试角色', '样例角色'],
+  char4: ['甲', '乙', '丙'],
+  weapon5: ['武器甲', '武器乙'],
+  weapon4: ['丙丁']
+}]
+"""
+
+# pool.js 派生出的旧版格式卡池（倒序，最新在前）
+DERIVED_POOLS = [{
+    "up4": ["甲", "乙", "丙"],
+    "up5": ["测试角色"],
+    "up5_2": ["样例角色"],
+    "weapon5": ["武器甲", "武器乙"],
+    "weapon4": ["丙丁"],
+    "endTime": "2026-08-11 14:59:59",
+}]
+
 # CDN 实际存在的文件（alias.js 故意缺失 → 404 → 进入 failed 列表）
 FILES = {
     "resources/meta-gs/character/测试角色/data.json": json.dumps(CHAR_A, ensure_ascii=False),
     "resources/meta-gs/character/样例角色/data.json": json.dumps(CHAR_B, ensure_ascii=False),
-    "resources/meta-gs/info/pool.js": "export const poolName = []",
+    "resources/meta-gs/info/pool.js": POOL_JS,
     "resources/meta-sr/character/测试星铁/data.json": json.dumps(SR_CHAR, ensure_ascii=False),
     "resources/meta-sr/info/index.js": "export const poolNameSr = []",
 }
@@ -187,7 +212,7 @@ async def test_download_files(tmp_path, mock_jsdelivr):
     )
     assert ret["ok"] == 1
     assert ret["failed"] == ["resources/meta-gs/character/alias.js"]
-    assert (tmp_path / "resources/meta-gs/info/pool.js").read_text() == "export const poolName = []"
+    assert (tmp_path / "resources/meta-gs/info/pool.js").read_text() == POOL_JS
     assert progress == [(1, 2, "resources/meta-gs/info/pool.js")]
 
 
@@ -202,15 +227,16 @@ async def test_update_resources_success(override_dir, mock_jsdelivr, low_min_cha
     assert ret["code"] == "ok"
     assert ret["gs_chars"] == 2
     assert ret["sr_chars"] == 1
-    assert ret["pools"] == 2
+    assert ret["pools"] == 1
     assert ret["failed"] == ["resources/meta-gs/character/alias.js"]
     assert ret["duration"] >= 0
 
     # 落盘结构：meta-gs/meta-sr + yaml 转出的 gacha-sim/*.json
     assert (override_dir / "meta-gs/info/pool.js").is_file()
     assert (override_dir / "meta-sr/character/测试星铁/data.json").is_file()
+    # pool.json 由 pool.js 派生（比 yaml 数据新）
     pools = json.loads((override_dir / "gacha-sim/pool.json").read_text(encoding="utf-8"))
-    assert pools == [{"up5": ["测试角色"]}, {"up5": ["样例角色"]}]
+    assert pools == DERIVED_POOLS
     # gacha.yaml 带 BOM，utf-8-sig 读取后正常解析
     gacha = json.loads((override_dir / "gacha-sim/gacha.json").read_text(encoding="utf-8"))
     assert gacha == {"gacha": ["角色活动祈愿"]}
@@ -237,9 +263,74 @@ async def test_override_priority_and_clear_cache(override_dir, mock_jsdelivr, lo
     assert meta.get_character("测角", "gs").name == "测试角色"
     # 覆盖目录整体替换打包资源：刻晴不在覆盖目录里，查不到
     assert meta.get_character("刻晴", "gs") is None
-    # gacha_sim_config 也走覆盖目录
+    # gacha_sim_config 也走覆盖目录（pool 为 pool.js 派生数据）
     sim = meta.gacha_sim_config()
-    assert sim["pool"] == [{"up5": ["测试角色"]}, {"up5": ["样例角色"]}]
+    assert sim["pool"] == DERIVED_POOLS
+
+
+async def test_pool_js_fallback_to_yaml(override_dir, low_min_chars):
+    """pool.js 无法解析（无 poolDetail）时回退 yaml 转换的 pool.json"""
+    _, res_update = _modules()
+    bad_files = {**FILES, "resources/meta-gs/info/pool.js": "export const poolName = []"}
+    with respx.mock(assert_all_called=False) as router:
+        router.get(MIAO_API).mock(return_value=httpx.Response(200, json=MIAO_TREE))
+
+        def cdn(request: httpx.Request) -> httpx.Response:
+            rel = urllib.parse.unquote(request.url.path).split("@master/", 1)[1]
+            if rel in bad_files:
+                return httpx.Response(200, content=bad_files[rel].encode("utf-8"))
+            if rel in YUNZAI_FILES:
+                text, enc = YUNZAI_FILES[rel]
+                return httpx.Response(200, content=text.encode(enc))
+            return httpx.Response(404)
+
+        router.route(host="cdn.jsdelivr.net").mock(side_effect=cdn)
+        ret = await res_update.update_resources()
+    assert ret["code"] == "ok"
+    pools = json.loads((override_dir / "gacha-sim/pool.json").read_text(encoding="utf-8"))
+    assert pools == [{"up5": ["测试角色"]}, {"up5": ["样例角色"]}]
+
+
+# ---------------------------------------------------------------------------
+# pool.js → gacha-sim/pool.json 派生
+# ---------------------------------------------------------------------------
+
+
+def test_pools_from_pool_js(tmp_path):
+    _, res_update = _modules()
+    p = tmp_path / "pool.js"
+    p.write_text("""
+export const poolName = {}
+export const poolDetail = [{
+  version: '1.0', half: '上半',
+  from: '2020-09-28 06:00:00', to: '2020-10-18 17:59:59',
+  char5: ['温迪'], char4: ['芭芭拉'],
+  weapon5: ['风鹰剑'], weapon4: ['笛剑']
+}, {
+  version: '6.7', half: '下半',
+  from: '2026-07-21 18:00:00', to: '2026-08-11 14:59:59',
+  char5: ['哥伦比娅', '雷电将军'], char4: ['雅珂达'],
+  weapon5: ['帷间夜曲', '薙草之稻光'], weapon4: ['祭礼剑']
+}]
+export const mixPoolDetail = []
+""", encoding="utf-8")
+    pools = res_update.pools_from_pool_js(p)
+    # 按 endTime 倒序，最新在前
+    assert [x["endTime"] for x in pools] == ["2026-08-11 14:59:59", "2020-10-18 17:59:59"]
+    newest = pools[0]
+    assert newest["up5"] == ["哥伦比娅"]
+    assert newest["up5_2"] == ["雷电将军"]
+    assert newest["weapon5"] == ["帷间夜曲", "薙草之稻光"]
+    # 单 up 期 up5_2 复用 up5
+    assert pools[1]["up5"] == pools[1]["up5_2"] == ["温迪"]
+
+
+def test_pools_from_pool_js_invalid(tmp_path):
+    _, res_update = _modules()
+    p = tmp_path / "pool.js"
+    p.write_text("export const poolName = []", encoding="utf-8")
+    with pytest.raises(Exception):
+        res_update.pools_from_pool_js(p)
 
 
 # ---------------------------------------------------------------------------

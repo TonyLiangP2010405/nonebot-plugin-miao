@@ -11,6 +11,8 @@ cdn.jsdelivr.net 并发下载。jsDelivr 对超过 50MB 的仓库拒绝返回文
 文件筛选规则与 tools/sync_resources.py 完全一致：
 meta-gs/meta-sr 下的 .json/.js（排除 imgs/icons/splash 目录与图片扩展名），
 外加 Yunzai-genshin 的 defSet/gacha/{gacha,pool,set}.yaml（转 JSON）。
+卡池列表 gacha-sim/pool.json 优先从 meta-gs/info/pool.js 派生
+（Yunzai 的 pool.yaml 上游已停更），解析失败或数据更旧时回退 yaml。
 
 原子性：先完整下载到临时目录，关键文件校验通过后才整体替换覆盖目录，
 任何失败都不会留下半截状态。
@@ -27,6 +29,7 @@ from typing import Any, Callable
 
 import httpx
 import yaml
+from nonebot import logger
 
 from ..core import store
 
@@ -50,6 +53,51 @@ TIMEOUT = 30
 MIN_TOTAL_CHARS = 100
 
 _UPDATE_INFO_FILE = "meta_update.json"
+
+
+# ---------------------------------------------------------------------------
+# 卡池数据：优先从 miao-plugin 的 meta-gs/info/pool.js 派生
+# ---------------------------------------------------------------------------
+#
+# Yunzai-genshin 的 defSet/gacha/pool.yaml 已停更（最后一条 2025-04 瓦雷莎），
+# 而 miao-plugin 的 pool.js 持续维护（poolDetail 含每期 up5/up4/武器与起止时间）。
+# 结构映射（poolDetail -> 旧版 pool.json 条目）：
+#   char5[0] -> up5，char5[1] -> up5_2（单 up 期复用 up5），char4 -> up4，
+#   weapon5 -> weapon5，weapon4 -> weapon4，to -> endTime
+# 旧版 pool.json 约定按时间倒序（最新在前），pool.js 为正序，需反转。
+
+
+def _pool_entry_from_detail(d: dict[str, Any]) -> dict[str, Any]:
+    char5 = list(d.get("char5") or [])
+    return {
+        "up4": list(d.get("char4") or []),
+        "up5": char5[:1],
+        "up5_2": char5[1:2] or char5[:1],
+        "weapon5": list(d.get("weapon5") or []),
+        "weapon4": list(d.get("weapon4") or []),
+        "endTime": str(d.get("to") or ""),
+    }
+
+
+def pools_from_pool_js(pool_js_path: Path | str) -> list[dict[str, Any]]:
+    """解析 meta-gs/info/pool.js，返回旧版格式的卡池列表（按时间倒序，最新在前）
+
+    pool.js 是 JS 源码（export const poolDetail = [...]），用插件内置 JS 引擎
+    求值后 JSON 化。解析失败抛异常，由调用方决定是否回退 yaml 数据。
+    """
+    from ..core import jseval
+
+    code = Path(pool_js_path).read_text(encoding="utf-8")
+    code = code.replace("export const", "const")
+    raw = jseval.eval_js(f"{code}\nJSON.stringify(poolDetail)")
+    details = json.loads(raw)
+    pools = [_pool_entry_from_detail(d) for d in details if d.get("to")]
+    pools.sort(key=lambda p: p["endTime"], reverse=True)
+    return pools
+
+
+def _newest_end_time(pools: list[dict[str, Any]]) -> str:
+    return max((str(p.get("endTime") or "") for p in pools), default="")
 
 
 def override_dir() -> Path:
@@ -284,6 +332,21 @@ async def update_resources(on_progress: Callable[[int, int, str], Any] | None = 
                 )
         except (OSError, yaml.YAMLError) as e:
             return _error(start, f"卡池配置转换失败：{e}", failed)
+
+        # 卡池列表优先用 miao-plugin 的 pool.js 派生（yaml 上游已停更）：
+        # pool.js 解析成功且其最新池不旧于 yaml 数据时覆盖 gacha-sim/pool.json
+        pool_js = staged / "meta-gs" / "info" / "pool.js"
+        if pool_js.is_file():
+            try:
+                js_pools = pools_from_pool_js(pool_js)
+                yaml_pools = store.load_json(sim_dir / "pool.json", []) or []
+                if js_pools and _newest_end_time(js_pools) >= _newest_end_time(yaml_pools):
+                    (sim_dir / "pool.json").write_text(
+                        json.dumps(js_pools, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+                    )
+            except Exception as e:
+                # 解析失败不影响整体更新，沿用 yaml 转换结果
+                logger.warning(f"[miao] pool.js 卡池派生失败，沿用 yaml 数据: {e}")
 
         # 关键文件校验，全部通过才替换覆盖目录
         gs_chars = _count_chars(staged, "meta-gs")
