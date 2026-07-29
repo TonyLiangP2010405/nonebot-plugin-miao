@@ -13,3 +13,5 @@ class Config(BaseModel):
     miao_mys_cookie: str = ""
     # 模拟抽卡每日十连次数限制
     miao_gacha_daily_limit: int = 1
+    # 每日自动更新面板资源（凌晨 4:20，失败仅记日志）
+    miao_res_auto_update: bool = True

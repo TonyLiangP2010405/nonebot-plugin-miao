@@ -16,8 +16,25 @@ import quickjs
 
 from .store import GAMES
 
-# resources 目录：nonebot_plugin_miao/resources
+# resources 目录：nonebot_plugin_miao/resources（打包兜底）
 RES_DIR = Path(__file__).resolve().parent.parent / "resources"
+
+
+def _res_root() -> Path:
+    """元数据根目录：运行时覆盖目录（#更新面板资源 拉取）优先，打包 resources 兜底
+
+    覆盖目录存在且含 meta-gs 时视为有效。localstore 依赖 nonebot 已初始化，
+    未初始化（如直接 import 的单元测试）时回退打包资源。
+    """
+    try:
+        from ..datasource.res_update import override_dir
+
+        ov = override_dir()
+    except Exception:
+        return RES_DIR
+    if ov.is_dir() and (ov / "meta-gs").is_dir():
+        return ov
+    return RES_DIR
 
 # ---------------------------------------------------------------------------
 # ESM 求值
@@ -100,7 +117,7 @@ def _check_game(game: str) -> None:
 
 def _meta_dir(game: str) -> Path:
     _check_game(game)
-    return RES_DIR / f"meta-{game}"
+    return _res_root() / f"meta-{game}"
 
 
 # ---------------------------------------------------------------------------
@@ -351,13 +368,26 @@ def pool_data(game: str) -> list[dict[str, Any]]:
 
 
 def gacha_sim_config() -> dict[str, Any]:
-    """模拟抽卡配置：resources/gacha-sim/{gacha,pool,set}.json"""
-    sim_dir = RES_DIR / "gacha-sim"
+    """模拟抽卡配置：resources/gacha-sim/{gacha,pool,set}.json（覆盖目录优先）"""
+    sim_dir = _res_root() / "gacha-sim"
     return {
         "gacha": _load_res_json(sim_dir / "gacha.json"),
         "pool": _load_res_json(sim_dir / "pool.json"),
         "set": _load_res_json(sim_dir / "set.json"),
     }
+
+
+def clear_cache() -> None:
+    """清空模块内全部缓存（覆盖目录更新后由 datasource/res_update 调用）
+
+    清空后所有元数据按当时的 _res_root() 重新加载。
+    """
+    _JSON_CACHE.clear()
+    _CHAR_INDEX.clear()
+    _WEAPON_INDEX.clear()
+    _WEAPON_ID_INDEX.clear()
+    _EXTRA_CACHE.clear()
+    _POOL_CACHE.clear()
 
 
 # ---------------------------------------------------------------------------

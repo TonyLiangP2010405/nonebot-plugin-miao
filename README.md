@@ -29,6 +29,7 @@ poetry add nonebot-plugin-miao-genshin
 | `MIAO_PROFILE_INTERVAL` | `3` | 面板更新冷却（分钟） |
 | `MIAO_MYS_COOKIE` | 空 | 全局米游社 Cookie（可选） |
 | `MIAO_GACHA_DAILY_LIMIT` | `1` | 每日模拟十连次数 |
+| `MIAO_RES_AUTO_UPDATE` | `True` | 每日自动更新面板资源（凌晨 4:20，需 nonebot-plugin-apscheduler） |
 
 ## 指令
 
