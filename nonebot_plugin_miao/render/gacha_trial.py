@@ -65,11 +65,11 @@ async def render_gacha_trial(result: dict, sender_name: str) -> bytes:
             base.draw_rounded(canvas, cx, cy, CARD_W, CARD_H, 10, border_c)
             ix, iy, iw, ih = cx + 4, cy + 4, CARD_W - 8, CARD_H - 8
             img = images[i] if i < len(images) else None
+            # 元素色渐变底常驻（对照 item-bg 元素卡背），图片 contain 完整显示不裁剪
+            base.draw_gradient(canvas, ix, iy, iw, ih, base.elem_gradient(it.get("element")), r=8)
             if img is not None:
-                base.draw_image_cover(canvas, img, ix, iy, iw, ih, r=8)
+                base.draw_image_contain(canvas, img, ix, iy, iw, ih, r=8)
             else:
-                # 无图：元素色渐变底 + 名字（对照 item-element 元素图标的色彩语义）
-                base.draw_gradient(canvas, ix, iy, iw, ih, base.elem_gradient(it.get("element")), r=8)
                 ef = base.font(18)
                 base.draw_text_center(canvas, it.get("element", ""), ix + iw / 2,
                                       iy + ih / 2 - 16, ef, base.color("#ccffffff"))

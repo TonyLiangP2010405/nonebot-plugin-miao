@@ -102,21 +102,31 @@ TEXT_SUB = "#aaaaaa"
 # 字体（resources/fonts，全局缓存）
 # ---------------------------------------------------------------------------
 
-# kind -> 候选字体文件（woff 加载失败记 warning 并顺延，TTF 兜底，最后用 skia 默认字体）
+# kind -> 候选字体文件（TTF 优先：skia 的 Windows 构建不支持 woff，会静默加载失败；
+# woff 作为其他平台兜底，最后用 skia 默认字体）
 _FONT_FILES = {
-    "default": ("HYWH-65W.woff", "华文中宋.TTF"),
-    "title": ("NZBZ.woff", "HYWH-65W.woff", "华文中宋.TTF"),
-    "number": ("tttgbnumber.woff", "华文中宋.TTF"),
+    "default": ("HYWH-65W.ttf", "HYWH-65W.woff"),
+    "title": ("NZBZ.ttf", "NZBZ.woff", "HYWH-65W.ttf", "HYWH-65W.woff"),
+    "number": ("tttgbnumber.ttf", "tttgbnumber.woff"),
 }
 
 _TYPEFACES: dict[str, skia.Typeface] = {}
 
 
-def _load_typeface(path: Path) -> skia.Typeface | None:
+def _load_typeface(path: Path, probe: str = "") -> skia.Typeface | None:
+    """加载字体文件；probe 非空时要求字体必须覆盖 probe 中的每个字符
+
+    防止加载到子集化字体（如只有百余字形的 华文中宋.TTF）时静默通过、
+    渲染出来大片缺字
+    """
     try:
         tf = skia.Typeface.MakeFromFile(str(path), 0)
-        if tf and tf.countGlyphs() > 0:
-            return tf
+        if not tf or tf.countGlyphs() == 0:
+            return None
+        if probe and any(not tf.unicharToGlyph(ord(ch)) for ch in probe):
+            logger.warning(f"[miao-render] 字体 {path.name} 缺少常用汉字字形，跳过")
+            return None
+        return tf
     except Exception as e:
         logger.warning(f"[miao-render] 字体加载失败 {path.name}: {e}")
     return None
@@ -127,11 +137,13 @@ def _typeface(kind: str = "default") -> skia.Typeface:
         return _TYPEFACES[kind]
     tf = None
     candidates = _FONT_FILES.get(kind, _FONT_FILES["default"])
+    # 数字字库本就只含数字，不做汉字覆盖检查
+    probe = "" if kind == "number" else "汉字体"
     for name in candidates:
         path = FONT_DIR / name
         if not path.is_file():
             continue
-        tf = _load_typeface(path)
+        tf = _load_typeface(path, probe)
         if tf is None and name.lower().endswith(".woff"):
             logger.warning(f"[miao-render] woff 字体 {name} 加载失败，尝试 TTF 兜底")
         if tf is not None:
@@ -394,6 +406,23 @@ def draw_image_cover(
     """cover 模式把图片绘制进目标区域（居中裁剪），r>0 时按圆角裁剪"""
     iw, ih = max(1, img.width()), max(1, img.height())
     scale = max(w / iw, h / ih)
+    dw, dh = iw * scale, ih * scale
+    dx, dy = x + (w - dw) / 2, y + (h - dh) / 2
+    canvas.save()
+    if r > 0:
+        canvas.clipRRect(rrect(x, y, w, h, r), skia.ClipOp.kIntersect, True)
+    else:
+        canvas.clipRect(skia.Rect.MakeXYWH(x, y, w, h), skia.ClipOp.kIntersect, True)
+    canvas.drawImageRect(img, skia.Rect.MakeXYWH(dx, dy, dw, dh), skia.SamplingOptions(), skia.Paint(AntiAlias=True))
+    canvas.restore()
+
+
+def draw_image_contain(
+    canvas: skia.Canvas, img: skia.Image, x: float, y: float, w: float, h: float, r: float = 0
+) -> None:
+    """contain 模式：整图按比例缩放进目标区域（居中留白），r>0 时按圆角裁剪"""
+    iw, ih = max(1, img.width()), max(1, img.height())
+    scale = min(w / iw, h / ih)
     dw, dh = iw * scale, ih * scale
     dx, dy = x + (w - dw) / 2, y + (h - dh) / 2
     canvas.save()
