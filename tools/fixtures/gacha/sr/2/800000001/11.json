@@ -1,0 +1,50 @@
+[
+ {
+  "uid": "fixture",
+  "gacha_type": "11",
+  "item_id": "",
+  "count": "1",
+  "time": "2023-04-27 10:00:00",
+  "name": "布洛妮娅",
+  "lang": "zh-cn",
+  "item_type": "角色",
+  "rank_type": "5",
+  "id": "1101"
+ },
+ {
+  "uid": "fixture",
+  "gacha_type": "11",
+  "item_id": "",
+  "count": "1",
+  "time": "2023-04-28 10:00:00",
+  "name": "停云",
+  "lang": "zh-cn",
+  "item_type": "角色",
+  "rank_type": "4",
+  "id": "1102"
+ },
+ {
+  "uid": "fixture",
+  "gacha_type": "11",
+  "item_id": "",
+  "count": "1",
+  "time": "2023-04-29 10:00:00",
+  "name": "希儿",
+  "lang": "zh-cn",
+  "item_type": "角色",
+  "rank_type": "5",
+  "id": "1103"
+ },
+ {
+  "uid": "fixture",
+  "gacha_type": "11",
+  "item_id": "",
+  "count": "1",
+  "time": "2023-04-30 10:00:00",
+  "name": "锋镝",
+  "lang": "zh-cn",
+  "item_type": "光锥",
+  "rank_type": "3",
+  "id": "1104"
+ }
+]

@@ -1,0 +1,38 @@
+[
+ {
+  "uid": "fixture",
+  "gacha_type": "12",
+  "item_id": "",
+  "count": "1",
+  "time": "2023-04-27 09:00:00",
+  "name": "论剑",
+  "lang": "zh-cn",
+  "item_type": "光锥",
+  "rank_type": "4",
+  "id": "1201"
+ },
+ {
+  "uid": "fixture",
+  "gacha_type": "12",
+  "item_id": "",
+  "count": "1",
+  "time": "2023-04-28 09:00:00",
+  "name": "锋镝",
+  "lang": "zh-cn",
+  "item_type": "光锥",
+  "rank_type": "3",
+  "id": "1202"
+ },
+ {
+  "uid": "fixture",
+  "gacha_type": "12",
+  "item_id": "",
+  "count": "1",
+  "time": "2023-04-29 09:00:00",
+  "name": "灵钥",
+  "lang": "zh-cn",
+  "item_type": "光锥",
+  "rank_type": "3",
+  "id": "1203"
+ }
+]

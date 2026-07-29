@@ -1,0 +1,12 @@
+{
+  "default": {
+    "count": 1,
+    "delMsg": 110,
+    "LimitSeparate": 0
+  },
+  "123465": {
+    "count": 10,
+    "delMsg": 110,
+    "LimitSeparate": 0
+  }
+}

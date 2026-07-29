@@ -1,0 +1,1981 @@
+{
+ "analyse|1|100000001|301|gs": {
+  "stat": {
+   "allNum": 10,
+   "noFiveNum": 2,
+   "noFourNum": 1,
+   "fiveNum": 3,
+   "fourNum": 3,
+   "fiveAvg": "2.67",
+   "fourAvg": "3.00",
+   "wai": 1,
+   "isvalidNum": "4.00",
+   "weaponNum": 0,
+   "weaponFourNum": 2,
+   "upYs": "640"
+  },
+  "maxFour": {
+   "type": "weapon",
+   "count": 1,
+   "star": 4,
+   "name": "西风剑",
+   "abbr": "西风剑",
+   "img": "meta-gs/weapon/sword/西风剑/icon.webp"
+  },
+  "fiveLog": [
+   {
+    "id": 888,
+    "isUp": true,
+    "count": 2,
+    "date": "07-29"
+   },
+   {
+    "id": 10000089,
+    "isUp": true,
+    "date": "11-10",
+    "count": 3
+   },
+   {
+    "id": 10000087,
+    "isUp": true,
+    "date": "10-02",
+    "count": 2
+   },
+   {
+    "id": 10000041,
+    "isUp": false,
+    "date": "09-30",
+    "count": 3
+   }
+  ],
+  "noWaiRate": "66.7",
+  "items": {
+   "888": {
+    "name": "已抽",
+    "star": 5,
+    "abbr": "已抽",
+    "img": "gacha/imgs/no-avatar.webp"
+   },
+   "11401": {
+    "type": "weapon",
+    "count": 1,
+    "star": 4,
+    "name": "西风剑",
+    "abbr": "西风剑",
+    "img": "meta-gs/weapon/sword/西风剑/icon.webp"
+   },
+   "12305": {
+    "type": "weapon",
+    "count": 1,
+    "star": 3,
+    "name": "以理服人",
+    "abbr": "以理服人",
+    "img": "meta-gs/weapon/claymore/以理服人/icon.webp"
+   },
+   "13303": {
+    "type": "weapon",
+    "count": 1,
+    "star": 3,
+    "name": "黑缨枪",
+    "abbr": "黑缨枪",
+    "img": "meta-gs/weapon/polearm/黑缨枪/icon.webp"
+   },
+   "13401": {
+    "type": "weapon",
+    "count": 1,
+    "star": 4,
+    "name": "匣里灭辰",
+    "abbr": "匣里灭辰",
+    "img": "meta-gs/weapon/polearm/匣里灭辰/icon.webp"
+   },
+   "14302": {
+    "type": "weapon",
+    "count": 1,
+    "star": 3,
+    "name": "讨龙英杰谭",
+    "abbr": "讨龙英杰谭",
+    "img": "meta-gs/weapon/catalyst/讨龙英杰谭/icon.webp"
+   },
+   "15304": {
+    "type": "weapon",
+    "count": 1,
+    "star": 3,
+    "name": "弹弓",
+    "abbr": "弹弓",
+    "img": "meta-gs/weapon/bow/弹弓/icon.webp"
+   },
+   "10000025": {
+    "type": "char",
+    "count": 1,
+    "star": 4,
+    "name": "行秋",
+    "abbr": "行秋",
+    "img": "meta-gs/character/行秋/imgs/face.webp"
+   },
+   "10000041": {
+    "type": "char",
+    "count": 1,
+    "star": 5,
+    "name": "莫娜",
+    "abbr": "莫娜",
+    "img": "meta-gs/character/莫娜/imgs/face.webp"
+   },
+   "10000087": {
+    "type": "char",
+    "count": 1,
+    "star": 5,
+    "name": "那维莱特",
+    "abbr": "那维",
+    "img": "meta-gs/character/那维莱特/imgs/face.webp"
+   },
+   "10000089": {
+    "type": "char",
+    "count": 1,
+    "star": 5,
+    "name": "芙宁娜",
+    "abbr": "芙宁娜",
+    "img": "meta-gs/character/芙宁娜/imgs/face.webp"
+   }
+  }
+ },
+ "analyse|1|100000001|302|gs": {
+  "stat": {
+   "allNum": 3,
+   "noFiveNum": 0,
+   "noFourNum": 0,
+   "fiveNum": 2,
+   "fourNum": 0,
+   "fiveAvg": "1.50",
+   "fourAvg": 0,
+   "wai": 1,
+   "isvalidNum": "2.00",
+   "weaponNum": 0,
+   "weaponFourNum": 0,
+   "upYs": "320"
+  },
+  "maxFour": {
+   "name": "无",
+   "count": 0
+  },
+  "fiveLog": [
+   {
+    "id": 14502,
+    "isUp": false,
+    "date": "09-30",
+    "count": 1
+   },
+   {
+    "id": "14514",
+    "isUp": true,
+    "date": "09-29",
+    "count": 2
+   }
+  ],
+  "noWaiRate": "50.0",
+  "items": {
+   "12302": {
+    "type": "weapon",
+    "count": 1,
+    "star": 3,
+    "name": "沐浴龙血的剑",
+    "abbr": "沐浴龙血的剑",
+    "img": "meta-gs/weapon/claymore/沐浴龙血的剑/icon.webp"
+   },
+   "14502": {
+    "type": "weapon",
+    "count": 1,
+    "star": 5,
+    "name": "四风原典",
+    "abbr": "四风原典",
+    "img": "meta-gs/weapon/catalyst/四风原典/icon.webp"
+   },
+   "14514": {
+    "type": "weapon",
+    "count": 1,
+    "star": 5,
+    "name": "万世流涌大典",
+    "abbr": "万世流涌大典",
+    "img": "meta-gs/weapon/catalyst/万世流涌大典/icon.webp"
+   }
+  }
+ },
+ "analyse|1|100000001|200|gs": {
+  "stat": {
+   "allNum": 2,
+   "noFiveNum": 1,
+   "noFourNum": 0,
+   "fiveNum": 1,
+   "fourNum": 1,
+   "fiveAvg": "1.00",
+   "fourAvg": "2.00",
+   "wai": 1,
+   "isvalidNum": 0,
+   "weaponNum": 0,
+   "weaponFourNum": 1,
+   "upYs": "0"
+  },
+  "maxFour": {
+   "type": "weapon",
+   "count": 1,
+   "star": 4,
+   "name": "匣里龙吟",
+   "abbr": "匣里龙吟",
+   "img": "meta-gs/weapon/sword/匣里龙吟/icon.webp"
+  },
+  "fiveLog": [
+   {
+    "id": 888,
+    "isUp": true,
+    "count": 1,
+    "date": "07-29"
+   },
+   {
+    "id": 10000016,
+    "isUp": false,
+    "date": "09-28",
+    "count": 1
+   }
+  ],
+  "noWaiRate": "0.0",
+  "items": {
+   "888": {
+    "name": "已抽",
+    "star": 5,
+    "abbr": "已抽",
+    "img": "gacha/imgs/no-avatar.webp"
+   },
+   "11405": {
+    "type": "weapon",
+    "count": 1,
+    "star": 4,
+    "name": "匣里龙吟",
+    "abbr": "匣里龙吟",
+    "img": "meta-gs/weapon/sword/匣里龙吟/icon.webp"
+   },
+   "10000016": {
+    "type": "char",
+    "count": 1,
+    "star": 5,
+    "name": "迪卢克",
+    "abbr": "迪卢克",
+    "img": "meta-gs/character/迪卢克/imgs/face.webp"
+   }
+  }
+ },
+ "analyse|1|100000001|500|gs": {
+  "stat": {
+   "allNum": 3,
+   "noFiveNum": 0,
+   "noFourNum": 1,
+   "fiveNum": 2,
+   "fourNum": 1,
+   "fiveAvg": "1.50",
+   "fourAvg": "2.00",
+   "wai": 0,
+   "isvalidNum": "1.50",
+   "weaponNum": 0,
+   "weaponFourNum": 0,
+   "upYs": "240"
+  },
+  "maxFour": {
+   "type": "char",
+   "count": 1,
+   "star": 4,
+   "name": "米卡",
+   "abbr": "米卡",
+   "img": "meta-gs/character/米卡/imgs/face.webp"
+  },
+  "fiveLog": [
+   {
+    "id": 12503,
+    "isUp": true,
+    "date": "03-16",
+    "count": 2
+   },
+   {
+    "id": 10000051,
+    "isUp": true,
+    "date": "03-14",
+    "count": 1
+   }
+  ],
+  "noWaiRate": "100.0",
+  "items": {
+   "12503": {
+    "type": "weapon",
+    "count": 1,
+    "star": 5,
+    "name": "松籁响起之时",
+    "abbr": "松籁响起之时",
+    "img": "meta-gs/weapon/claymore/松籁响起之时/icon.webp"
+   },
+   "10000051": {
+    "type": "char",
+    "count": 1,
+    "star": 5,
+    "name": "优菈",
+    "abbr": "优菈",
+    "img": "meta-gs/character/优菈/imgs/face.webp"
+   },
+   "10000080": {
+    "type": "char",
+    "count": 1,
+    "star": 4,
+    "name": "米卡",
+    "abbr": "米卡",
+    "img": "meta-gs/character/米卡/imgs/face.webp"
+   }
+  }
+ },
+ "analyse|2|800000001|11|sr": {
+  "stat": {
+   "allNum": 4,
+   "noFiveNum": 1,
+   "noFourNum": 2,
+   "fiveNum": 2,
+   "fourNum": 1,
+   "fiveAvg": "1.50",
+   "fourAvg": "2.00",
+   "wai": 1,
+   "isvalidNum": "3.00",
+   "weaponNum": 0,
+   "weaponFourNum": 0,
+   "upYs": "480"
+  },
+  "maxFour": {
+   "type": "char",
+   "count": 1,
+   "star": 4,
+   "name": "停云",
+   "img": "meta-sr/character/停云/imgs/face.webp"
+  },
+  "fiveLog": [
+   {
+    "id": 888,
+    "isUp": true,
+    "count": 1,
+    "date": "07-29"
+   },
+   {
+    "id": 1102,
+    "isUp": true,
+    "date": "04-29",
+    "count": 2
+   },
+   {
+    "id": 1101,
+    "isUp": false,
+    "date": "04-27",
+    "count": 1
+   }
+  ],
+  "noWaiRate": "50.0",
+  "items": {
+   "888": {
+    "name": "已抽",
+    "star": 5,
+    "abbr": "已抽",
+    "img": "gacha/imgs/no-avatar.webp"
+   },
+   "1101": {
+    "type": "char",
+    "count": 1,
+    "star": 5,
+    "name": "布洛妮娅",
+    "img": "meta-sr/character/布洛妮娅/imgs/face.webp"
+   },
+   "1102": {
+    "type": "char",
+    "count": 1,
+    "star": 5,
+    "name": "希儿",
+    "img": "meta-sr/character/希儿/imgs/face.webp"
+   },
+   "1202": {
+    "type": "char",
+    "count": 1,
+    "star": 4,
+    "name": "停云",
+    "img": "meta-sr/character/停云/imgs/face.webp"
+   },
+   "20000": {
+    "type": "weapon",
+    "count": 1,
+    "star": 3,
+    "name": "锋镝",
+    "abbr": "锋镝",
+    "img": "meta-sr/weapon/巡猎/锋镝/icon.webp"
+   }
+  }
+ },
+ "analyse|2|800000001|12|sr": {
+  "stat": {
+   "allNum": 3,
+   "noFiveNum": 3,
+   "noFourNum": 2,
+   "fiveNum": 0,
+   "fourNum": 1,
+   "fiveAvg": 0,
+   "fourAvg": "1.00",
+   "wai": 0,
+   "isvalidNum": 0,
+   "weaponNum": 0,
+   "weaponFourNum": 1,
+   "upYs": "0"
+  },
+  "maxFour": {
+   "type": "weapon",
+   "count": 1,
+   "star": 4,
+   "name": "论剑",
+   "abbr": "论剑",
+   "img": "meta-sr/weapon/巡猎/论剑/icon.webp"
+  },
+  "fiveLog": [
+   {
+    "id": 888,
+    "isUp": true,
+    "count": 3,
+    "date": "07-29"
+   }
+  ],
+  "noWaiRate": 0,
+  "items": {
+   "888": {
+    "name": "已抽",
+    "star": 5,
+    "abbr": "已抽",
+    "img": "gacha/imgs/no-avatar.webp"
+   },
+   "20000": {
+    "type": "weapon",
+    "count": 1,
+    "star": 3,
+    "name": "锋镝",
+    "abbr": "锋镝",
+    "img": "meta-sr/weapon/巡猎/锋镝/icon.webp"
+   },
+   "20013": {
+    "type": "weapon",
+    "count": 1,
+    "star": 3,
+    "name": "灵钥",
+    "abbr": "灵钥",
+    "img": "meta-sr/weapon/智识/灵钥/icon.webp"
+   },
+   "21010": {
+    "type": "weapon",
+    "count": 1,
+    "star": 4,
+    "name": "论剑",
+    "abbr": "论剑",
+    "img": "meta-sr/weapon/巡猎/论剑/icon.webp"
+   }
+  }
+ },
+ "analyse|2|800000001|1|sr": {
+  "stat": {
+   "allNum": 2,
+   "noFiveNum": 0,
+   "noFourNum": 0,
+   "fiveNum": 1,
+   "fourNum": 0,
+   "fiveAvg": "2.00",
+   "fourAvg": 0,
+   "wai": 1,
+   "isvalidNum": 0,
+   "weaponNum": 0,
+   "weaponFourNum": 0,
+   "upYs": "0"
+  },
+  "maxFour": {
+   "name": "无",
+   "count": 0
+  },
+  "fiveLog": [
+   {
+    "id": 1211,
+    "isUp": false,
+    "date": "05-02",
+    "count": 2
+   }
+  ],
+  "noWaiRate": "0.0",
+  "items": {
+   "1211": {
+    "type": "char",
+    "count": 1,
+    "star": 5,
+    "name": "白露",
+    "img": "meta-sr/character/白露/imgs/face.webp"
+   },
+   "20008": {
+    "type": "weapon",
+    "count": 1,
+    "star": 3,
+    "name": "嘉果",
+    "abbr": "嘉果",
+    "img": "meta-sr/weapon/丰饶/嘉果/icon.webp"
+   }
+  }
+ },
+ "analyse|9|999999999|301|gs": false,
+ "stat|1|100000001|char|gs": {
+  "versionData": [
+   {
+    "version": "4.2",
+    "half": "上半",
+    "from": "23-11-08",
+    "to": "23-11-28",
+    "upIds": {
+     "10000089": "芙宁娜"
+    },
+    "name": "芙宁娜 / 白术",
+    "items": [
+     {
+      "id": "10000089",
+      "num": 1,
+      "star": 5,
+      "isUp": 1
+     },
+     {
+      "id": "11401",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     },
+     {
+      "id": "13303",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     },
+     {
+      "id": "12305",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     }
+    ],
+    "stats": {
+     "w5Num": 0,
+     "w5UpNum": 0,
+     "c5Num": 1,
+     "c5UpNum": 1,
+     "c4Num": 0,
+     "w4Num": 1,
+     "w3Num": 2,
+     "upNum": 1,
+     "star5Num": 1,
+     "star4Num": 1,
+     "totalNum": 4
+    }
+   },
+   {
+    "version": "4.1",
+    "half": "上半",
+    "from": "23-09-27",
+    "to": "23-10-17",
+    "upIds": {
+     "10000087": "那维莱特"
+    },
+    "name": "那维 / 胡桃",
+    "items": [
+     {
+      "id": "10000087",
+      "num": 1,
+      "star": 5,
+      "isUp": 1
+     },
+     {
+      "id": "10000041",
+      "num": 1,
+      "star": 5,
+      "isUp": 0
+     },
+     {
+      "id": "10000025",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     },
+     {
+      "id": "13401",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     },
+     {
+      "id": "15304",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     },
+     {
+      "id": "14302",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     }
+    ],
+    "stats": {
+     "w5Num": 0,
+     "w5UpNum": 0,
+     "c5Num": 2,
+     "c5UpNum": 1,
+     "c4Num": 1,
+     "w4Num": 1,
+     "w3Num": 2,
+     "upNum": 1,
+     "star5Num": 2,
+     "star4Num": 2,
+     "totalNum": 6
+    }
+   }
+  ],
+  "itemMap": {
+   "11401": {
+    "type": "weapon",
+    "count": 0,
+    "star": 4,
+    "name": "西风剑",
+    "abbr": "西风剑",
+    "img": "meta-gs/weapon/sword/西风剑/icon.webp"
+   },
+   "12305": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "以理服人",
+    "abbr": "以理服人",
+    "img": "meta-gs/weapon/claymore/以理服人/icon.webp"
+   },
+   "13303": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "黑缨枪",
+    "abbr": "黑缨枪",
+    "img": "meta-gs/weapon/polearm/黑缨枪/icon.webp"
+   },
+   "13401": {
+    "type": "weapon",
+    "count": 0,
+    "star": 4,
+    "name": "匣里灭辰",
+    "abbr": "匣里灭辰",
+    "img": "meta-gs/weapon/polearm/匣里灭辰/icon.webp"
+   },
+   "14302": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "讨龙英杰谭",
+    "abbr": "讨龙英杰谭",
+    "img": "meta-gs/weapon/catalyst/讨龙英杰谭/icon.webp"
+   },
+   "15304": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "弹弓",
+    "abbr": "弹弓",
+    "img": "meta-gs/weapon/bow/弹弓/icon.webp"
+   },
+   "10000025": {
+    "type": "char",
+    "count": 0,
+    "star": 4,
+    "name": "行秋",
+    "abbr": "行秋",
+    "img": "meta-gs/character/行秋/imgs/face.webp"
+   },
+   "10000041": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "莫娜",
+    "abbr": "莫娜",
+    "img": "meta-gs/character/莫娜/imgs/face.webp"
+   },
+   "10000087": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "那维莱特",
+    "abbr": "那维",
+    "img": "meta-gs/character/那维莱特/imgs/face.webp"
+   },
+   "10000089": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "芙宁娜",
+    "abbr": "芙宁娜",
+    "img": "meta-gs/character/芙宁娜/imgs/face.webp"
+   }
+  },
+  "totalStat": {
+   "w5Num": 0,
+   "w5UpNum": 0,
+   "c5Num": 3,
+   "c5UpNum": 2,
+   "c4Num": 1,
+   "w4Num": 2,
+   "w3Num": 4,
+   "upNum": 2,
+   "star5Num": 3,
+   "star4Num": 3,
+   "totalNum": 10,
+   "avgUpNum": "5.0"
+  },
+  "isMix": false
+ },
+ "stat|1|100000001|up|gs": {
+  "versionData": [
+   {
+    "version": "4.2",
+    "half": "上半",
+    "from": "23-11-08",
+    "to": "23-11-28",
+    "upIds": {
+     "10000089": "芙宁娜"
+    },
+    "name": "芙宁娜 / 白术",
+    "items": [
+     {
+      "id": "10000089",
+      "num": 1,
+      "star": 5,
+      "isUp": 1
+     },
+     {
+      "id": "11401",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     },
+     {
+      "id": "13303",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     },
+     {
+      "id": "12305",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     }
+    ],
+    "stats": {
+     "w5Num": 0,
+     "w5UpNum": 0,
+     "c5Num": 1,
+     "c5UpNum": 1,
+     "c4Num": 0,
+     "w4Num": 1,
+     "w3Num": 2,
+     "upNum": 1,
+     "star5Num": 1,
+     "star4Num": 1,
+     "totalNum": 4
+    }
+   },
+   {
+    "version": "4.1",
+    "half": "上半",
+    "from": "23-09-27",
+    "to": "23-10-17",
+    "upIds": {
+     "14514": "万世流涌大典",
+     "10000087": "那维莱特"
+    },
+    "name": "那维 / 胡桃",
+    "items": [
+     {
+      "id": "10000087",
+      "num": 1,
+      "star": 5,
+      "isUp": 1
+     },
+     {
+      "id": "14514",
+      "num": 1,
+      "star": 5,
+      "isUp": 1
+     },
+     {
+      "id": "10000041",
+      "num": 1,
+      "star": 5,
+      "isUp": 0
+     },
+     {
+      "id": "14502",
+      "num": 1,
+      "star": 5,
+      "isUp": 0
+     },
+     {
+      "id": "10000025",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     },
+     {
+      "id": "13401",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     },
+     {
+      "id": "15304",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     },
+     {
+      "id": "14302",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     },
+     {
+      "id": "12302",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     }
+    ],
+    "stats": {
+     "w5Num": 2,
+     "w5UpNum": 1,
+     "c5Num": 2,
+     "c5UpNum": 1,
+     "c4Num": 1,
+     "w4Num": 1,
+     "w3Num": 3,
+     "upNum": 2,
+     "star5Num": 4,
+     "star4Num": 2,
+     "totalNum": 9
+    }
+   }
+  ],
+  "itemMap": {
+   "11401": {
+    "type": "weapon",
+    "count": 0,
+    "star": 4,
+    "name": "西风剑",
+    "abbr": "西风剑",
+    "img": "meta-gs/weapon/sword/西风剑/icon.webp"
+   },
+   "12302": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "沐浴龙血的剑",
+    "abbr": "沐浴龙血的剑",
+    "img": "meta-gs/weapon/claymore/沐浴龙血的剑/icon.webp"
+   },
+   "12305": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "以理服人",
+    "abbr": "以理服人",
+    "img": "meta-gs/weapon/claymore/以理服人/icon.webp"
+   },
+   "13303": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "黑缨枪",
+    "abbr": "黑缨枪",
+    "img": "meta-gs/weapon/polearm/黑缨枪/icon.webp"
+   },
+   "13401": {
+    "type": "weapon",
+    "count": 0,
+    "star": 4,
+    "name": "匣里灭辰",
+    "abbr": "匣里灭辰",
+    "img": "meta-gs/weapon/polearm/匣里灭辰/icon.webp"
+   },
+   "14302": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "讨龙英杰谭",
+    "abbr": "讨龙英杰谭",
+    "img": "meta-gs/weapon/catalyst/讨龙英杰谭/icon.webp"
+   },
+   "14502": {
+    "type": "weapon",
+    "count": 0,
+    "star": 5,
+    "name": "四风原典",
+    "abbr": "四风原典",
+    "img": "meta-gs/weapon/catalyst/四风原典/icon.webp"
+   },
+   "14514": {
+    "type": "weapon",
+    "count": 0,
+    "star": 5,
+    "name": "万世流涌大典",
+    "abbr": "万世流涌大典",
+    "img": "meta-gs/weapon/catalyst/万世流涌大典/icon.webp"
+   },
+   "15304": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "弹弓",
+    "abbr": "弹弓",
+    "img": "meta-gs/weapon/bow/弹弓/icon.webp"
+   },
+   "10000025": {
+    "type": "char",
+    "count": 0,
+    "star": 4,
+    "name": "行秋",
+    "abbr": "行秋",
+    "img": "meta-gs/character/行秋/imgs/face.webp"
+   },
+   "10000041": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "莫娜",
+    "abbr": "莫娜",
+    "img": "meta-gs/character/莫娜/imgs/face.webp"
+   },
+   "10000087": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "那维莱特",
+    "abbr": "那维",
+    "img": "meta-gs/character/那维莱特/imgs/face.webp"
+   },
+   "10000089": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "芙宁娜",
+    "abbr": "芙宁娜",
+    "img": "meta-gs/character/芙宁娜/imgs/face.webp"
+   }
+  },
+  "totalStat": {
+   "w5Num": 2,
+   "w5UpNum": 1,
+   "c5Num": 3,
+   "c5UpNum": 2,
+   "c4Num": 1,
+   "w4Num": 2,
+   "w3Num": 5,
+   "upNum": 3,
+   "star5Num": 5,
+   "star4Num": 3,
+   "totalNum": 13,
+   "avgUpNum": "4.3"
+  },
+  "isMix": false
+ },
+ "stat|1|100000001|normal|gs": {
+  "versionData": [
+   {
+    "version": "常驻池",
+    "half": "",
+    "from": "",
+    "to": "",
+    "upIds": {},
+    "name": "",
+    "items": [
+     {
+      "id": "10000016",
+      "num": 1,
+      "star": 5,
+      "isUp": 0
+     },
+     {
+      "id": "11405",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     }
+    ],
+    "stats": {
+     "w5Num": 0,
+     "w5UpNum": 0,
+     "c5Num": 1,
+     "c5UpNum": 0,
+     "c4Num": 0,
+     "w4Num": 1,
+     "w3Num": 0,
+     "upNum": 0,
+     "star5Num": 1,
+     "star4Num": 1,
+     "totalNum": 2
+    }
+   }
+  ],
+  "itemMap": {
+   "11405": {
+    "type": "weapon",
+    "count": 0,
+    "star": 4,
+    "name": "匣里龙吟",
+    "abbr": "匣里龙吟",
+    "img": "meta-gs/weapon/sword/匣里龙吟/icon.webp"
+   },
+   "10000016": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "迪卢克",
+    "abbr": "迪卢克",
+    "img": "meta-gs/character/迪卢克/imgs/face.webp"
+   }
+  },
+  "totalStat": {
+   "w5Num": 0,
+   "w5UpNum": 0,
+   "c5Num": 1,
+   "c5UpNum": 0,
+   "c4Num": 0,
+   "w4Num": 1,
+   "w3Num": 0,
+   "upNum": 0,
+   "star5Num": 1,
+   "star4Num": 1,
+   "totalNum": 2,
+   "avgUpNum": 0
+  },
+  "isMix": false
+ },
+ "stat|1|100000001|mix|gs": {
+  "versionData": [
+   {
+    "version": "4.5",
+    "half": "上半",
+    "from": "24-03-13",
+    "to": "24-04-02",
+    "upIds": {
+     "12503": "松籁响起之时",
+     "10000051": "优菈"
+    },
+    "name": "优菈 / 阿贝多 / 可莉",
+    "items": [
+     {
+      "id": "10000051",
+      "num": 1,
+      "star": 5,
+      "isUp": 1
+     },
+     {
+      "id": "12503",
+      "num": 1,
+      "star": 5,
+      "isUp": 1
+     },
+     {
+      "id": "10000080",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     }
+    ],
+    "stats": {
+     "w5Num": 1,
+     "w5UpNum": 1,
+     "c5Num": 1,
+     "c5UpNum": 1,
+     "c4Num": 1,
+     "w4Num": 0,
+     "w3Num": 0,
+     "upNum": 2,
+     "star5Num": 2,
+     "star4Num": 1,
+     "totalNum": 3
+    }
+   }
+  ],
+  "itemMap": {
+   "12503": {
+    "type": "weapon",
+    "count": 0,
+    "star": 5,
+    "name": "松籁响起之时",
+    "abbr": "松籁响起之时",
+    "img": "meta-gs/weapon/claymore/松籁响起之时/icon.webp"
+   },
+   "10000051": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "优菈",
+    "abbr": "优菈",
+    "img": "meta-gs/character/优菈/imgs/face.webp"
+   },
+   "10000080": {
+    "type": "char",
+    "count": 0,
+    "star": 4,
+    "name": "米卡",
+    "abbr": "米卡",
+    "img": "meta-gs/character/米卡/imgs/face.webp"
+   }
+  },
+  "totalStat": {
+   "w5Num": 1,
+   "w5UpNum": 1,
+   "c5Num": 1,
+   "c5UpNum": 1,
+   "c4Num": 1,
+   "w4Num": 0,
+   "w3Num": 0,
+   "upNum": 2,
+   "star5Num": 2,
+   "star4Num": 1,
+   "totalNum": 3,
+   "avgUpNum": "1.5"
+  },
+  "isMix": true
+ },
+ "stat|1|100000001|all|gs": {
+  "versionData": [
+   {
+    "version": "全部统计",
+    "half": "",
+    "from": "",
+    "to": "",
+    "upIds": {},
+    "name": "",
+    "items": [
+     {
+      "id": "10000089",
+      "num": 1,
+      "star": 5,
+      "isUp": 0
+     },
+     {
+      "id": "10000087",
+      "num": 1,
+      "star": 5,
+      "isUp": 0
+     },
+     {
+      "id": "10000051",
+      "num": 1,
+      "star": 5,
+      "isUp": 0
+     },
+     {
+      "id": "10000041",
+      "num": 1,
+      "star": 5,
+      "isUp": 0
+     },
+     {
+      "id": "10000016",
+      "num": 1,
+      "star": 5,
+      "isUp": 0
+     },
+     {
+      "id": "14514",
+      "num": 1,
+      "star": 5,
+      "isUp": 0
+     },
+     {
+      "id": "14502",
+      "num": 1,
+      "star": 5,
+      "isUp": 0
+     },
+     {
+      "id": "12503",
+      "num": 1,
+      "star": 5,
+      "isUp": 0
+     },
+     {
+      "id": "10000080",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     },
+     {
+      "id": "10000025",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     },
+     {
+      "id": "13401",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     },
+     {
+      "id": "11405",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     },
+     {
+      "id": "11401",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     },
+     {
+      "id": "15304",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     },
+     {
+      "id": "14302",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     },
+     {
+      "id": "13303",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     },
+     {
+      "id": "12305",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     },
+     {
+      "id": "12302",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     }
+    ],
+    "stats": {
+     "w5Num": 3,
+     "w5UpNum": 0,
+     "c5Num": 5,
+     "c5UpNum": 0,
+     "c4Num": 2,
+     "w4Num": 3,
+     "w3Num": 5,
+     "upNum": 0,
+     "star5Num": 8,
+     "star4Num": 5,
+     "totalNum": 18
+    }
+   }
+  ],
+  "itemMap": {
+   "11401": {
+    "type": "weapon",
+    "count": 0,
+    "star": 4,
+    "name": "西风剑",
+    "abbr": "西风剑",
+    "img": "meta-gs/weapon/sword/西风剑/icon.webp"
+   },
+   "11405": {
+    "type": "weapon",
+    "count": 0,
+    "star": 4,
+    "name": "匣里龙吟",
+    "abbr": "匣里龙吟",
+    "img": "meta-gs/weapon/sword/匣里龙吟/icon.webp"
+   },
+   "12302": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "沐浴龙血的剑",
+    "abbr": "沐浴龙血的剑",
+    "img": "meta-gs/weapon/claymore/沐浴龙血的剑/icon.webp"
+   },
+   "12305": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "以理服人",
+    "abbr": "以理服人",
+    "img": "meta-gs/weapon/claymore/以理服人/icon.webp"
+   },
+   "12503": {
+    "type": "weapon",
+    "count": 0,
+    "star": 5,
+    "name": "松籁响起之时",
+    "abbr": "松籁响起之时",
+    "img": "meta-gs/weapon/claymore/松籁响起之时/icon.webp"
+   },
+   "13303": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "黑缨枪",
+    "abbr": "黑缨枪",
+    "img": "meta-gs/weapon/polearm/黑缨枪/icon.webp"
+   },
+   "13401": {
+    "type": "weapon",
+    "count": 0,
+    "star": 4,
+    "name": "匣里灭辰",
+    "abbr": "匣里灭辰",
+    "img": "meta-gs/weapon/polearm/匣里灭辰/icon.webp"
+   },
+   "14302": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "讨龙英杰谭",
+    "abbr": "讨龙英杰谭",
+    "img": "meta-gs/weapon/catalyst/讨龙英杰谭/icon.webp"
+   },
+   "14502": {
+    "type": "weapon",
+    "count": 0,
+    "star": 5,
+    "name": "四风原典",
+    "abbr": "四风原典",
+    "img": "meta-gs/weapon/catalyst/四风原典/icon.webp"
+   },
+   "14514": {
+    "type": "weapon",
+    "count": 0,
+    "star": 5,
+    "name": "万世流涌大典",
+    "abbr": "万世流涌大典",
+    "img": "meta-gs/weapon/catalyst/万世流涌大典/icon.webp"
+   },
+   "15304": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "弹弓",
+    "abbr": "弹弓",
+    "img": "meta-gs/weapon/bow/弹弓/icon.webp"
+   },
+   "10000016": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "迪卢克",
+    "abbr": "迪卢克",
+    "img": "meta-gs/character/迪卢克/imgs/face.webp"
+   },
+   "10000025": {
+    "type": "char",
+    "count": 0,
+    "star": 4,
+    "name": "行秋",
+    "abbr": "行秋",
+    "img": "meta-gs/character/行秋/imgs/face.webp"
+   },
+   "10000041": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "莫娜",
+    "abbr": "莫娜",
+    "img": "meta-gs/character/莫娜/imgs/face.webp"
+   },
+   "10000051": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "优菈",
+    "abbr": "优菈",
+    "img": "meta-gs/character/优菈/imgs/face.webp"
+   },
+   "10000080": {
+    "type": "char",
+    "count": 0,
+    "star": 4,
+    "name": "米卡",
+    "abbr": "米卡",
+    "img": "meta-gs/character/米卡/imgs/face.webp"
+   },
+   "10000087": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "那维莱特",
+    "abbr": "那维",
+    "img": "meta-gs/character/那维莱特/imgs/face.webp"
+   },
+   "10000089": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "芙宁娜",
+    "abbr": "芙宁娜",
+    "img": "meta-gs/character/芙宁娜/imgs/face.webp"
+   }
+  },
+  "totalStat": {
+   "w5Num": 3,
+   "w5UpNum": 0,
+   "c5Num": 5,
+   "c5UpNum": 0,
+   "c4Num": 2,
+   "w4Num": 3,
+   "w3Num": 5,
+   "upNum": 0,
+   "star5Num": 8,
+   "star4Num": 5,
+   "totalNum": 18,
+   "avgUpNum": 0
+  },
+  "isMix": false
+ },
+ "stat|2|800000001|up|sr": {
+  "versionData": [
+   {
+    "version": "1.0",
+    "half": "上半",
+    "from": "23-04-26",
+    "to": "23-05-17",
+    "upIds": {
+     "1102": "希儿"
+    },
+    "name": "",
+    "items": [
+     {
+      "id": "1102",
+      "num": 1,
+      "star": 5,
+      "isUp": 1
+     },
+     {
+      "id": "1101",
+      "num": 1,
+      "star": 5,
+      "isUp": 0
+     },
+     {
+      "id": "21010",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     },
+     {
+      "id": "1202",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     },
+     {
+      "id": "20000",
+      "num": 2,
+      "star": 3,
+      "isUp": 0
+     },
+     {
+      "id": "20013",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     }
+    ],
+    "stats": {
+     "w5Num": 0,
+     "w5UpNum": 0,
+     "c5Num": 2,
+     "c5UpNum": 1,
+     "c4Num": 1,
+     "w4Num": 1,
+     "w3Num": 3,
+     "upNum": 1,
+     "star5Num": 2,
+     "star4Num": 2,
+     "totalNum": 7
+    }
+   }
+  ],
+  "itemMap": {
+   "1101": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "布洛妮娅",
+    "img": "meta-sr/character/布洛妮娅/imgs/face.webp"
+   },
+   "1102": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "希儿",
+    "img": "meta-sr/character/希儿/imgs/face.webp"
+   },
+   "1202": {
+    "type": "char",
+    "count": 0,
+    "star": 4,
+    "name": "停云",
+    "img": "meta-sr/character/停云/imgs/face.webp"
+   },
+   "20000": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "锋镝",
+    "abbr": "锋镝",
+    "img": "meta-sr/weapon/巡猎/锋镝/icon.webp"
+   },
+   "20013": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "灵钥",
+    "abbr": "灵钥",
+    "img": "meta-sr/weapon/智识/灵钥/icon.webp"
+   },
+   "21010": {
+    "type": "weapon",
+    "count": 0,
+    "star": 4,
+    "name": "论剑",
+    "abbr": "论剑",
+    "img": "meta-sr/weapon/巡猎/论剑/icon.webp"
+   }
+  },
+  "totalStat": {
+   "w5Num": 0,
+   "w5UpNum": 0,
+   "c5Num": 2,
+   "c5UpNum": 1,
+   "c4Num": 1,
+   "w4Num": 1,
+   "w3Num": 3,
+   "upNum": 1,
+   "star5Num": 2,
+   "star4Num": 2,
+   "totalNum": 7,
+   "avgUpNum": "7.0"
+  },
+  "isMix": false
+ },
+ "stat|2|800000001|char|sr": {
+  "versionData": [
+   {
+    "version": "1.0",
+    "half": "上半",
+    "from": "23-04-26",
+    "to": "23-05-17",
+    "upIds": {
+     "1102": "希儿"
+    },
+    "name": "",
+    "items": [
+     {
+      "id": "1102",
+      "num": 1,
+      "star": 5,
+      "isUp": 1
+     },
+     {
+      "id": "1101",
+      "num": 1,
+      "star": 5,
+      "isUp": 0
+     },
+     {
+      "id": "1202",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     },
+     {
+      "id": "20000",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     }
+    ],
+    "stats": {
+     "w5Num": 0,
+     "w5UpNum": 0,
+     "c5Num": 2,
+     "c5UpNum": 1,
+     "c4Num": 1,
+     "w4Num": 0,
+     "w3Num": 1,
+     "upNum": 1,
+     "star5Num": 2,
+     "star4Num": 1,
+     "totalNum": 4
+    }
+   }
+  ],
+  "itemMap": {
+   "1101": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "布洛妮娅",
+    "img": "meta-sr/character/布洛妮娅/imgs/face.webp"
+   },
+   "1102": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "希儿",
+    "img": "meta-sr/character/希儿/imgs/face.webp"
+   },
+   "1202": {
+    "type": "char",
+    "count": 0,
+    "star": 4,
+    "name": "停云",
+    "img": "meta-sr/character/停云/imgs/face.webp"
+   },
+   "20000": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "锋镝",
+    "abbr": "锋镝",
+    "img": "meta-sr/weapon/巡猎/锋镝/icon.webp"
+   }
+  },
+  "totalStat": {
+   "w5Num": 0,
+   "w5UpNum": 0,
+   "c5Num": 2,
+   "c5UpNum": 1,
+   "c4Num": 1,
+   "w4Num": 0,
+   "w3Num": 1,
+   "upNum": 1,
+   "star5Num": 2,
+   "star4Num": 1,
+   "totalNum": 4,
+   "avgUpNum": "4.0"
+  },
+  "isMix": false
+ },
+ "stat|2|800000001|weapon|sr": {
+  "versionData": [
+   {
+    "version": "1.0",
+    "half": "上半",
+    "from": "23-04-26",
+    "to": "23-05-17",
+    "upIds": {},
+    "name": "",
+    "items": [
+     {
+      "id": "21010",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     },
+     {
+      "id": "20013",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     },
+     {
+      "id": "20000",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     }
+    ],
+    "stats": {
+     "w5Num": 0,
+     "w5UpNum": 0,
+     "c5Num": 0,
+     "c5UpNum": 0,
+     "c4Num": 0,
+     "w4Num": 1,
+     "w3Num": 2,
+     "upNum": 0,
+     "star5Num": 0,
+     "star4Num": 1,
+     "totalNum": 3
+    }
+   }
+  ],
+  "itemMap": {
+   "20000": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "锋镝",
+    "abbr": "锋镝",
+    "img": "meta-sr/weapon/巡猎/锋镝/icon.webp"
+   },
+   "20013": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "灵钥",
+    "abbr": "灵钥",
+    "img": "meta-sr/weapon/智识/灵钥/icon.webp"
+   },
+   "21010": {
+    "type": "weapon",
+    "count": 0,
+    "star": 4,
+    "name": "论剑",
+    "abbr": "论剑",
+    "img": "meta-sr/weapon/巡猎/论剑/icon.webp"
+   }
+  },
+  "totalStat": {
+   "w5Num": 0,
+   "w5UpNum": 0,
+   "c5Num": 0,
+   "c5UpNum": 0,
+   "c4Num": 0,
+   "w4Num": 1,
+   "w3Num": 2,
+   "upNum": 0,
+   "star5Num": 0,
+   "star4Num": 1,
+   "totalNum": 3,
+   "avgUpNum": 0
+  },
+  "isMix": false
+ },
+ "stat|2|800000001|normal|sr": {
+  "versionData": [
+   {
+    "version": "常驻池",
+    "half": "",
+    "from": "",
+    "to": "",
+    "upIds": {},
+    "name": "",
+    "items": [
+     {
+      "id": "1211",
+      "num": 1,
+      "star": 5,
+      "isUp": 0
+     },
+     {
+      "id": "20008",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     }
+    ],
+    "stats": {
+     "w5Num": 0,
+     "w5UpNum": 0,
+     "c5Num": 1,
+     "c5UpNum": 0,
+     "c4Num": 0,
+     "w4Num": 0,
+     "w3Num": 1,
+     "upNum": 0,
+     "star5Num": 1,
+     "star4Num": 0,
+     "totalNum": 2
+    }
+   }
+  ],
+  "itemMap": {
+   "1211": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "白露",
+    "img": "meta-sr/character/白露/imgs/face.webp"
+   },
+   "20008": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "嘉果",
+    "abbr": "嘉果",
+    "img": "meta-sr/weapon/丰饶/嘉果/icon.webp"
+   }
+  },
+  "totalStat": {
+   "w5Num": 0,
+   "w5UpNum": 0,
+   "c5Num": 1,
+   "c5UpNum": 0,
+   "c4Num": 0,
+   "w4Num": 0,
+   "w3Num": 1,
+   "upNum": 0,
+   "star5Num": 1,
+   "star4Num": 0,
+   "totalNum": 2,
+   "avgUpNum": 0
+  },
+  "isMix": false
+ },
+ "stat|2|800000001|all|sr": {
+  "versionData": [
+   {
+    "version": "全部统计",
+    "half": "",
+    "from": "",
+    "to": "",
+    "upIds": {},
+    "name": "",
+    "items": [
+     {
+      "id": "1211",
+      "num": 1,
+      "star": 5,
+      "isUp": 0
+     },
+     {
+      "id": "1102",
+      "num": 1,
+      "star": 5,
+      "isUp": 0
+     },
+     {
+      "id": "1101",
+      "num": 1,
+      "star": 5,
+      "isUp": 0
+     },
+     {
+      "id": "21010",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     },
+     {
+      "id": "1202",
+      "num": 1,
+      "star": 4,
+      "isUp": 0
+     },
+     {
+      "id": "20000",
+      "num": 2,
+      "star": 3,
+      "isUp": 0
+     },
+     {
+      "id": "20013",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     },
+     {
+      "id": "20008",
+      "num": 1,
+      "star": 3,
+      "isUp": 0
+     }
+    ],
+    "stats": {
+     "w5Num": 0,
+     "w5UpNum": 0,
+     "c5Num": 3,
+     "c5UpNum": 0,
+     "c4Num": 1,
+     "w4Num": 1,
+     "w3Num": 4,
+     "upNum": 0,
+     "star5Num": 3,
+     "star4Num": 2,
+     "totalNum": 9
+    }
+   }
+  ],
+  "itemMap": {
+   "1101": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "布洛妮娅",
+    "img": "meta-sr/character/布洛妮娅/imgs/face.webp"
+   },
+   "1102": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "希儿",
+    "img": "meta-sr/character/希儿/imgs/face.webp"
+   },
+   "1202": {
+    "type": "char",
+    "count": 0,
+    "star": 4,
+    "name": "停云",
+    "img": "meta-sr/character/停云/imgs/face.webp"
+   },
+   "1211": {
+    "type": "char",
+    "count": 0,
+    "star": 5,
+    "name": "白露",
+    "img": "meta-sr/character/白露/imgs/face.webp"
+   },
+   "20000": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "锋镝",
+    "abbr": "锋镝",
+    "img": "meta-sr/weapon/巡猎/锋镝/icon.webp"
+   },
+   "20008": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "嘉果",
+    "abbr": "嘉果",
+    "img": "meta-sr/weapon/丰饶/嘉果/icon.webp"
+   },
+   "20013": {
+    "type": "weapon",
+    "count": 0,
+    "star": 3,
+    "name": "灵钥",
+    "abbr": "灵钥",
+    "img": "meta-sr/weapon/智识/灵钥/icon.webp"
+   },
+   "21010": {
+    "type": "weapon",
+    "count": 0,
+    "star": 4,
+    "name": "论剑",
+    "abbr": "论剑",
+    "img": "meta-sr/weapon/巡猎/论剑/icon.webp"
+   }
+  },
+  "totalStat": {
+   "w5Num": 0,
+   "w5UpNum": 0,
+   "c5Num": 3,
+   "c5UpNum": 0,
+   "c4Num": 1,
+   "w4Num": 1,
+   "w3Num": 4,
+   "upNum": 0,
+   "star5Num": 3,
+   "star4Num": 2,
+   "totalNum": 9,
+   "avgUpNum": 0
+  },
+  "isMix": false
+ },
+ "stat|2|800000001|mix|sr": false
+}

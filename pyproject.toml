@@ -1,0 +1,66 @@
+[tool.poetry]
+name = "nonebot-plugin-miao"
+version = "0.1.0"
+description = "原神/星铁抽卡分析与角色面板（移植自 miao-plugin）"
+authors = ["TonyLiangP2010405"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/TonyLiangP2010405/nonebot-plugin-miao"
+repository = "https://github.com/TonyLiangP2010405/nonebot-plugin-miao"
+keywords = ["nonebot", "nonebot2", "genshin", "starrail", "gacha", "plugin"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Communications :: Chat",
+]
+packages = [{ include = "nonebot_plugin_miao" }]
+include = [
+    { path = "nonebot_plugin_miao/resources", format = ["sdist", "wheel"] },
+]
+
+[tool.poetry.dependencies]
+python = ">=3.9,<4.0"
+nonebot2 = ">=2.2.0"
+nonebot-adapter-onebot = ">=2.4.0"
+httpx = ">=0.27.0"
+pillow = ">=10.0.0"
+skia-python = ">=87.5"
+quickjs = ">=1.19"
+nonebot-plugin-localstore = ">=0.7.0"
+pydantic = ">=2.0.0"
+pyyaml = ">=6.0"
+# skia-python 依赖 numpy；universal 解析会选到 2.0.2（无 cp313 wheel），按 Python 版本分档
+numpy = [
+    { version = ">=2.0.2", python = ">=3.9,<3.13" },
+    { version = ">=2.1", python = ">=3.13" },
+]
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=7.0"
+pytest-asyncio = ">=0.21"
+nonebug = ">=0.3"
+ruff = ">=0.1"
+respx = "^0.23.1"
+
+[build-system]
+requires = ["poetry-core>=2.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.nonebot]
+plugins = ["nonebot_plugin_miao"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

@@ -1,0 +1,26 @@
+[
+ {
+  "uid": "fixture",
+  "gacha_type": "200",
+  "item_id": "",
+  "count": "1",
+  "time": "2023-09-28 08:00:00",
+  "name": "迪卢克",
+  "lang": "zh-cn",
+  "item_type": "角色",
+  "rank_type": "5",
+  "id": "301"
+ },
+ {
+  "uid": "fixture",
+  "gacha_type": "200",
+  "item_id": "",
+  "count": "1",
+  "time": "2023-10-05 08:00:00",
+  "name": "匣里龙吟",
+  "lang": "zh-cn",
+  "item_type": "武器",
+  "rank_type": "4",
+  "id": "302"
+ }
+]

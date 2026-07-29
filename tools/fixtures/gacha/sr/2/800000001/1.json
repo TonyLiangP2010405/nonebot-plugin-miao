@@ -1,0 +1,26 @@
+[
+ {
+  "uid": "fixture",
+  "gacha_type": "1",
+  "item_id": "",
+  "count": "1",
+  "time": "2023-05-01 10:00:00",
+  "name": "嘉果",
+  "lang": "zh-cn",
+  "item_type": "光锥",
+  "rank_type": "3",
+  "id": "101"
+ },
+ {
+  "uid": "fixture",
+  "gacha_type": "1",
+  "item_id": "",
+  "count": "1",
+  "time": "2023-05-02 10:00:00",
+  "name": "白露",
+  "lang": "zh-cn",
+  "item_type": "角色",
+  "rank_type": "5",
+  "id": "102"
+ }
+]

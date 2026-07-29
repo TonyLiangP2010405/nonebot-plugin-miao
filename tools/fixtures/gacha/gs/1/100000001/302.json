@@ -1,0 +1,38 @@
+[
+ {
+  "uid": "fixture",
+  "gacha_type": "302",
+  "item_id": "",
+  "count": "1",
+  "time": "2023-09-28 09:00:00",
+  "name": "沐浴龙血的剑",
+  "lang": "zh-cn",
+  "item_type": "武器",
+  "rank_type": "3",
+  "id": "201"
+ },
+ {
+  "uid": "fixture",
+  "gacha_type": "302",
+  "item_id": "",
+  "count": "1",
+  "time": "2023-09-29 09:00:00",
+  "name": "万世流涌大典",
+  "lang": "zh-cn",
+  "item_type": "武器",
+  "rank_type": "5",
+  "id": "202"
+ },
+ {
+  "uid": "fixture",
+  "gacha_type": "302",
+  "item_id": "",
+  "count": "1",
+  "time": "2023-09-30 09:00:00",
+  "name": "四风原典",
+  "lang": "zh-cn",
+  "item_type": "武器",
+  "rank_type": "5",
+  "id": "203"
+ }
+]
