@@ -15,11 +15,13 @@ from nonebot_plugin_miao.datasource.mihomo import parse_mihomo
 ROOT = Path(__file__).resolve().parent
 FIXTURES = ROOT.parent / "tests" / "fixtures"
 
-# (用例名, game, 角色id)：原神 优菈/迪卢克 + 星铁 镜流Pro（加强角色）
+# (用例名, game, 角色id)：原神 优菈/迪卢克/刻晴 + 星铁 镜流Pro/瓦尔特Pro（加强角色，attr 为数组形态）
 CASES = [
     ("eula", "gs", "10000051"),
     ("diluc", "gs", "10000016"),
+    ("keqing", "gs", "10000042"),
     ("jingliu", "sr", "2212"),
+    ("welt", "sr", "2004"),
 ]
 
 # 对比用的面板属性 key（staticAttr 嵌套结构不直接对比，逐 key 比 computed 值）

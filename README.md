@@ -12,10 +12,12 @@
 ## 安装
 
 ```bash
-nb plugin install nonebot-plugin-miao
-pip install nonebot-plugin-miao
-poetry add nonebot-plugin-miao
+nb plugin install nonebot-plugin-miao-genshin
+pip install nonebot-plugin-miao-genshin
+poetry add nonebot-plugin-miao-genshin
 ```
+
+> 注意：PyPI 上的 `nonebot-plugin-miao` 是他人发布的无关项目，请勿安装；本插件的 PyPI 包名为 `nonebot-plugin-miao-genshin`（导入模块名仍为 `nonebot_plugin_miao`）。
 
 ## 配置
 

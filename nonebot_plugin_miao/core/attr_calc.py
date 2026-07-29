@@ -198,7 +198,12 @@ def _set_char_attr(ad: AttrData, avatar: dict[str, Any], char: meta.CharacterMet
     promote = int(avatar.get("promote") or 0)
     if game == "sr":
         # Character.getLvAttr：attrs + grow*(level-1)
-        lv_attr = (char.get("attr") or {}).get(str(promote)) or {}
+        char_attr = char.get("attr") or {}
+        # 新版星铁角色 attr 为按突破段索引的数组（原版 metaAttr[promote] 对 dict/数组都成立）
+        if isinstance(char_attr, list):
+            lv_attr = char_attr[promote] if 0 <= promote < len(char_attr) else {}
+        else:
+            lv_attr = char_attr.get(str(promote)) or {}
         ret: dict[str, float] = {}
         for k, v in (lv_attr.get("attrs") or {}).items():
             ret[k] = float(v)

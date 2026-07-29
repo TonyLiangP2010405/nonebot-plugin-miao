@@ -107,6 +107,39 @@
    }
   }
  },
+ "keqing": {
+  "attr": {
+   "hp": 10025,
+   "atk": 512.9,
+   "def": 611.54,
+   "mastery": 0,
+   "cpct": 22.87,
+   "cdmg": 69.2,
+   "recharge": 100,
+   "dmg": 0,
+   "phy": 0,
+   "heal": 0,
+   "shield": 0,
+   "coloringDmg": 0,
+   "hpBase": 10025,
+   "atkBase": 512.9,
+   "defBase": 611.54
+  },
+  "mark": {
+   "mark": 0,
+   "markClass": "D",
+   "classTitle": "刻晴-通用",
+   "charWeight": {
+    "atk": 75,
+    "atkPlus": 75,
+    "cpct": 100,
+    "cdmg": 100,
+    "dmg": 100,
+    "phy": 100
+   },
+   "artis": {}
+  }
+ },
  "jingliu": {
   "attr": {
    "hp": 3970.122774898837,
@@ -164,6 +197,68 @@
     "6": {
      "mark": 5.869435893202592,
      "markClass": "D"
+    }
+   }
+  }
+ },
+ "welt": {
+  "attr": {
+   "hp": 3178.2257538941285,
+   "atk": 3404.02410946906,
+   "def": 990.108905,
+   "speed": 138.05200000000002,
+   "cpct": 28.652000179999998,
+   "cdmg": 72.03200007999999,
+   "recharge": 0,
+   "dmg": 14.4,
+   "heal": 0,
+   "stance": 41.47200031999999,
+   "effPct": 39.23200066,
+   "effDef": 25.984000950000002,
+   "joy": 0,
+   "hpBase": 2077.9919999999997,
+   "atkBase": 1097.208,
+   "defBase": 840.105,
+   "speedBase": 102
+  },
+  "mark": {
+   "mark": 167.89544199860975,
+   "markClass": "A",
+   "classTitle": "瓦尔特Pro-通用",
+   "charWeight": {
+    "atk": 75,
+    "atkPlus": 75,
+    "speed": 75,
+    "cpct": 100,
+    "cdmg": 100,
+    "recharge": 50,
+    "dmg": 100,
+    "effPct": 100
+   },
+   "artis": {
+    "1": {
+     "mark": 31.027252886935287,
+     "markClass": "S"
+    },
+    "2": {
+     "mark": 18.29142930621693,
+     "markClass": "B"
+    },
+    "3": {
+     "mark": 23.401462507899012,
+     "markClass": "A"
+    },
+    "4": {
+     "mark": 43.73834619043481,
+     "markClass": "SSS"
+    },
+    "5": {
+     "mark": 24.0401163453919,
+     "markClass": "A"
+    },
+    "6": {
+     "mark": 27.396834761731817,
+     "markClass": "A"
     }
    }
   }

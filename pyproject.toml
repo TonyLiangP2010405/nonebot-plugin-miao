@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "nonebot-plugin-miao"
-version = "0.1.0"
+name = "nonebot-plugin-miao-genshin"
+version = "0.1.1"
 description = "原神/星铁抽卡分析与角色面板（移植自 miao-plugin）"
 authors = ["TonyLiangP2010405"]
 license = "MIT"
@@ -22,6 +22,7 @@ classifiers = [
 packages = [{ include = "nonebot_plugin_miao" }]
 include = [
     { path = "nonebot_plugin_miao/resources", format = ["sdist", "wheel"] },
+    { path = "nonebot_plugin_miao/dmg/js", format = ["sdist", "wheel"] },
 ]
 
 [tool.poetry.dependencies]

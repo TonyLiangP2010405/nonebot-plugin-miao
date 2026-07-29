@@ -510,7 +510,12 @@ _SR_SPEED_PROPERTY_TYPE = 4
 
 def _sr_char_hp(char: meta.CharacterMeta, level: int, promote: int) -> float:
     """角色裸生命（对照 Character.getLvAttr：attr[promote].attrs + grow*(level-1)）"""
-    lv_attr = (char.get("attr") or {}).get(str(promote)) or {}
+    char_attr = char.get("attr") or {}
+    # 新版星铁角色 attr 为数组（同 attr_calc._set_char_attr 的处理）
+    if isinstance(char_attr, list):
+        lv_attr = char_attr[promote] if 0 <= promote < len(char_attr) else {}
+    else:
+        lv_attr = char_attr.get(str(promote)) or {}
     hp = float((lv_attr.get("attrs") or {}).get("hp") or 0)
     hp += float((lv_attr.get("grow") or {}).get("hp") or 0) * (level - 1)
     return hp
