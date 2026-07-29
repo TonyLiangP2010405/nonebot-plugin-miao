@@ -214,10 +214,17 @@ def write_player(game: str, uid: str | int, data: dict) -> None:
 
 # ---------------- 模拟抽卡用户状态（data/sim/{scope_key}.json） ----------------
 
+# Windows 文件名禁用字符（scope_key 含 ":"，直接在 Windows 上会触发 WinError 87）
+_INVALID_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*]')
+
 
 def sim_state_path(scope_key: str) -> Path:
-    """模拟抽卡状态文件路径，scope_key 形如 "group_123:456" 或 "private:456" """
-    path = _data_dir() / "sim" / f"{scope_key}.json"
+    """模拟抽卡状态文件路径，scope_key 形如 "123:456"（群聊）或 "private:456"（私聊）
+
+    文件名中的 Windows 禁用字符统一替换为 "_"（旧版带 ":" 的文件会被自然弃用，
+    模拟抽卡保底计数丢失无实际影响）
+    """
+    path = _data_dir() / "sim" / f"{_INVALID_FILENAME_CHARS.sub('_', scope_key)}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     return path
 

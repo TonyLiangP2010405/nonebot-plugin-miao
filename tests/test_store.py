@@ -124,7 +124,8 @@ def test_sim_state_rw(data_dir):
     assert store.read_sim_state("group_123:456") == {}
     state = {"count": 3, "date": "2024-01-01"}
     store.write_sim_state("group_123:456", state)
-    assert store.sim_state_path("group_123:456") == data_dir / "sim" / "group_123:456.json"
+    # Windows 文件名禁用字符（":" 等）统一替换为 "_"
+    assert store.sim_state_path("group_123:456") == data_dir / "sim" / "group_123_456.json"
     assert store.read_sim_state("group_123:456") == state
     # private 作用域互不影响
     assert store.read_sim_state("private:456") == {}
