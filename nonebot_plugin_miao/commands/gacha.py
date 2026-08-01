@@ -1,9 +1,8 @@
 """抽卡相关指令：authkey 嗅探 / 更新记录 / 记录分析 / 统计 / 模拟抽卡 / 定轨 / UIGF 导入导出
 
 正则设计要点（交叉命中都有测试覆盖）：
-- 记录分析 / 统计 要求以 记录|祈愿|分析 / 统计 结尾，不会误伤 #十连 系列
-- 模拟抽卡沿用原版正则 `^#*(10|[武器池常驻]*[十]+|抽|单)[连抽卡奖][123武器池常驻]*$`，
-  只有特定组合才命中，#抽卡记录 / #抽卡分析 均不命中
+- 记录分析 / 统计要求以 `/` 开头，并以 记录|祈愿|分析 / 统计结尾
+- 模拟抽卡是唯一无需 `/` 的功能，同时兼容旧的 `#` 前缀
 - authkey 嗅探优先级最低（15），避免与正常指令抢消息
 """
 from __future__ import annotations
@@ -40,14 +39,14 @@ from .common import _delete_tmp_after, game_of, guard, resolve_uid, send_image
 # 正则（导出常量以便测试交叉命中）
 # ---------------------------------------------------------------------------
 
-RE_AUTHKEY = r"authkey="
-RE_UPDATE = r"^#(星铁)?更新(抽卡|抽奖|祈愿|跃迁)?记录$"
-RE_ANALYSE = r"^#?(星铁)?(抽卡|抽奖|角色|武器|光锥|常驻|集录|[uU][pP])+池?(记录|祈愿|分析)$"
-RE_STAT = r"^#?(星铁)?(全部|抽卡|抽奖|角色|武器|光锥|常驻|集录|[uU][pP]|版本)+池?统计$"
-RE_SIMULATE = r"^#*(10|[武器池常驻]*[十]+|抽|单)[连抽卡奖][123武器池常驻]*$"
-RE_BING = r"^#定轨$"
-RE_IMPORT = r"^#(星铁)?导入记录"
-RE_EXPORT = r"^#(星铁)?导出记录$"
+RE_AUTHKEY = r"^/[\s\S]*authkey="
+RE_UPDATE = r"^/(星铁)?更新(抽卡|抽奖|祈愿|跃迁)?记录$"
+RE_ANALYSE = r"^/(星铁)?(抽卡|抽奖|角色|武器|光锥|常驻|集录|[uU][pP])+池?(记录|祈愿|分析)$"
+RE_STAT = r"^/(星铁)?(全部|抽卡|抽奖|角色|武器|光锥|常驻|集录|[uU][pP]|版本)+池?统计$"
+RE_SIMULATE = r"^[#/]?(10|[武器池常驻]*[十]+|抽|单)[连抽卡奖][123武器池常驻]*$"
+RE_BING = r"^/定轨$"
+RE_IMPORT = r"^/(星铁)?导入记录"
+RE_EXPORT = r"^/(星铁)?导出记录$"
 
 authkey_m = on_regex(RE_AUTHKEY, priority=15, block=True)
 update_m = on_regex(RE_UPDATE, priority=5, block=True)
@@ -88,7 +87,7 @@ def _first_token(text: str) -> str:
 
 def analyse_keyword(text: str, game: str) -> str | None:
     """从分析指令文本中提取归一化的卡池关键词，无法识别返回 None"""
-    t = text.lstrip("#").strip()
+    t = text.lstrip("#/").strip()
     if t.startswith("星铁"):
         t = t[2:]
     t = re.sub(r"(记录|祈愿|分析)$", "", t).rstrip("池").strip()
@@ -103,7 +102,7 @@ def analyse_keyword(text: str, game: str) -> str | None:
 
 def stat_keyword(text: str) -> str:
     """从统计指令文本中提取归一化的统计关键词（抽卡/抽奖/版本 → 全部）"""
-    t = text.lstrip("#").strip()
+    t = text.lstrip("#/").strip()
     if t.startswith("星铁"):
         t = t[2:]
     t = re.sub(r"统计$", "", t).rstrip("池").strip()
@@ -115,7 +114,7 @@ def stat_keyword(text: str) -> str:
 
 def sim_kind_of(text: str) -> str:
     """模拟抽卡文本 → do_gacha 的 kind"""
-    t = text.lstrip("#")
+    t = text.lstrip("#/")
     if "武器" in t:
         return "weapon"
     if "常驻" in t:
@@ -127,7 +126,7 @@ def sim_kind_of(text: str) -> str:
 
 def is_single(text: str) -> bool:
     """是否单抽（不含 十/10），simulate 层只跑十连，单抽截取结果第 1 个"""
-    t = text.lstrip("#")
+    t = text.lstrip("#/")
     return "十" not in t and "10" not in t
 
 
@@ -160,7 +159,7 @@ def _at_msg(event: MessageEvent, text: str) -> Message:
 
 
 async def _do_update(matcher, event: MessageEvent, authkey_info: dict, game: str, uid: str) -> None:
-    """增量更新 + 汇总回复（authkey 嗅探与 #更新抽卡记录 共用）"""
+    """增量更新 + 汇总回复（authkey 嗅探与 /更新抽卡记录 共用）"""
     await matcher.send(f"开始更新抽卡记录（UID {uid}），请稍候...")
     result = await update_gacha_log(event.get_user_id(), uid, authkey_info)
     save_authkey(event.get_user_id(), game, authkey_info)
@@ -186,7 +185,7 @@ async def _(event: MessageEvent):
         logs = await fetch_gacha_log(authkey_info, DEFAULT_POOLS[game][0])
         uid = str(logs[0].get("uid")) if logs else None
         if not uid:
-            await authkey_m.finish("未能从链接中获取到 UID，请先发送 #绑定uid <uid> 后再更新")
+            await authkey_m.finish("未能从链接中获取到 UID，请先发送 /绑定uid <uid> 后再更新")
         try:
             store.bind_uid(user_id, game, uid)
         except ValueError:
@@ -195,7 +194,7 @@ async def _(event: MessageEvent):
 
 
 # ---------------------------------------------------------------------------
-# #更新抽卡记录 / #星铁更新抽卡记录
+# /更新抽卡记录 / /星铁更新抽卡记录
 # ---------------------------------------------------------------------------
 
 
@@ -208,16 +207,16 @@ async def _(event: MessageEvent):
     if not authkey_info:
         await update_m.finish(
             "未找到可用的抽卡链接（缓存 24 小时内有效）\n"
-            "请在游戏中打开抽卡记录页面复制链接发送给我，或使用 #导入记录 导入 UIGF 文件"
+            "请在游戏中打开抽卡记录页面复制链接，并在链接前加 / 发送给我，或使用 /导入记录 导入 UIGF 文件"
         )
     uid = store.get_uid(event.get_user_id(), game)
     if not uid:
-        await update_m.finish("你还未绑定 UID，请先发送 #" + ("星铁" if game == "sr" else "") + "绑定uid <uid>")
+        await update_m.finish("你还未绑定 UID，请先发送 /" + ("星铁" if game == "sr" else "") + "绑定uid <uid>")
     await _do_update(update_m, event, authkey_info, game, uid)
 
 
 # ---------------------------------------------------------------------------
-# 记录分析：#(星铁)?(抽卡|角色|武器|...)(记录|祈愿|分析)
+# 记录分析：/(星铁)?(抽卡|角色|武器|...)(记录|祈愿|分析)
 # ---------------------------------------------------------------------------
 
 
@@ -231,17 +230,18 @@ async def _(event: MessageEvent):
         await analyse_m.finish("无法识别的卡池，支持：角色/武器/光锥/常驻/集录/抽卡")
     uid = resolve_uid(event, text, game)
     if not uid:
-        await analyse_m.finish("你还未绑定 UID，请先发送 #" + ("星铁" if game == "sr" else "") + "绑定uid <uid>")
+        await analyse_m.finish("你还未绑定 UID，请先发送 /" + ("星铁" if game == "sr" else "") + "绑定uid <uid>")
     data = analyse_pool(event.get_user_id(), uid, keyword, game)
     if data is None:
-        await analyse_m.finish("暂无抽卡记录，请先发送抽卡链接或 #" + ("星铁" if game == "sr" else "") + "更新抽卡记录")
+        update_command = "/" + ("星铁" if game == "sr" else "") + "更新抽卡记录"
+        await analyse_m.finish(f"暂无抽卡记录，请发送以 / 开头的抽卡链接或 {update_command}")
     png = await render_gacha_detail(data, uid, game, pool_label_of(keyword, game) or "抽卡记录")
     await send_image(analyse_m, png)
     await analyse_m.finish()
 
 
 # ---------------------------------------------------------------------------
-# 按版本统计：#(星铁)?(全部|角色|...|版本)统计
+# 按版本统计：/(星铁)?(全部|角色|...|版本)统计
 # ---------------------------------------------------------------------------
 
 
@@ -253,17 +253,18 @@ async def _(event: MessageEvent):
     keyword = stat_keyword(text)
     uid = resolve_uid(event, text, game)
     if not uid:
-        await stat_m.finish("你还未绑定 UID，请先发送 #" + ("星铁" if game == "sr" else "") + "绑定uid <uid>")
+        await stat_m.finish("你还未绑定 UID，请先发送 /" + ("星铁" if game == "sr" else "") + "绑定uid <uid>")
     data = stat_pool(event.get_user_id(), uid, keyword, game)
     if data is None:
-        await stat_m.finish("暂无抽卡记录，请先发送抽卡链接或 #" + ("星铁" if game == "sr" else "") + "更新抽卡记录")
+        update_command = "/" + ("星铁" if game == "sr" else "") + "更新抽卡记录"
+        await stat_m.finish(f"暂无抽卡记录，请发送以 / 开头的抽卡链接或 {update_command}")
     png = await render_gacha_stat(data, uid, game)
     await send_image(stat_m, png)
     await stat_m.finish()
 
 
 # ---------------------------------------------------------------------------
-# 模拟抽卡：#十连 / #十连2 / #武器十连 / #常驻十连 / #单抽 等
+# 模拟抽卡：十连 / 十连2 / 武器十连 / 常驻十连 / 单抽 等（无需前缀）
 # ---------------------------------------------------------------------------
 
 
@@ -287,7 +288,7 @@ async def _(bot: Bot, event: MessageEvent):
 
 
 # ---------------------------------------------------------------------------
-# #定轨：武器池定轨切换
+# /定轨：武器池定轨切换
 # ---------------------------------------------------------------------------
 
 
@@ -299,7 +300,7 @@ async def _(event: MessageEvent):
 
 
 # ---------------------------------------------------------------------------
-# #导入记录：参数为 UIGF json 文件链接或直接跟 JSON 文本
+# /导入记录：参数为 UIGF json 文件链接或直接跟 JSON 文本
 # ---------------------------------------------------------------------------
 
 
@@ -307,9 +308,9 @@ async def _(event: MessageEvent):
 @guard(import_m)
 async def _(event: MessageEvent):
     text = event.get_plaintext()
-    param = re.sub(r"^#(星铁)?导入记录", "", text).strip()
+    param = re.sub(r"^/(星铁)?导入记录", "", text).strip()
     if not param:
-        await import_m.finish("用法：#导入记录 <UIGF文件链接> 或 #导入记录 <UIGF的JSON文本>")
+        await import_m.finish("用法：/导入记录 <UIGF文件链接> 或 /导入记录 <UIGF的JSON文本>")
     if param.startswith("http://") or param.startswith("https://"):
         try:
             async with httpx.AsyncClient(timeout=30) as client:
@@ -328,7 +329,7 @@ async def _(event: MessageEvent):
 
 
 # ---------------------------------------------------------------------------
-# #导出记录 / #星铁导出记录：UIGF json 文件上传，失败降级为文本
+# /导出记录 / /星铁导出记录：UIGF json 文件上传，失败降级为文本
 # ---------------------------------------------------------------------------
 
 
@@ -339,7 +340,7 @@ async def _(bot: Bot, event: MessageEvent):
     game = game_of(text)
     uid = resolve_uid(event, "", game)
     if not uid:
-        await export_m.finish("你还未绑定 UID，请先发送 #" + ("星铁" if game == "sr" else "") + "绑定uid <uid>")
+        await export_m.finish("你还未绑定 UID，请先发送 /" + ("星铁" if game == "sr" else "") + "绑定uid <uid>")
     data = export_uigf(event.get_user_id(), uid, game)
     if not data["list"]:
         await export_m.finish("暂无抽卡记录可导出，请先更新抽卡记录")

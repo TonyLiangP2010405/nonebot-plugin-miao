@@ -1,6 +1,6 @@
-"""绑定相关指令：#绑定uid / #删除绑定 / #绑定cookie / #删除cookie / #我的绑定
+"""绑定相关指令：/绑定uid / /删除绑定 / /绑定cookie / /删除cookie / /我的绑定
 
-全部走 on_regex（默认 command_start 不含 "#"，on_command 无法命中 "#绑定uid" 这类指令）。
+全部走 on_regex，明确要求以斜杠开头，避免普通聊天误触发。
 """
 from __future__ import annotations
 
@@ -16,11 +16,11 @@ from .common import game_of, guard
 _GAME_NAME = {"gs": "原神", "sr": "星铁"}
 
 # 正则常量（导出以便测试交叉命中）
-RE_BIND_UID = r"^#(星铁)?绑定([uU][iI][dD])?\s*(\d{0,11})\s*$"
-RE_DEL_BIND = r"^#删除(星铁)?绑定$"
-RE_BIND_COOKIE = r"^#绑定cookie\s*([\s\S]*)$"
-RE_DEL_COOKIE = r"^#删除cookie$"
-RE_MY_BIND = r"^#我的绑定$"
+RE_BIND_UID = r"^/(星铁)?绑定([uU][iI][dD])?\s*(\d{0,11})\s*$"
+RE_DEL_BIND = r"^/删除(星铁)?绑定$"
+RE_BIND_COOKIE = r"^/绑定cookie\s*([\s\S]*)$"
+RE_DEL_COOKIE = r"^/删除cookie$"
+RE_MY_BIND = r"^/我的绑定$"
 
 bind_uid_m = on_regex(RE_BIND_UID, priority=5, block=True)
 del_bind_m = on_regex(RE_DEL_BIND, priority=5, block=True)
@@ -47,9 +47,9 @@ async def _(event: MessageEvent):
     old = store.get_uid(event.get_user_id(), game)
     if old:
         await bind_uid_m.finish(
-            f"你已绑定{game_name} UID {old}\n如需更换，请发送 #{'星铁' if game == 'sr' else ''}绑定uid <新UID>"
+            f"你已绑定{game_name} UID {old}\n如需更换，请发送 /{'星铁' if game == 'sr' else ''}绑定uid <新UID>"
         )
-    await bind_uid_m.finish(f"请发送 #{'星铁' if game == 'sr' else ''}绑定uid <你的{game_name}UID>")
+    await bind_uid_m.finish(f"请发送 /{'星铁' if game == 'sr' else ''}绑定uid <你的{game_name}UID>")
 
 
 def resolve_uid_in_bind(text: str) -> str | None:
@@ -72,13 +72,13 @@ async def _(event: MessageEvent):
 @guard(bind_cookie_m)
 async def _(event: MessageEvent):
     if isinstance(event, GroupMessageEvent):
-        await bind_cookie_m.finish("为保护账号安全，cookie 请私聊发送给我（#绑定cookie <cookie>）")
+        await bind_cookie_m.finish("为保护账号安全，cookie 请私聊发送给我（/绑定cookie <cookie>）")
     text = event.get_plaintext()
     cookie = text.split("绑定cookie", 1)[1].strip()
     if not cookie:
-        await bind_cookie_m.finish("请在指令后跟上 cookie：#绑定cookie <你的米游社cookie>")
+        await bind_cookie_m.finish("请在指令后跟上 cookie：/绑定cookie <你的米游社cookie>")
     store.set_cookie(event.get_user_id(), cookie)
-    await bind_cookie_m.finish("cookie 已保存，仅存储在 bot 本地\n如需删除请发送 #删除cookie")
+    await bind_cookie_m.finish("cookie 已保存，仅存储在 bot 本地\n如需删除请发送 /删除cookie")
 
 
 @del_cookie_m.handle()

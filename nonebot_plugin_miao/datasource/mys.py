@@ -146,7 +146,7 @@ class MysApi:
         """区服判定，国际服暂不支持（国际服需 hoyolab 域 + SALT_OS + client_type=2）"""
         server = get_server(uid, self.game)
         if not _CN_SERVER_RE.search(server):
-            raise ProfileError("米游社面板暂只支持国服 UID，国际服请使用 #更新面板", "mys")
+            raise ProfileError("米游社面板暂只支持国服 UID，国际服请使用 /更新面板", "mys")
         return server
 
     def _headers(self, uid: str | int, query: str = "", body: str = "") -> dict[str, str]:
@@ -169,10 +169,10 @@ class MysApi:
         if retcode == 0:
             return res.get("data") or {}
         if retcode in (10104, 1008):
-            raise ProfileError("米游社 cookie 无效或已过期，请重新发送 #绑定cookie 绑定", "mys")
+            raise ProfileError("米游社 cookie 无效或已过期，请重新发送 /绑定cookie 绑定", "mys")
         if retcode in (-1, -100, 1001, 10001, 10103):
             if re.search(r"登录|login", message, re.I):
-                raise ProfileError("米游社 cookie 已失效，请重新发送 #绑定cookie 绑定", "mys")
+                raise ProfileError("米游社 cookie 已失效，请重新发送 /绑定cookie 绑定", "mys")
             raise ProfileError(f"米游社接口报错：{message or retcode}", "mys")
         if retcode == 10101:
             raise ProfileError("米游社查询已达今日上限，请明天再试", "mys")
@@ -815,8 +815,8 @@ async def update_profile_mys(user_id: str | int, uid: str | int, game: str) -> d
     uid = str(uid)
     cookie = store.get_cookie(user_id) or _global_cookie()
     if not cookie:
-        return {"code": "no_cookie", "msg": "米游社面板需要绑定米游社 cookie，请先发送 #绑定cookie"}
-    # CD 与 #更新面板 相互独立（不同数据源），key 加 mys 前缀
+        return {"code": "no_cookie", "msg": "米游社面板需要绑定米游社 cookie，请先发送 /绑定cookie"}
+    # CD 与 /更新面板 相互独立（不同数据源），key 加 mys 前缀
     cd_key = f"profile:mys:{game}:{uid}"
     wait = store.check_cd(cd_key, _interval_seconds())
     if wait > 0:

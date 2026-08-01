@@ -10,11 +10,11 @@ __plugin_meta__ = PluginMetadata(
     name="喵喵抽卡面板",
     description="原神/星铁抽卡分析与角色面板（移植自 miao-plugin）",
     usage=(
-        "#抽卡分析          原神抽卡记录分析\n"
-        "#星铁抽卡分析      星铁抽卡记录分析\n"
-        "#模拟抽卡          模拟十连抽卡\n"
-        "#面板 <角色>       查看角色面板\n"
-        "#更新面板          更新角色面板数据"
+        "/抽卡分析          原神抽卡记录分析\n"
+        "/星铁抽卡分析      星铁抽卡记录分析\n"
+        "十连               模拟十连抽卡（无需前缀）\n"
+        "/<角色>面板        查看角色面板\n"
+        "/更新面板          更新角色面板数据"
     ),
     type="application",
     homepage="https://github.com/TonyLiangP2010405/nonebot-plugin-miao",

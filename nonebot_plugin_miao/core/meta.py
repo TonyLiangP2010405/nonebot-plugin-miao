@@ -20,7 +20,7 @@ RES_DIR = Path(__file__).resolve().parent.parent / "resources"
 
 
 def _res_root() -> Path:
-    """元数据根目录：运行时覆盖目录（#更新面板资源 拉取）优先，打包 resources 兜底
+    """元数据根目录：运行时覆盖目录（/更新面板资源拉取）优先，打包 resources 兜底
 
     覆盖目录存在且含 meta-gs 时视为有效。localstore 依赖 nonebot 已初始化，
     未初始化（如直接 import 的单元测试）时回退打包资源。

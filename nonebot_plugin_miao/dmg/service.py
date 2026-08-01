@@ -177,7 +177,7 @@ def _build_script(game: str, w_type: str | None, rule_code: str, payload: dict[s
 def calc_dmg(avatar: dict[str, Any], game: str, idx: int | None = None) -> dict[str, Any]:
     """Evaluate an upstream character rule and return its damage rows.
 
-    ``idx`` is one-based, matching ``#角色伤害N``.  Rules, callbacks and
+    ``idx`` is one-based, matching ``/角色伤害N``.  Rules, callbacks and
     conditional rows run in QuickJS; Python supplies the validated panel and
     talent data only.
     """

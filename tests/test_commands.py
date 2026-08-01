@@ -15,9 +15,9 @@ from nonebot_plugin_miao.core import store
 @pytest.fixture
 def cmds():
     """在 nonebot 初始化后导入 commands 模块（on_regex 注册要求已初始化）"""
-    from nonebot_plugin_miao.commands import bind, common, gacha, profile
+    from nonebot_plugin_miao.commands import bind, common, gacha, help, profile
 
-    return SimpleNamespace(bind=bind, common=common, gacha=gacha, profile=profile)
+    return SimpleNamespace(bind=bind, common=common, gacha=gacha, help=help, profile=profile)
 
 
 @pytest.fixture
@@ -67,6 +67,8 @@ def test_matchers_registered(cmds):
         cmds.gacha.bing_m,
         cmds.gacha.import_m,
         cmds.gacha.export_m,
+        cmds.help.profile_help_m,
+        cmds.help.gacha_help_m,
         cmds.profile.update_m,
         cmds.profile.list_m,
         cmds.profile.artis_list_m,
@@ -154,12 +156,12 @@ def test_pool_new_summary(cmds):
 
 
 # ---------------------------------------------------------------------------
-# 正则交叉命中：#十连 系列与 #抽卡记录/统计 系列互不误伤
+# 正则交叉命中：模拟抽卡与带斜杠的记录/统计指令互不误伤
 # ---------------------------------------------------------------------------
 
 
 def test_simulate_regex(cmds):
-    for text in ("#十连", "#十连2", "#武器十连", "#常驻十连", "#单抽", "十连", "#10连", "#抽卡", "#抽奖"):
+    for text in ("#十连", "/十连", "#十连2", "#武器十连", "#常驻十连", "#单抽", "十连", "#10连", "#抽卡", "#抽奖"):
         assert re.match(cmds.gacha.RE_SIMULATE, text), text
     # 不误伤记录/统计指令和普通聊天
     for text in ("#抽卡记录", "#抽卡分析", "#抽卡统计", "#星铁更新抽卡记录", "今天十连真欧", "#十连抽"):
@@ -167,31 +169,46 @@ def test_simulate_regex(cmds):
 
 
 def test_analyse_regex(cmds):
-    for text in ("#抽卡记录", "抽卡记录", "#星铁光锥分析", "#角色祈愿", "#武器池记录", "#up记录"):
+    for text in ("/抽卡记录", "/星铁光锥分析", "/角色祈愿", "/武器池记录", "/up记录"):
         assert re.match(cmds.gacha.RE_ANALYSE, text), text
-    for text in ("#十连", "#单抽", "#抽卡统计", "#更新抽卡记录", "#绑定uid 100000001"):
+    for text in ("抽卡记录", "#抽卡记录", "#十连", "#单抽", "/抽卡统计", "/更新抽卡记录", "/绑定uid 100000001"):
         assert not re.match(cmds.gacha.RE_ANALYSE, text), text
 
 
 def test_stat_regex(cmds):
-    for text in ("#全部统计", "#版本统计", "#星铁常驻池统计", "#抽卡统计"):
+    for text in ("/全部统计", "/版本统计", "/星铁常驻池统计", "/抽卡统计"):
         assert re.match(cmds.gacha.RE_STAT, text), text
-    for text in ("#抽卡记录", "#十连", "#全部记录"):
+    for text in ("全部统计", "#全部统计", "/抽卡记录", "#十连", "/全部记录"):
         assert not re.match(cmds.gacha.RE_STAT, text), text
 
 
 def test_update_and_bind_regex(cmds):
-    assert re.match(cmds.gacha.RE_UPDATE, "#更新抽卡记录")
-    assert re.match(cmds.gacha.RE_UPDATE, "#星铁更新抽卡记录")
-    assert not re.match(cmds.gacha.RE_UPDATE, "#更新抽卡")
-    assert re.match(cmds.gacha.RE_IMPORT, "#导入记录 https://example.com/uigf.json")
-    assert re.match(cmds.gacha.RE_EXPORT, "#星铁导出记录")
+    assert re.match(cmds.gacha.RE_UPDATE, "/更新抽卡记录")
+    assert re.match(cmds.gacha.RE_UPDATE, "/星铁更新抽卡记录")
+    assert not re.match(cmds.gacha.RE_UPDATE, "更新抽卡记录")
+    assert not re.match(cmds.gacha.RE_UPDATE, "#更新抽卡记录")
+    assert not re.match(cmds.gacha.RE_UPDATE, "/更新抽卡")
+    assert re.match(cmds.gacha.RE_IMPORT, "/导入记录 https://example.com/uigf.json")
+    assert re.match(cmds.gacha.RE_EXPORT, "/星铁导出记录")
+    assert re.match(cmds.gacha.RE_AUTHKEY, "/https://example.com/?authkey=abc")
+    assert not re.match(cmds.gacha.RE_AUTHKEY, "https://example.com/?authkey=abc")
     # 绑定系列互不命中
     bind = cmds.bind
-    assert not re.match(bind.RE_BIND_UID, "#绑定cookie abc")
-    assert not re.match(bind.RE_BIND_COOKIE, "#绑定uid 100000001")
-    assert not re.match(bind.RE_MY_BIND, "#删除绑定")
-    assert re.match(bind.RE_BIND_UID, "#星铁绑定uid 800000001")
+    assert not re.match(bind.RE_BIND_UID, "/绑定cookie abc")
+    assert not re.match(bind.RE_BIND_COOKIE, "/绑定uid 100000001")
+    assert not re.match(bind.RE_MY_BIND, "/删除绑定")
+    assert re.match(bind.RE_BIND_UID, "/星铁绑定uid 800000001")
+    assert not re.match(bind.RE_BIND_UID, "星铁绑定uid 800000001")
+    assert not re.match(bind.RE_BIND_UID, "#星铁绑定uid 800000001")
+
+
+def test_help_requires_slash(cmds):
+    assert re.match(cmds.help.RE_PROFILE_HELP, "/面板帮助")
+    assert re.match(cmds.help.RE_GACHA_HELP, "/抽卡帮助")
+    for text in ("面板帮助", "#面板帮助"):
+        assert not re.match(cmds.help.RE_PROFILE_HELP, text)
+    for text in ("抽卡帮助", "#抽卡帮助"):
+        assert not re.match(cmds.help.RE_GACHA_HELP, text)
 
 
 # ---------------------------------------------------------------------------
@@ -201,38 +218,42 @@ def test_update_and_bind_regex(cmds):
 
 def test_profile_update_regex(cmds):
     p = cmds.profile
-    for text in ("#更新面板", "#面板更新", "#星铁更新面板", "#原神更新面板", "#全部面板更新",
-                 "#更新全部面板", "#获取游戏角色详情", "#更新面板 800055548"):
+    for text in ("/更新面板", "/面板更新", "/星铁更新面板", "/原神更新面板", "/全部面板更新",
+                 "/更新全部面板", "/获取游戏角色详情", "/更新面板 800055548"):
         assert re.match(p.RE_UPDATE, text), text
-    for text in ("#面板列表", "#优菈面板", "#更新面板数据", "#圣遗物列表"):
+    for text in ("更新面板", "#更新面板", "/面板列表", "/优菈面板", "/更新面板数据", "/圣遗物列表"):
         assert not re.match(p.RE_UPDATE, text), text
 
 
 def test_profile_list_regex(cmds):
     p = cmds.profile
-    for text in ("#面板列表", "#面板", "#角色面板", "#星铁面板角色", "#星铁面板列表", "#面板列表 800055548"):
+    for text in ("/面板列表", "/面板", "/角色面板", "/星铁面板角色", "/星铁面板列表", "/面板列表 800055548"):
         assert re.match(p.RE_LIST, text), text
-    for text in ("#更新面板", "#优菈面板", "#圣遗物列表"):
+    for text in ("面板列表", "#面板列表", "/更新面板", "/优菈面板", "/圣遗物列表"):
         assert not re.match(p.RE_LIST, text), text
 
 
 def test_profile_artis_list_regex(cmds):
     p = cmds.profile
-    for text in ("#圣遗物列表", "#星铁遗器列表", "#圣遗物列表 800055548"):
+    for text in ("/圣遗物列表", "/星铁遗器列表", "/圣遗物列表 800055548"):
         assert re.match(p.RE_ARTIS_LIST, text), text
-    for text in ("#圣遗物", "#面板列表", "#优菈圣遗物"):
+    for text in ("圣遗物列表", "#圣遗物列表", "/圣遗物", "/面板列表", "/优菈圣遗物"):
         assert not re.match(p.RE_ARTIS_LIST, text), text
 
 
 def test_profile_detail_regex(cmds):
     p = cmds.profile
-    for text in ("#优菈面板", "#刻晴面板", "#优菈圣遗物", "#星铁镜流面板", "#镜流遗器", "#优菈面板 800055548"):
+    for text in ("/优菈面板", "/刻晴面板", "/优菈圣遗物", "/星铁镜流面板", "/镜流遗器", "/优菈面板 800055548"):
         assert re.match(p.RE_DETAIL, text), text
     # 角色名解析：group(1) 为角色名（可带游戏前缀，处理时剥离）
-    assert re.match(p.RE_DETAIL, "#刻晴面板").group(1) == "刻晴"
-    assert re.match(p.RE_DETAIL, "#星铁镜流面板").group(1) == "星铁镜流"
+    assert re.match(p.RE_DETAIL, "/刻晴面板").group(1) == "刻晴"
+    assert re.match(p.RE_DETAIL, "/星铁镜流面板").group(1) == "星铁镜流"
     # 不与其他面板指令冲突
-    for text in ("#面板列表", "#更新面板", "#星铁更新面板", "#面板", "#圣遗物列表", "#角色面板"):
+    other_commands = (
+        "刻晴面板", "#刻晴面板", "/面板列表", "/更新面板", "/星铁更新面板",
+        "/面板", "/圣遗物列表", "/角色面板",
+    )
+    for text in other_commands:
         assert not re.match(p.RE_DETAIL, text), text
 
 
@@ -253,9 +274,9 @@ async def test_my_bind_unbound(app, cmds, data_dir):
             group_id=88888,
             message_type="group",
             message_id=1,
-            message=Message("#我的绑定"),
-            original_message=Message("#我的绑定"),
-            raw_message="#我的绑定",
+            message=Message("/我的绑定"),
+            original_message=Message("/我的绑定"),
+            raw_message="/我的绑定",
             font=0,
             sender=Sender(user_id=12345, nickname="tester"),
         )

@@ -9,6 +9,7 @@
 导入（与 test_commands.py 的做法一致）。
 """
 import json
+import re
 import sys
 import urllib.parse
 
@@ -370,6 +371,12 @@ def test_admin_matchers_registered():
         all_matchers.update(ms)
     assert admin.res_update_m in all_matchers
     assert admin.res_info_m in all_matchers
+    assert re.match(admin.RE_RES_UPDATE, "/更新面板资源")
+    assert re.match(admin.RE_RES_INFO, "/面板资源信息")
+    assert not re.match(admin.RE_RES_UPDATE, "更新面板资源")
+    assert not re.match(admin.RE_RES_UPDATE, "#更新面板资源")
+    assert not re.match(admin.RE_RES_INFO, "面板资源信息")
+    assert not re.match(admin.RE_RES_INFO, "#面板资源信息")
 
 
 def test_plugin_load_with_scheduler():

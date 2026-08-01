@@ -568,13 +568,13 @@ def test_mys_update_matcher_registered(cmds):
 
 
 def test_mys_update_regex(cmds):
-    for text in ("#米游社更新面板", "#米游社面板更新", "#星铁米游社更新面板",
-                 "#原神mys面板更新", "#mys更新面板", "#米游社更新面板 800055548"):
+    for text in ("/米游社更新面板", "/米游社面板更新", "/星铁米游社更新面板",
+                 "/原神mys面板更新", "/mys更新面板", "/米游社更新面板 800055548"):
         assert re.match(cmds.RE_MYS_UPDATE, text), text
-    for text in ("#更新面板", "#米游社面板", "#面板列表"):
+    for text in ("米游社更新面板", "#米游社更新面板", "/更新面板", "/米游社面板", "/面板列表"):
         assert not re.match(cmds.RE_MYS_UPDATE, text), text
     # 不误伤/不被误伤：普通更新面板不命中 mys 正则，mys 指令不命中普通更新与角色面板正则
-    assert not re.match(cmds.RE_UPDATE, "#米游社更新面板")
-    assert not re.match(cmds.RE_DETAIL, "#米游社更新面板")
-    assert not re.match(cmds.RE_DETAIL, "#星铁mys面板更新")
-    assert not re.match(cmds.RE_DETAIL, "#米游社面板更新 800055548")
+    assert not re.match(cmds.RE_UPDATE, "/米游社更新面板")
+    assert not re.match(cmds.RE_DETAIL, "/米游社更新面板")
+    assert not re.match(cmds.RE_DETAIL, "/星铁mys面板更新")
+    assert not re.match(cmds.RE_DETAIL, "/米游社面板更新 800055548")
