@@ -318,7 +318,8 @@ def get_local_image(rel: str) -> skia.Image | None:
     for path in candidates:
         try:
             if path.is_file():
-                img = skia.Image.MakeFromEncoded(path.read_bytes())
+                # MakeWithCopy：MakeFromEncoded 零拷贝不持有数据，read_bytes 临时对象被 GC 后悬垂
+                img = skia.Image.MakeFromEncoded(skia.Data.MakeWithCopy(path.read_bytes()))
                 if img:
                     return img
         except Exception as e:
@@ -346,7 +347,8 @@ def _cache_dir() -> Path:
 
 
 def _decode(data: bytes) -> skia.Image | None:
-    img = skia.Image.MakeFromEncoded(data)
+    # MakeWithCopy：MakeFromEncoded 零拷贝不持有 data，调用方释放后 img 即成悬垂指针
+    img = skia.Image.MakeFromEncoded(skia.Data.MakeWithCopy(data))
     if img:
         try:
             img = img.makeRasterImage() or img
