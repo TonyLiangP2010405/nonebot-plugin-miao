@@ -5,7 +5,6 @@ import asyncio
 import functools
 import os
 import re
-import tempfile
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -35,17 +34,13 @@ async def _delete_tmp_after(path: str, delay: int = 30) -> None:
 
 
 async def send_image(matcher: type[Matcher], png_bytes: bytes) -> None:
-    """PNG bytes → 临时文件 → MessageSegment.image 发送，30s 后自动删除
+    """直接以 base64 发送 PNG
 
-    参照 nonebot-plugin-bili-dynamic monitor.py 的做法：NapCat 等实现读取
-    file:// 本地路径需要时间，不能发完立刻删。
+    macOS 上 QQ/NapCat 进程带 App Sandbox，无权读取本进程在 /tmp 下创建的
+    临时文件（内核 deny file-read-data，OneBot 侧报 EPERM），因此不走
+    file:// 临时文件方案；bytes 会由 onebot 适配器编码为 base64:// 发送。
     """
-    fd, tmp_path = tempfile.mkstemp(suffix=".png")
-    with os.fdopen(fd, "wb") as f:
-        f.write(png_bytes)
-    safe_path = tmp_path.replace("\\", "/")
-    await matcher.send(MessageSegment.image(f"file:///{safe_path}"))
-    _ = asyncio.create_task(_delete_tmp_after(tmp_path, 30))
+    await matcher.send(MessageSegment.image(png_bytes))
 
 
 def resolve_uid(event: MessageEvent, args_text: str, game: str) -> str | None:
