@@ -212,6 +212,42 @@ def write_player(game: str, uid: str | int, data: dict) -> None:
     save_json(player_path(game, uid), data)
 
 
+# ---------------- 原神攻略设置（data/strategy.json） ----------------
+
+
+def get_strategy_default_source(default: int = 1) -> int:
+    """读取攻略图默认来源；持久化值无效时回退到配置默认值。"""
+    try:
+        fallback = int(default)
+    except (TypeError, ValueError):
+        fallback = 1
+    if not 1 <= fallback <= 7:
+        fallback = 1
+
+    settings = load_json(_data_dir() / "strategy.json", {}) or {}
+    try:
+        source = int(settings.get("default_source", fallback))
+    except (TypeError, ValueError):
+        return fallback
+    return source if 1 <= source <= 7 else fallback
+
+
+def set_strategy_default_source(source: int) -> int:
+    """持久化攻略图默认来源并返回规范化后的编号。"""
+    try:
+        source = int(source)
+    except (TypeError, ValueError) as e:
+        raise ValueError("攻略来源必须是 1-7 的数字") from e
+    if not 1 <= source <= 7:
+        raise ValueError("攻略来源必须是 1-7 的数字")
+
+    with _LOCK:
+        settings = load_json(_data_dir() / "strategy.json", {}) or {}
+        settings["default_source"] = source
+        save_json(_data_dir() / "strategy.json", settings)
+    return source
+
+
 # ---------------- 模拟抽卡用户状态（data/sim/{scope_key}.json） ----------------
 
 # Windows 文件名禁用字符（scope_key 含 ":"，直接在 Windows 上会触发 WinError 87）

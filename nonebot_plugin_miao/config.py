@@ -15,3 +15,5 @@ class Config(BaseModel):
     miao_gacha_daily_limit: int = 1
     # 每日自动更新面板资源（凌晨 4:20，失败仅记日志）
     miao_res_auto_update: bool = True
+    # 原神角色攻略图默认来源（1-7，可用“设置默认攻略”指令持久化覆盖）
+    miao_strategy_default_source: int = 1

@@ -117,6 +117,25 @@ def test_player_rw(data_dir):
     assert store.read_player("gs", "100000001") == payload
 
 
+# ---------------- 原神攻略设置 ----------------
+
+
+def test_strategy_default_source(data_dir):
+    assert store.get_strategy_default_source() == 1
+    assert store.get_strategy_default_source(3) == 3
+    assert store.set_strategy_default_source(6) == 6
+    assert store.get_strategy_default_source() == 6
+    assert json.loads((data_dir / "strategy.json").read_text(encoding="utf-8"))["default_source"] == 6
+
+
+def test_strategy_default_source_validation(data_dir):
+    for value in (0, 8, "x"):
+        with pytest.raises(ValueError, match="1-7"):
+            store.set_strategy_default_source(value)
+    store.save_json(data_dir / "strategy.json", {"default_source": 99})
+    assert store.get_strategy_default_source(2) == 2
+
+
 # ---------------- 模拟抽卡状态 ----------------
 
 

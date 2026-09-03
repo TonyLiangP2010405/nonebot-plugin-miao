@@ -15,9 +15,17 @@ from nonebot_plugin_miao.core import store
 @pytest.fixture
 def cmds():
     """在 nonebot 初始化后导入 commands 模块（on_regex 注册要求已初始化）"""
-    from nonebot_plugin_miao.commands import bind, common, encyclopedia, gacha, help, profile
+    from nonebot_plugin_miao.commands import bind, common, encyclopedia, gacha, help, profile, strategy
 
-    return SimpleNamespace(bind=bind, common=common, encyclopedia=encyclopedia, gacha=gacha, help=help, profile=profile)
+    return SimpleNamespace(
+        bind=bind,
+        common=common,
+        encyclopedia=encyclopedia,
+        gacha=gacha,
+        help=help,
+        profile=profile,
+        strategy=strategy,
+    )
 
 
 @pytest.fixture
@@ -68,6 +76,9 @@ def test_matchers_registered(cmds):
         cmds.gacha.import_m,
         cmds.gacha.export_m,
         cmds.encyclopedia.encyclopedia_m,
+        cmds.strategy.strategy_help_m,
+        cmds.strategy.strategy_setting_m,
+        cmds.strategy.strategy_m,
         cmds.help.profile_help_m,
         cmds.help.gacha_help_m,
         cmds.profile.update_m,
@@ -245,6 +256,38 @@ def test_encyclopedia_lookup(cmds):
     kind, weapon = find("雾切")
     assert kind == "weapon" and weapon["name"] == "雾切之回光"
     assert find("不存在的图鉴条目") is None
+
+
+# ---------------------------------------------------------------------------
+# strategy：原神攻略指令与来源解析
+# ---------------------------------------------------------------------------
+
+
+def test_strategy_regex_and_query(cmds):
+    strategy = cmds.strategy
+    cases = {
+        "/心海攻略": (False, "心海", None),
+        "#心海攻略4": (False, "心海", 4),
+        "/心海攻略7": (False, "心海", 7),
+        "/更新早柚攻略2": (True, "早柚", 2),
+    }
+    for text, expected in cases.items():
+        assert re.match(strategy.RE_STRATEGY, text), text
+        assert strategy.parse_strategy_query(text) == expected
+
+    for text in ("/攻略帮助", "#攻略说明", "/攻略"):
+        assert re.match(strategy.RE_STRATEGY_HELP, text), text
+        assert strategy.parse_strategy_query(text) is None
+    for text in ("/设置默认攻略1", "#设置默认攻略7", "/设置默认攻略"):
+        assert re.match(strategy.RE_STRATEGY_SETTING, text), text
+    for text in ("心海攻略", "今天看了心海攻略", "/心海攻略图", "/星铁流萤攻略"):
+        assert not re.match(strategy.RE_STRATEGY, text), text
+
+
+def test_strategy_help_lists_all_sources(cmds):
+    text = cmds.strategy.strategy_help_text()
+    assert "1——西风驿站" in text
+    assert "7——婧枫赛赛" in text
 
 
 # ---------------------------------------------------------------------------
