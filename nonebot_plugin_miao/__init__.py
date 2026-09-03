@@ -8,13 +8,14 @@ from .config import Config
 
 __plugin_meta__ = PluginMetadata(
     name="喵喵抽卡面板",
-    description="原神/星铁抽卡分析与角色面板（移植自 miao-plugin）",
+    description="原神/星铁抽卡分析、角色面板与原神角色武器图鉴（移植自 miao-plugin）",
     usage=(
         "/抽卡分析          原神抽卡记录分析\n"
         "/星铁抽卡分析      星铁抽卡记录分析\n"
         "十连               模拟十连抽卡（无需前缀）\n"
         "/<角色>面板        查看角色面板\n"
-        "/更新面板          更新角色面板数据"
+        "/更新面板          更新角色面板数据\n"
+        "/<名称>图鉴        查看原神角色或武器图鉴"
     ),
     type="application",
     homepage="https://github.com/TonyLiangP2010405/nonebot-plugin-miao",
@@ -26,7 +27,7 @@ __plugin_meta__ = PluginMetadata(
 # require 会失败，此时跳过定时任务注册（真实运行 / nonebot.load_plugin 时正常注册）。
 from nonebot import logger, require  # noqa: E402
 
-from .commands import admin, bind, gacha, help, profile  # noqa: E402,F401 注册指令 matcher
+from .commands import admin, bind, encyclopedia, gacha, help, profile  # noqa: E402,F401 注册指令 matcher
 
 try:
     require("nonebot_plugin_apscheduler")

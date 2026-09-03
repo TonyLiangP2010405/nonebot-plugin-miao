@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "nonebot-plugin-miao-genshin"
-version = "0.1.9"
-description = "原神/星铁抽卡分析与角色面板（移植自 miao-plugin）"
+version = "0.1.10"
+description = "原神/星铁抽卡分析、角色面板与原神角色武器图鉴（移植自 miao-plugin）"
 authors = ["TonyLiangP2010405"]
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/TonyLiangP2010405/nonebot-plugin-miao"
 repository = "https://github.com/TonyLiangP2010405/nonebot-plugin-miao"
-keywords = ["nonebot", "nonebot2", "genshin", "starrail", "gacha", "plugin"]
+keywords = ["nonebot", "nonebot2", "genshin", "starrail", "gacha", "encyclopedia", "plugin"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: MIT License",

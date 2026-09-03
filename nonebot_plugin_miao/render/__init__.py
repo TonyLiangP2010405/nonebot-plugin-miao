@@ -1,6 +1,7 @@
 """skia-python 手绘渲染层：抽卡详情 / 按版本统计 / 十连模拟抽卡卡片"""
 from .artis_list import render_artis_list
 from .base import ELEM_COLORS, draw_image_or_placeholder, elem_gradient, fetch_image, font, render_card
+from .encyclopedia import render_character_encyclopedia, render_encyclopedia_index, render_weapon_encyclopedia
 from .gacha_detail import render_gacha_detail
 from .gacha_stat import render_gacha_stat
 from .gacha_trial import render_gacha_trial
@@ -14,6 +15,9 @@ __all__ = [
     "fetch_image",
     "font",
     "render_card",
+    "render_character_encyclopedia",
+    "render_encyclopedia_index",
+    "render_weapon_encyclopedia",
     "render_gacha_detail",
     "render_gacha_stat",
     "render_gacha_trial",

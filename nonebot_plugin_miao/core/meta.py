@@ -214,6 +214,17 @@ def get_character(name_or_alias: str | int, game: str) -> CharacterMeta | None:
     return CharacterMeta(game=game, data=data)
 
 
+def list_characters(game: str) -> list[dict[str, Any]]:
+    """返回全部角色的规范元数据，按星级降序、名称升序排列。"""
+    index = _char_index(game)
+    result: list[dict[str, Any]] = []
+    for dir_name in set(index.by_name.values()):
+        data_file = _meta_dir(game) / "character" / dir_name / "data.json"
+        if data_file.is_file():
+            result.append(dict(_load_res_json(data_file)))
+    return sorted(result, key=lambda item: (-int(item.get("star") or 0), str(item.get("name") or "")))
+
+
 # ---------------------------------------------------------------------------
 # 武器
 # ---------------------------------------------------------------------------
@@ -264,6 +275,19 @@ def get_weapon(name_or_alias: str, game: str) -> dict[str, Any] | None:
     data = dict(_load_res_json(_meta_dir(game) / "weapon" / type_dir / dir_name / "data.json"))
     data.setdefault("type", type_dir)
     return data
+
+
+def list_weapons(game: str) -> list[dict[str, Any]]:
+    """返回全部武器的规范元数据，按类型、星级降序、名称升序排列。"""
+    result: list[dict[str, Any]] = []
+    for type_dir, dir_name in set(_weapon_index(game).values()):
+        data = dict(_load_res_json(_meta_dir(game) / "weapon" / type_dir / dir_name / "data.json"))
+        data.setdefault("type", type_dir)
+        result.append(data)
+    return sorted(
+        result,
+        key=lambda item: (str(item.get("type") or ""), -int(item.get("star") or 0), str(item.get("name") or "")),
+    )
 
 
 _WEAPON_ID_INDEX: dict[str, dict[str, tuple[str, str]]] = {}  # game -> {id: (类型目录, 武器目录)}

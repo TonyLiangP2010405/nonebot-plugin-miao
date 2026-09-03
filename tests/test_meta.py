@@ -44,6 +44,14 @@ def test_get_character_not_found():
     assert meta.get_character("", "sr") is None
 
 
+def test_list_characters():
+    characters = meta.list_characters("gs")
+    names = [item["name"] for item in characters]
+    assert "芙宁娜" in names
+    assert len(names) == len(set(names))
+    assert characters == sorted(characters, key=lambda item: (-int(item.get("star") or 0), item["name"]))
+
+
 # ---------------- 角色查找（sr） ----------------
 
 
@@ -95,6 +103,14 @@ def test_get_weapon_sr():
 
 def test_get_weapon_not_found():
     assert meta.get_weapon("不存在的武器", "gs") is None
+
+
+def test_list_weapons():
+    weapons = meta.list_weapons("gs")
+    names = [item["name"] for item in weapons]
+    assert "雾切之回光" in names
+    assert len(names) == len(set(names))
+    assert all(item.get("type") in {"sword", "claymore", "polearm", "bow", "catalyst"} for item in weapons)
 
 
 # ---------------- 圣遗物 / 遗器 ----------------

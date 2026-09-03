@@ -4,9 +4,9 @@ from pathlib import Path
 import pytest
 import skia
 
-from nonebot_plugin_miao.core import store
+from nonebot_plugin_miao.core import meta, store
 from nonebot_plugin_miao.gacha import analyse, simulate
-from nonebot_plugin_miao.render import base, gacha_detail, gacha_stat, gacha_trial
+from nonebot_plugin_miao.render import base, encyclopedia, gacha_detail, gacha_stat, gacha_trial
 
 FIXTURE_DIR = Path(__file__).resolve().parent.parent / "tools" / "fixtures"
 GS_UID, SR_UID = "100000001", "800000001"
@@ -67,6 +67,29 @@ def test_render_card_two_pass():
 
     data = base.render_card(200, builder)
     _check_png(data)
+
+
+# ---------------- 角色与武器图鉴 ----------------
+
+
+async def test_character_encyclopedia(no_images):
+    character = meta.get_character("芙宁娜", "gs")
+    assert character is not None
+    png = await encyclopedia.render_character_encyclopedia(character)
+    _check_png(png)
+
+
+async def test_weapon_encyclopedia(no_images):
+    weapon = meta.get_weapon("雾切", "gs")
+    assert weapon is not None
+    assert encyclopedia.weapon_affix_text(weapon, 1).startswith("获得12%")
+    png = await encyclopedia.render_weapon_encyclopedia(weapon)
+    _check_png(png)
+
+
+async def test_encyclopedia_indexes(no_images):
+    _check_png(await encyclopedia.render_encyclopedia_index("character"))
+    _check_png(await encyclopedia.render_encyclopedia_index("weapon"))
 
 
 # ---------------- 抽卡详情 ----------------

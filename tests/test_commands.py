@@ -15,9 +15,9 @@ from nonebot_plugin_miao.core import store
 @pytest.fixture
 def cmds():
     """在 nonebot 初始化后导入 commands 模块（on_regex 注册要求已初始化）"""
-    from nonebot_plugin_miao.commands import bind, common, gacha, help, profile
+    from nonebot_plugin_miao.commands import bind, common, encyclopedia, gacha, help, profile
 
-    return SimpleNamespace(bind=bind, common=common, gacha=gacha, help=help, profile=profile)
+    return SimpleNamespace(bind=bind, common=common, encyclopedia=encyclopedia, gacha=gacha, help=help, profile=profile)
 
 
 @pytest.fixture
@@ -67,6 +67,7 @@ def test_matchers_registered(cmds):
         cmds.gacha.bing_m,
         cmds.gacha.import_m,
         cmds.gacha.export_m,
+        cmds.encyclopedia.encyclopedia_m,
         cmds.help.profile_help_m,
         cmds.help.gacha_help_m,
         cmds.profile.update_m,
@@ -209,6 +210,41 @@ def test_help_requires_slash(cmds):
         assert not re.match(cmds.help.RE_PROFILE_HELP, text)
     for text in ("抽卡帮助", "#抽卡帮助"):
         assert not re.match(cmds.help.RE_GACHA_HELP, text)
+
+
+# ---------------------------------------------------------------------------
+# encyclopedia：角色/武器图鉴触发与查询词
+# ---------------------------------------------------------------------------
+
+
+def test_encyclopedia_regex_and_query(cmds):
+    e = cmds.encyclopedia
+    cases = {
+        "/芙宁娜图鉴": "芙宁娜",
+        "#雾切图鉴": "雾切",
+        "/原神刻晴图鉴": "刻晴",
+        "/图鉴 芙宁娜": "芙宁娜",
+        "/角色图鉴": "角色",
+        "/武器图鉴": "武器",
+        "/角色索引": "角色",
+        "/武器列表": "武器",
+        "/图鉴": "",
+        "/图鉴 帮助": "帮助",
+    }
+    for text, query in cases.items():
+        assert re.match(e.RE_ENCYCLOPEDIA, text), text
+        assert e.parse_encyclopedia_query(text) == query
+    for text in ("芙宁娜图鉴", "今天看了芙宁娜图鉴", "/芙宁娜面板", "/图鉴芙宁娜"):
+        assert not re.match(e.RE_ENCYCLOPEDIA, text), text
+
+
+def test_encyclopedia_lookup(cmds):
+    find = cmds.encyclopedia.find_encyclopedia_entry
+    kind, character = find("水神")
+    assert kind == "character" and character.name == "芙宁娜"
+    kind, weapon = find("雾切")
+    assert kind == "weapon" and weapon["name"] == "雾切之回光"
+    assert find("不存在的图鉴条目") is None
 
 
 # ---------------------------------------------------------------------------
