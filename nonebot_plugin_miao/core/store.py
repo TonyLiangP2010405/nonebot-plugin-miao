@@ -212,38 +212,49 @@ def write_player(game: str, uid: str | int, data: dict) -> None:
     save_json(player_path(game, uid), data)
 
 
-# ---------------- 原神攻略设置（data/strategy.json） ----------------
+# ---------------- 角色攻略设置（data/strategy.json） ----------------
+
+_STRATEGY_SOURCE_LIMITS = {"gs": 7, "sr": 3, "zzz": 4}
 
 
-def get_strategy_default_source(default: int = 1) -> int:
+def _strategy_setting_key(game: str) -> tuple[str, int]:
+    if game not in _STRATEGY_SOURCE_LIMITS:
+        raise ValueError(f"非法攻略游戏标识：{game!r}")
+    key = "default_source" if game == "gs" else f"{game}_default_source"
+    return key, _STRATEGY_SOURCE_LIMITS[game]
+
+
+def get_strategy_default_source(default: int = 1, game: str = "gs") -> int:
     """读取攻略图默认来源；持久化值无效时回退到配置默认值。"""
+    key, limit = _strategy_setting_key(game)
     try:
         fallback = int(default)
     except (TypeError, ValueError):
         fallback = 1
-    if not 1 <= fallback <= 7:
+    if not 1 <= fallback <= limit:
         fallback = 1
 
     settings = load_json(_data_dir() / "strategy.json", {}) or {}
     try:
-        source = int(settings.get("default_source", fallback))
+        source = int(settings.get(key, fallback))
     except (TypeError, ValueError):
         return fallback
-    return source if 1 <= source <= 7 else fallback
+    return source if 1 <= source <= limit else fallback
 
 
-def set_strategy_default_source(source: int) -> int:
+def set_strategy_default_source(source: int, game: str = "gs") -> int:
     """持久化攻略图默认来源并返回规范化后的编号。"""
+    key, limit = _strategy_setting_key(game)
     try:
         source = int(source)
     except (TypeError, ValueError) as e:
-        raise ValueError("攻略来源必须是 1-7 的数字") from e
-    if not 1 <= source <= 7:
-        raise ValueError("攻略来源必须是 1-7 的数字")
+        raise ValueError(f"攻略来源必须是 1-{limit} 的数字") from e
+    if not 1 <= source <= limit:
+        raise ValueError(f"攻略来源必须是 1-{limit} 的数字")
 
     with _LOCK:
         settings = load_json(_data_dir() / "strategy.json", {}) or {}
-        settings["default_source"] = source
+        settings[key] = source
         save_json(_data_dir() / "strategy.json", settings)
     return source
 

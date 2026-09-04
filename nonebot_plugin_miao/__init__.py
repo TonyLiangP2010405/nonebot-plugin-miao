@@ -8,7 +8,7 @@ from .config import Config
 
 __plugin_meta__ = PluginMetadata(
     name="喵喵抽卡面板",
-    description="原神/星铁抽卡分析、角色面板、原神角色武器图鉴与攻略图（移植自 miao-plugin）",
+    description="原神/星铁抽卡分析与面板、原神图鉴、原神/星铁/绝区零攻略图（移植自 miao-plugin）",
     usage=(
         "/抽卡分析          原神抽卡记录分析\n"
         "/星铁抽卡分析      星铁抽卡记录分析\n"
@@ -16,7 +16,9 @@ __plugin_meta__ = PluginMetadata(
         "/<角色>面板        查看角色面板\n"
         "/更新面板          更新角色面板数据\n"
         "/<名称>图鉴        查看原神角色或武器图鉴\n"
-        "/<角色>攻略        查看原神角色攻略图"
+        "/<角色>攻略        查看原神角色攻略图\n"
+        "/星铁<角色>攻略    查看星铁角色攻略图\n"
+        "/绝区零<角色>攻略  查看绝区零角色攻略图"
     ),
     type="application",
     homepage="https://github.com/TonyLiangP2010405/nonebot-plugin-miao",

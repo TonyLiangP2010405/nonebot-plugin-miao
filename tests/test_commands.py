@@ -259,28 +259,43 @@ def test_encyclopedia_lookup(cmds):
 
 
 # ---------------------------------------------------------------------------
-# strategy：原神攻略指令与来源解析
+# strategy：原神、星铁与绝区零攻略指令与来源解析
 # ---------------------------------------------------------------------------
 
 
 def test_strategy_regex_and_query(cmds):
     strategy = cmds.strategy
     cases = {
-        "/心海攻略": (False, "心海", None),
-        "#心海攻略4": (False, "心海", 4),
-        "/心海攻略7": (False, "心海", 7),
-        "/更新早柚攻略2": (True, "早柚", 2),
+        "/心海攻略": (False, "gs", "心海", None),
+        "#心海攻略4": (False, "gs", "心海", 4),
+        "/原神心海攻略7": (False, "gs", "心海", 7),
+        "/更新早柚攻略2": (True, "gs", "早柚", 2),
+        "/星铁流萤攻略": (False, "sr", "流萤", None),
+        "/铁道流萤攻略": (False, "sr", "流萤", None),
+        "#崩铁饮月君攻略3": (False, "sr", "饮月君", 3),
+        "/更新星穹铁道姬子启行攻略2": (True, "sr", "姬子启行", 2),
+        "/绝区零星见雅攻略": (False, "zzz", "星见雅", None),
+        "#更新ZZZ艾莲攻略4": (True, "zzz", "艾莲", 4),
     }
     for text, expected in cases.items():
         assert re.match(strategy.RE_STRATEGY, text), text
         assert strategy.parse_strategy_query(text) == expected
 
-    for text in ("/攻略帮助", "#攻略说明", "/攻略"):
+    for text in ("/攻略帮助", "#攻略说明", "/攻略", "/星铁攻略帮助", "#绝区零攻略说明"):
         assert re.match(strategy.RE_STRATEGY_HELP, text), text
         assert strategy.parse_strategy_query(text) is None
-    for text in ("/设置默认攻略1", "#设置默认攻略7", "/设置默认攻略"):
+    for text in (
+        "/设置默认攻略1",
+        "#设置默认攻略7",
+        "/设置默认攻略",
+        "/设置星铁默认攻略3",
+        "#设置绝区零默认攻略4",
+    ):
         assert re.match(strategy.RE_STRATEGY_SETTING, text), text
-    for text in ("心海攻略", "今天看了心海攻略", "/心海攻略图", "/星铁流萤攻略"):
+    assert strategy.parse_strategy_help_game("/星铁攻略帮助") == "sr"
+    assert strategy.parse_strategy_help_game("/攻略帮助") is None
+    assert strategy.parse_strategy_setting("/设置绝区零默认攻略4") == ("zzz", 4)
+    for text in ("心海攻略", "今天看了心海攻略", "/心海攻略图"):
         assert not re.match(strategy.RE_STRATEGY, text), text
 
 
@@ -288,6 +303,19 @@ def test_strategy_help_lists_all_sources(cmds):
     text = cmds.strategy.strategy_help_text()
     assert "1——西风驿站" in text
     assert "7——婧枫赛赛" in text
+    assert "星铁攻略来源" in text and "3——丶ATRI丶" in text
+    assert "绝区零攻略来源" in text and "4——小橙子阿" in text
+    sr_text = cmds.strategy.strategy_help_text("sr")
+    assert "星铁攻略来源" in sr_text
+    assert "原神攻略来源" not in sr_text
+
+
+def test_strategy_role_resolution(cmds):
+    resolve = cmds.strategy._resolve_role_name
+    assert resolve("饮月君", "sr") == "丹恒•饮月"
+    assert resolve("水神", "gs") == "芙宁娜"
+    assert resolve("星见雅", "zzz") == "星见雅"
+    assert resolve("不存在的铁道角色", "sr") is None
 
 
 # ---------------------------------------------------------------------------

@@ -117,7 +117,7 @@ def test_player_rw(data_dir):
     assert store.read_player("gs", "100000001") == payload
 
 
-# ---------------- 原神攻略设置 ----------------
+# ---------------- 三游戏攻略设置 ----------------
 
 
 def test_strategy_default_source(data_dir):
@@ -125,15 +125,27 @@ def test_strategy_default_source(data_dir):
     assert store.get_strategy_default_source(3) == 3
     assert store.set_strategy_default_source(6) == 6
     assert store.get_strategy_default_source() == 6
-    assert json.loads((data_dir / "strategy.json").read_text(encoding="utf-8"))["default_source"] == 6
+    assert store.set_strategy_default_source(3, "sr") == 3
+    assert store.get_strategy_default_source(game="sr") == 3
+    assert store.set_strategy_default_source(4, "zzz") == 4
+    assert store.get_strategy_default_source(game="zzz") == 4
+    settings = json.loads((data_dir / "strategy.json").read_text(encoding="utf-8"))
+    assert settings == {"default_source": 6, "sr_default_source": 3, "zzz_default_source": 4}
 
 
 def test_strategy_default_source_validation(data_dir):
     for value in (0, 8, "x"):
         with pytest.raises(ValueError, match="1-7"):
             store.set_strategy_default_source(value)
+    with pytest.raises(ValueError, match="1-3"):
+        store.set_strategy_default_source(4, "sr")
+    with pytest.raises(ValueError, match="1-4"):
+        store.set_strategy_default_source(5, "zzz")
+    with pytest.raises(ValueError, match="非法攻略游戏标识"):
+        store.get_strategy_default_source(game="xx")
     store.save_json(data_dir / "strategy.json", {"default_source": 99})
     assert store.get_strategy_default_source(2) == 2
+    assert store.get_strategy_default_source(9, "sr") == 1
 
 
 # ---------------- 模拟抽卡状态 ----------------
