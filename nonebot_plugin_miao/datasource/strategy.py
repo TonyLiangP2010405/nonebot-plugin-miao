@@ -19,6 +19,10 @@ API_URLS = (
     "https://bbs-api.miyoushe.com/post/wapi/getPostFullInCollection",
     "https://bbs-api.mihoyo.com/post/wapi/getPostFullInCollection",
 )
+POST_API_URLS = (
+    "https://bbs-api.miyoushe.com/post/wapi/getPostFull",
+    "https://bbs-api.mihoyo.com/post/wapi/getPostFull",
+)
 # 保留旧的单地址常量，方便外部调用方和测试读取；请求时会按 API_URLS 自动回退。
 API_URL = API_URLS[0]
 IMAGE_PROCESS = "x-oss-process=image/resize,s_1200/quality,q_90/auto-orient,0/interlace,1/format,jpg"
@@ -117,8 +121,8 @@ def cache_path(role_name: str, source: int, game: str = "gs") -> Path:
     """生成跨平台安全的攻略图片缓存路径。"""
     _check_game(game)
     safe_name = _INVALID_FILENAME.sub("_", role_name).strip(". ") or "unknown"
-    # 原神沿用 0.1.11 以前的目录，避免升级后重新下载已有缓存；新游戏单独隔离。
-    base = _cache_root() if game == "gs" else _cache_root() / game
+    # 原神沿用旧目录；星铁与绝区零升级缓存版本，自动淘汰 0.1.12 错存的合集封面。
+    base = _cache_root() if game == "gs" else _cache_root() / "guide-v2" / game
     return base / str(source) / f"{safe_name}.jpg"
 
 
@@ -170,6 +174,27 @@ async def _fetch_collection(client: httpx.AsyncClient, collection_id: int, game:
         except (httpx.HTTPError, ValueError) as error:
             last_error = error
     raise StrategyDataError("攻略数据源请求失败") from last_error
+
+
+async def _fetch_post(client: httpx.AsyncClient, post_id: int, game: str) -> dict[str, Any]:
+    """获取米游社单篇攻略正文；新域名失败时自动尝试旧域名。"""
+    _check_game(game)
+    last_error: Exception | None = None
+    for api_url in POST_API_URLS:
+        try:
+            response = await client.get(
+                api_url,
+                params={"gids": GAME_GIDS[game], "post_id": post_id, "read": 1},
+            )
+            response.raise_for_status()
+            payload = response.json()
+            if not isinstance(payload, dict) or payload.get("retcode") != 0:
+                message = payload.get("message", "未知错误") if isinstance(payload, dict) else "响应格式错误"
+                raise StrategyDataError(f"攻略正文返回异常：{message}")
+            return payload
+        except (httpx.HTTPError, ValueError) as error:
+            last_error = error
+    raise StrategyDataError("攻略正文请求失败") from last_error
 
 
 async def _fetch_payloads(client: httpx.AsyncClient, source: int, game: str = "gs") -> list[dict[str, Any]]:
@@ -237,63 +262,73 @@ def _role_search_keys(role_name: str) -> tuple[str, ...]:
     return tuple(key for key in keys if key)
 
 
-def _role_segment_images(
-    content: str,
-    role_name: str,
-    images: list[dict[str, Any]],
-) -> list[tuple[int, dict[str, Any]]]:
-    """从结构化正文中找出紧跟在角色相关文本段落后的图片。"""
+def _structured_operations(content: str) -> list[dict[str, Any]]:
+    """解析米游社富文本操作列表，异常内容按空列表处理。"""
     try:
         operations = json.loads(content)
     except (json.JSONDecodeError, TypeError):
         return []
     if not isinstance(operations, list):
         return []
+    return [operation for operation in operations if isinstance(operation, dict)]
 
-    image_by_id = {
-        str(image.get("image_id")): image
-        for image in images
-        if isinstance(image, dict) and image.get("image_id") is not None
-    }
+
+def find_strategy_article_ids(role_name: str, payloads: list[dict[str, Any]]) -> list[int]:
+    """从角色合集里提取对应攻略正文链接，并以合集帖自身作为最后回退。"""
     search_keys = _role_search_keys(role_name)
-    text_parts: list[str] = []
-    matched: list[tuple[int, dict[str, Any]]] = []
-    for operation in operations:
-        if not isinstance(operation, dict):
-            continue
-        inserted = operation.get("insert")
-        if isinstance(inserted, str):
-            text_parts.append(inserted)
-            continue
-        if not isinstance(inserted, dict) or inserted.get("image") is None:
-            continue
-        segment = _normalized_text("".join(text_parts))
-        image = image_by_id.get(str(inserted["image"]))
-        if image is not None and any(key in segment for key in search_keys):
-            section_markers = ("新角色", "复刻角色", "加强角色", "角色")
-            score = 2 if any(f"{marker}{key}" in segment for marker in section_markers for key in search_keys) else 1
-            matched.append((score, image))
-        text_parts.clear()
-    return matched
+    linked_ids: list[int] = []
+    own_ids: list[int] = []
+    for payload in payloads:
+        posts = ((payload.get("data") or {}).get("posts") or []) if isinstance(payload, dict) else []
+        for item in posts:
+            if not isinstance(item, dict):
+                continue
+            post = item.get("post") or {}
+            if not isinstance(post, dict):
+                continue
+            subject = _normalized_text(str(post.get("subject") or ""))
+            if not any(key in subject for key in search_keys):
+                continue
+            for operation in _structured_operations(str(post.get("structured_content") or "")):
+                inserted = operation.get("insert")
+                attributes = operation.get("attributes") or {}
+                if not isinstance(inserted, str) or not isinstance(attributes, dict):
+                    continue
+                if not any(key in _normalized_text(inserted) for key in search_keys):
+                    continue
+                match = re.search(r"/article/(\d+)", str(attributes.get("link") or ""))
+                if match:
+                    linked_ids.append(int(match.group(1)))
+            try:
+                own_ids.append(int(post.get("post_id")))
+            except (TypeError, ValueError):
+                pass
+    return list(dict.fromkeys((*linked_ids, *own_ids)))
 
 
-def _first_guide_image_url(images: list[tuple[int, dict[str, Any]]]) -> str | None:
-    """优先取角色段落后的第一张正文图，跳过细长标题条和页脚。"""
-    valid = [(score, image) for score, image in images if isinstance(image, dict) and image.get("url")]
-    guide_images: list[tuple[int, dict[str, Any]]] = []
-    for score, image in valid:
-        try:
-            width = int(image.get("width") or 0)
-            height = int(image.get("height") or 0)
-        except (TypeError, ValueError):
+def find_post_guide_image_url(payload: dict[str, Any]) -> str | None:
+    """从单篇攻略正文中排除封面，选择信息量最大的正文攻略图。"""
+    wrapper = ((payload.get("data") or {}).get("post") or {}) if isinstance(payload, dict) else {}
+    if not isinstance(wrapper, dict):
+        return None
+    images = wrapper.get("image_list") or []
+    cover = wrapper.get("cover") or {}
+    if not isinstance(images, list) or not isinstance(cover, dict):
+        return None
+    cover_id = str(cover.get("image_id") or "")
+    cover_url = str(cover.get("url") or "")
+    candidates: list[dict[str, Any]] = []
+    for image in images:
+        if not isinstance(image, dict) or not image.get("url"):
             continue
-        if width >= 300 and height >= 300 and max(width, height) <= min(width, height) * 4:
-            guide_images.append((score, image))
-    candidates = guide_images or valid
+        if cover_id and str(image.get("image_id") or "") == cover_id:
+            continue
+        if cover_url and str(image.get("url") or "") == cover_url:
+            continue
+        candidates.append(image)
     if not candidates:
         return None
-    best_score = max(score for score, _ in candidates)
-    return str(next(image["url"] for score, image in candidates if score == best_score))
+    return str(max(candidates, key=_image_size)["url"])
 
 
 def find_strategy_image_url(
@@ -302,8 +337,10 @@ def find_strategy_image_url(
     payloads: list[dict[str, Any]],
     game: str = "gs",
 ) -> str | None:
-    """从米游社合集响应中找到角色攻略主图。"""
+    """从原神米游社合集响应中找到角色攻略主图。"""
     _check_game(game)
+    if game != "gs":
+        return None
     search_keys = _role_search_keys(role_name)
     for payload in payloads:
         posts = ((payload.get("data") or {}).get("posts") or []) if isinstance(payload, dict) else []
@@ -323,9 +360,6 @@ def find_strategy_image_url(
                     return url
             normalized_subject = _normalized_text(subject)
             if any(key in normalized_subject for key in search_keys):
-                segment_url = _first_guide_image_url(_role_segment_images(content, role_name, images))
-                if segment_url:
-                    return segment_url
                 url = _largest_image_url(images)
                 if url:
                     return url
@@ -360,6 +394,18 @@ async def _download_image(client: httpx.AsyncClient, url: str) -> bytes:
 
 async def _fetch_remote(role_name: str, source: int, game: str, client: httpx.AsyncClient) -> bytes | None:
     payloads = await _fetch_payloads(client, source, game)
+    if game != "gs":
+        article_ids = find_strategy_article_ids(role_name, payloads)
+        for article_id in article_ids:
+            try:
+                post_payload = await _fetch_post(client, article_id, game)
+                image_url = find_post_guide_image_url(post_payload)
+                if image_url:
+                    return await _download_image(client, image_url)
+            except StrategyDataError as error:
+                logger.warning(f"[miao-strategy] 攻略正文 {article_id} 获取失败: {error}")
+        return None
+
     image_url = find_strategy_image_url(role_name, source, payloads, game)
     if not image_url:
         return None

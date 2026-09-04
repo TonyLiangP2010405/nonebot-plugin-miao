@@ -16,6 +16,7 @@ def _payload(
     *,
     subject: str | None = None,
     content: str = "",
+    post_id: int = 100,
 ) -> dict:
     return {
         "retcode": 0,
@@ -24,6 +25,7 @@ def _payload(
             "posts": [
                 {
                     "post": {
+                        "post_id": str(post_id),
                         "subject": subject if subject is not None else f"{role_name}角色攻略",
                         "structured_content": content,
                     },
@@ -58,35 +60,65 @@ def test_find_strategy_image_missing():
 
 
 def test_find_strategy_image_normalizes_punctuation_and_pro():
-    himeko = _payload("姬子", subject="【车站指南】姬子·启行 攻略合集")
-    assert strategy.find_strategy_image_url("姬子•启行", 1, [himeko], "sr")
-    firefly = _payload("流萤", subject="【V3.4攻略】流萤加强后培养攻略")
-    assert strategy.find_strategy_image_url("流萤Pro", 2, [firefly], "sr")
+    content = json.dumps(
+        [{"insert": "【攻略】姬子·启行一图流", "attributes": {"link": "https://www.miyoushe.com/sr/article/123"}}],
+        ensure_ascii=False,
+    )
+    himeko = _payload("姬子", subject="【车站指南】姬子·启行 攻略合集", content=content)
+    assert strategy.find_strategy_article_ids("姬子•启行", [himeko]) == [123, 100]
+
+    content = json.dumps(
+        [{"insert": "流萤加强后培养攻略", "attributes": {"link": "https://www.miyoushe.com/sr/article/456"}}],
+        ensure_ascii=False,
+    )
+    firefly = _payload("流萤", subject="【V3.4攻略】流萤加强后培养攻略", content=content)
+    assert strategy.find_strategy_article_ids("流萤Pro", [firefly]) == [456, 100]
 
 
-def test_find_strategy_image_uses_matching_section_in_multi_role_post():
-    images = [
-        {"image_id": "cover", "url": "https://img.example/cover.jpg", "size": 9999, "width": 1200, "height": 675},
-        {"image_id": "banner", "url": "https://img.example/banner.jpg", "size": 10, "width": 604, "height": 84},
-        {"image_id": "other", "url": "https://img.example/dahlia.jpg", "size": 5000, "width": 1200, "height": 675},
-        {"image_id": "target", "url": "https://img.example/firefly.jpg", "size": 100, "width": 568, "height": 756},
-    ]
+def test_find_strategy_article_uses_matching_link_in_multi_role_post():
     content = json.dumps(
         [
-            {"insert": {"image": "cover"}},
-            {"insert": "本期介绍新角色大丽花和复刻角色流萤"},
-            {"insert": {"image": "banner"}},
-            {"insert": "新角色——大丽花\n大丽花养成攻略"},
-            {"insert": {"image": "other"}},
-            {"insert": "大丽花给流萤该如何使用"},
-            {"insert": {"image": "other"}},
-            {"insert": "复刻角色——流萤\n流萤全新配速与养成攻略"},
-            {"insert": {"image": "target"}},
+            {
+                "insert": "大丽花养成攻略",
+                "attributes": {"link": "https://www.miyoushe.com/sr/article/111"},
+            },
+            {
+                "insert": "流萤全新配速与养成一图流",
+                "attributes": {"link": "https://www.miyoushe.com/sr/article/222"},
+            },
         ],
         ensure_ascii=False,
     )
-    payload = _payload("流萤", images, subject="大丽花&流萤攻略合集", content=content)
-    assert strategy.find_strategy_image_url("流萤", 1, [payload], "sr") == "https://img.example/firefly.jpg"
+    payload = _payload("流萤", subject="大丽花&流萤攻略合集", content=content, post_id=333)
+    assert strategy.find_strategy_article_ids("流萤", [payload]) == [222, 333]
+
+
+def test_find_post_guide_image_excludes_cover_and_uses_largest_body_image():
+    payload = {
+        "data": {
+            "post": {
+                "cover": {"image_id": "cover", "url": "https://img.example/cover.jpg"},
+                "image_list": [
+                    {"image_id": "cover", "url": "https://img.example/cover.jpg", "size": 9999},
+                    {"image_id": "small", "url": "https://img.example/small.jpg", "size": 100},
+                    {"image_id": "guide", "url": "https://img.example/guide.jpg", "size": 5000},
+                ],
+            }
+        }
+    }
+    assert strategy.find_post_guide_image_url(payload) == "https://img.example/guide.jpg"
+
+
+def test_find_post_guide_image_does_not_return_cover_only_post():
+    payload = {
+        "data": {
+            "post": {
+                "cover": {"image_id": "cover", "url": "https://img.example/cover.jpg"},
+                "image_list": [{"image_id": "cover", "url": "https://img.example/cover.jpg", "size": 9999}],
+            }
+        }
+    }
+    assert strategy.find_post_guide_image_url(payload) is None
 
 
 def test_source_validation():
@@ -139,8 +171,8 @@ async def test_fetch_strategy_image_writes_and_reuses_cache(cache_root: Path, mo
 
 
 def test_cache_paths_are_isolated_by_game(cache_root: Path):
-    assert strategy.cache_path("流萤", 1, "sr") == cache_root / "sr" / "1" / "流萤.jpg"
-    assert strategy.cache_path("星见雅", 1, "zzz") == cache_root / "zzz" / "1" / "星见雅.jpg"
+    assert strategy.cache_path("流萤", 1, "sr") == cache_root / "guide-v2" / "sr" / "1" / "流萤.jpg"
+    assert strategy.cache_path("星见雅", 1, "zzz") == cache_root / "guide-v2" / "zzz" / "1" / "星见雅.jpg"
     assert strategy.cache_path("心海", 1, "gs") == cache_root / "1" / "心海.jpg"
 
 
@@ -170,6 +202,49 @@ async def test_fetch_payloads_all_failed(monkeypatch: pytest.MonkeyPatch):
             await strategy._fetch_payloads(client, 2, "gs")
 
 
+async def test_fetch_remote_follows_article_and_downloads_body_guide(monkeypatch: pytest.MonkeyPatch):
+    content = json.dumps(
+        [
+            {
+                "insert": "星见雅角色攻略一图流",
+                "attributes": {"link": "https://www.miyoushe.com/zzz/article/60271370"},
+            }
+        ],
+        ensure_ascii=False,
+    )
+    collection = _payload("星见雅", subject="星见雅角色攻略合集", content=content, post_id=60376649)
+    article = {
+        "retcode": 0,
+        "data": {
+            "post": {
+                "cover": {"image_id": "cover", "url": "https://img.example/cover.jpg"},
+                "image_list": [
+                    {"image_id": "guide", "url": "https://img.example/guide.jpg", "size": 6000},
+                    {"image_id": "cover", "url": "https://img.example/cover.jpg", "size": 9000},
+                ],
+            }
+        },
+    }
+
+    async def fake_payloads(client: httpx.AsyncClient, source: int, game: str) -> list[dict]:
+        assert (source, game) == (1, "zzz")
+        return [collection]
+
+    async def fake_post(client: httpx.AsyncClient, post_id: int, game: str) -> dict:
+        assert (post_id, game) == (60271370, "zzz")
+        return article
+
+    async def fake_download(client: httpx.AsyncClient, url: str) -> bytes:
+        assert url == "https://img.example/guide.jpg"
+        return b"real-guide"
+
+    monkeypatch.setattr(strategy, "_fetch_payloads", fake_payloads)
+    monkeypatch.setattr(strategy, "_fetch_post", fake_post)
+    monkeypatch.setattr(strategy, "_download_image", fake_download)
+    async with httpx.AsyncClient() as client:
+        assert await strategy._fetch_remote("星见雅", 1, "zzz", client) == b"real-guide"
+
+
 async def test_fetch_collection_uses_game_gid_and_falls_back_to_old_host():
     requests: list[httpx.Request] = []
 
@@ -185,3 +260,21 @@ async def test_fetch_collection_uses_game_gid_and_falls_back_to_old_host():
     assert payload["retcode"] == 0
     assert [request.url.host for request in requests] == ["bbs-api.miyoushe.com", "bbs-api.mihoyo.com"]
     assert all(request.url.params["gids"] == "6" for request in requests)
+
+
+async def test_fetch_post_uses_game_gid_and_falls_back_to_old_host():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.host == "bbs-api.miyoushe.com":
+            return httpx.Response(503)
+        return httpx.Response(200, json={"retcode": 0, "message": "OK", "data": {"post": {}}})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        payload = await strategy._fetch_post(client, 60271370, "zzz")
+
+    assert payload["retcode"] == 0
+    assert [request.url.host for request in requests] == ["bbs-api.miyoushe.com", "bbs-api.mihoyo.com"]
+    assert all(request.url.params["gids"] == "8" for request in requests)
+    assert all(request.url.params["post_id"] == "60271370" for request in requests)
