@@ -137,8 +137,7 @@ async def test_gacha_stat_sr(data_dir, no_images):
 # ---------------- 十连模拟抽卡 ----------------
 
 
-async def test_gacha_trial(tmp_path, monkeypatch, no_images):
-    monkeypatch.setattr(store, "_data_dir", lambda: tmp_path)
+async def test_gacha_trial(sim_data, no_images):
     rng = simulate._default_rng  # 系统随机即可，结构不受 rng 影响
     result = simulate.do_gacha("test:1", "role", is_master=True, rng=rng)
     assert result["code"] == "ok"
@@ -146,9 +145,15 @@ async def test_gacha_trial(tmp_path, monkeypatch, no_images):
     _check_png(png)
 
 
-async def test_gacha_trial_weapon(tmp_path, monkeypatch, no_images):
-    monkeypatch.setattr(store, "_data_dir", lambda: tmp_path)
+async def test_gacha_trial_weapon(sim_data, no_images):
     result = simulate.do_gacha("test:2", "weapon", is_master=True)
     assert result["code"] == "ok"
     png = await gacha_trial.render_gacha_trial(result, "测试玩家")
+    _check_png(png)
+
+
+@pytest.mark.parametrize("game,count", [("sr", 10), ("zzz", 1), ("zzz", 10)])
+async def test_multigame_gacha_images(sim_data, no_images, game, count):
+    result = simulate.do_gacha("render:1", "role2", game=game, count=count, is_master=True)
+    png = await gacha_trial.render_gacha_trial(result, "三游戏测试")
     _check_png(png)

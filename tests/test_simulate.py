@@ -1,245 +1,190 @@
-"""十连模拟抽卡单元测试：注入固定 rng + monkeypatch 时间/数据目录"""
-from datetime import datetime
+"""三游戏模拟抽卡的保底、并行卡池、迁移、额度及并发回归测试。"""
+from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
 
 import pytest
 
 from nonebot_plugin_miao.core import store
+from nonebot_plugin_miao.datasource import sim_pools
 from nonebot_plugin_miao.gacha import simulate
 
-GROUP_SCOPE = "12345:67890"
-PRIVATE_SCOPE = "private:67890"
+SCOPE = "12345:67890"
 
 
 class FakeRng:
-    """按 (min,max) 分派的固定随机源
+    def __init__(self, roll=10000):
+        self.roll = roll
 
-    - max=10000：五/四星判定档，roll_10000=10000 表示"只有概率满 10000 才中"
-    - max=100：UP/对半判定档（roll_100=1 必中 UP，roll_100=100 必歪）
-    - 其余：lodash.sample 的取元素档，默认取第一个元素
-    """
-
-    def __init__(self, roll_10000: int = 10000, roll_100: int = 1, sample: int = 1):
-        self.roll_10000 = roll_10000
-        self.roll_100 = roll_100
-        self.sample = sample
-
-    def __call__(self, min_: int, max_: int) -> int:
-        if max_ == 10000:
-            return self.roll_10000
-        if max_ == 100:
-            return self.roll_100
-        return min(self.sample, max_)
+    def __call__(self, minimum, maximum):
+        return self.roll if maximum == 10000 else minimum
 
 
-def _ts(y, mo, d, h=0, mi=0, s=0):
-    return datetime(y, mo, d, h, mi, s).timestamp()
+def counter(game, group, **updates):
+    user = simulate.load_user(SCOPE, game)
+    user.setdefault(group, simulate._counter()).update(updates)
+    simulate.save_user(SCOPE, user, game)
 
 
-@pytest.fixture
-def data_dir(tmp_path, monkeypatch):
-    """把插件数据目录重定向到临时目录"""
-    d = tmp_path / "data"
-    monkeypatch.setattr(store, "_data_dir", lambda: d)
-    return d
+@pytest.mark.parametrize("game", ["gs", "sr", "zzz"])
+@pytest.mark.parametrize("kind,hard", [("role", 90), ("weapon", 80), ("permanent", 90)])
+def test_hard_pity_exact_boundary(sim_data, game, kind, hard):
+    counter(game, kind, num5=hard - 1)
+    result = simulate.do_gacha(SCOPE, kind, game=game, count=1, rng=FakeRng())
+    assert result["list"][0]["star"] == 5
+    assert result["list"][0]["num"] == hard
+    assert simulate.load_user(SCOPE, game)[kind]["num5"] == 0
 
 
-def _set_counter(scope, gacha_type, **kwargs):
-    """直接改用户某个池子的保底计数"""
-    user = store.read_sim_state(scope)
-    user[gacha_type].update(kwargs)
-    store.write_sim_state(scope, user)
+@pytest.mark.parametrize("game", ["gs", "sr", "zzz"])
+def test_second_role_and_equipment_pools(sim_data, game):
+    second = simulate.get_pool("role2", game=game)
+    counter(game, "role", num5=89, isUp5=1)
+    result = simulate.do_gacha(SCOPE, "role2", game=game, count=1, rng=FakeRng())
+    assert result["list"][0]["name"] == second["up5"][0]
+    assert result["list"][0]["isBigUP"]
+    assert simulate.load_user(SCOPE, game)["role"]["num5"] == 0
+    if game != "gs":
+        second_weapon = simulate.get_pool("weapon2", game=game)
+        counter(game, "weapon", num5=79, isUp5=1)
+        result = simulate.do_gacha(SCOPE, "weapon2", game=game, count=1, rng=FakeRng())
+        assert result["list"][0]["name"] == second_weapon["up5"][0]
+        assert not result["bingWeapon"]
 
 
-# ---------------- 五星保底 ----------------
+@pytest.mark.parametrize("game", ["gs", "sr", "zzz"])
+@pytest.mark.parametrize("kind", ["role", "weapon"])
+def test_big_pity_and_four_star_guarantee(sim_data, game, kind):
+    counter(game, kind, num5=89 if kind == "role" else 79)
+    first = simulate.do_gacha(SCOPE, kind, game=game, count=1, rng=FakeRng())
+    assert first["list"][0]["name"] not in simulate.get_pool(kind, game=game)["up5"]
+    assert simulate.load_user(SCOPE, game)[kind]["isUp5"] == 1
+    counter(game, kind, num5=89 if kind == "role" else 79)
+    second = simulate.do_gacha(SCOPE, kind, game=game, count=1, rng=FakeRng())
+    assert second["list"][0]["isBigUP"]
+    counter(game, kind, num4=9)
+    result = simulate.do_gacha(SCOPE, kind, game=game, count=1, rng=FakeRng())
+    assert result["list"][0]["star"] == 4
+    assert simulate.load_user(SCOPE, game)[kind]["isUp4"] == 1
+    counter(game, kind, num4=9)
+    result = simulate.do_gacha(SCOPE, kind, game=game, count=1, rng=FakeRng())
+    assert result["list"][0]["name"] in simulate.get_pool(kind, game=game)["up4"]
+    assert simulate.load_user(SCOPE, game)[kind]["isUp4"] == 0
 
 
-def test_five_pity_hit_at_90_misses(data_dir):
-    """连续 90 次不中（num5=90）后下一发必中五星"""
-    # 先抽一发建立用户状态
-    res = simulate.do_gacha(GROUP_SCOPE, "role", daily_limit=100, rng=FakeRng())
-    assert res["code"] == "ok"
-    assert all(v["star"] < 5 for v in res["list"])  # roll 恒 10000，五星不可能中（第10发会吃四星保底）
-
-    _set_counter(GROUP_SCOPE, "role", num5=90)
-    res = simulate.do_gacha(GROUP_SCOPE, "role", daily_limit=100, rng=FakeRng())
-    fives = [v for v in res["list"] if v["star"] == 5]
-    assert len(fives) == 1
-    assert fives[0]["index"] == 1  # 第一发即中
-    assert fives[0]["num"] == 91  # 第 91 抽
-    # 命中后保底清零，随后 9 发未中 → num5=9
-    assert store.read_sim_state(GROUP_SCOPE)["role"]["num5"] == 9
-
-
-def test_four_pity_hit_at_10(data_dir):
-    """四星 10 连必中（num4=9 时下一发必中四星）"""
-    simulate.do_gacha(GROUP_SCOPE, "role", daily_limit=100, rng=FakeRng())
-    _set_counter(GROUP_SCOPE, "role", num4=9)
-    res = simulate.do_gacha(GROUP_SCOPE, "role", daily_limit=100, rng=FakeRng())
-    fours = [v for v in res["list"] if v["star"] == 4]
-    assert len(fours) == 1
-    assert fours[0]["index"] == 1
-    # roll_100=1 必中 UP，sample=1 取 up4 第一个
-    assert fours[0]["name"] == simulate.get_pool("role")["up4"][0]
+def test_fate_one_point_switch_cancel_and_new_period(sim_data):
+    pool = simulate.get_pool("weapon")
+    simulate.toggle_bing(SCOPE, 2)
+    counter("gs", "weapon", num5=79)
+    result = simulate.do_gacha(SCOPE, "weapon", count=1, rng=FakeRng())
+    assert result["lifeNum"] == 1
+    counter("gs", "weapon", num5=79, isUp5=1)
+    result = simulate.do_gacha(SCOPE, "weapon", count=1, rng=FakeRng())
+    assert result["list"][0]["name"] == pool["up5"][1]
+    assert result["list"][0]["isBing"]
+    assert simulate.load_user(SCOPE)["weapon"]["isUp5"] == 0
+    counter("gs", "weapon", lifeNum=1)
+    simulate.toggle_bing(SCOPE, 2)  # 重复选中原目标不清进度
+    assert simulate.load_user(SCOPE)["weapon"]["lifeNum"] == 1
+    simulate.toggle_bing(SCOPE, 1)
+    assert simulate.load_user(SCOPE)["weapon"]["lifeNum"] == 0
+    simulate.toggle_bing(SCOPE, 0)
+    counter("gs", "weapon", num5=79)
+    assert simulate.do_gacha(SCOPE, "weapon", count=1, rng=FakeRng())["lifeNum"] == 0
+    counter("gs", "weapon", num5=15, isUp5=1, lifeNum=1, type=2)
+    new = deepcopy(pool)
+    new["id"] = "next-period"
+    simulate.do_gacha(SCOPE, "weapon", count=1, pool=new, rng=FakeRng())
+    state = simulate.load_user(SCOPE)["weapon"]
+    assert (state["num5"], state["isUp5"], state["lifeNum"], state["type"]) == (16, 1, 0, 0)
 
 
-# ---------------- 大保底 ----------------
+def test_toggle_bing_cycle(sim_data):
+    for selected in (1, 2, 0, 1):
+        simulate.toggle_bing(SCOPE)
+        assert simulate.load_user(SCOPE)["weapon"]["type"] == selected
+    with pytest.raises(ValueError):
+        simulate.toggle_bing(SCOPE, 3)
 
 
-def test_big_pity_after_wai(data_dir):
-    """歪一次后下次五星必为 UP（isBigUP）"""
-    simulate.do_gacha(GROUP_SCOPE, "role", daily_limit=100, rng=FakeRng())
-    _set_counter(GROUP_SCOPE, "role", num5=90)
-    # roll_100=100 > wai(50) → 歪
-    res = simulate.do_gacha(GROUP_SCOPE, "role", daily_limit=100, rng=FakeRng(roll_100=100))
-    five = [v for v in res["list"] if v["star"] == 5][0]
-    assert five["name"] in simulate.get_pool("role")["five"]
-    assert not five["isBigUP"]
-    assert store.read_sim_state(GROUP_SCOPE)["role"]["isUp5"] == 1
-
-    # 下次五星 tmpUp=101，roll_100=1 必中 UP
-    _set_counter(GROUP_SCOPE, "role", num5=90)
-    res = simulate.do_gacha(GROUP_SCOPE, "role", daily_limit=100, rng=FakeRng(roll_100=1))
-    five = [v for v in res["list"] if v["star"] == 5][0]
-    assert five["name"] in simulate.get_pool("role")["up5"]
-    assert five["isBigUP"]
-    assert store.read_sim_state(GROUP_SCOPE)["role"]["isUp5"] == 0
-    assert "大保底" in res["info"]
+def test_game_group_and_scope_isolation(sim_data):
+    simulate.do_gacha(SCOPE, "role", rng=FakeRng())
+    simulate.do_gacha(SCOPE, "role", game="sr", rng=FakeRng())
+    simulate.do_gacha(SCOPE, "role", game="zzz", rng=FakeRng())
+    for game in ("gs", "sr", "zzz"):
+        assert simulate.load_user(SCOPE, game)["role"]["num5"] == 10
+        assert simulate.load_user(SCOPE, game)["weapon"]["num5"] == 0
+        assert simulate.do_gacha(SCOPE, "weapon", game=game)["code"] == "limit"
+    assert simulate.do_gacha("private:67890", "role", rng=FakeRng())["code"] == "ok"
+    collab = next(p for p in sim_data["sr"]["pools"] if p["group"] == "collab_role")
+    simulate.do_gacha(SCOPE, "role3", game="sr", is_master=True, pool=collab, rng=FakeRng())
+    state = simulate.load_user(SCOPE, "sr")
+    assert state["collab_role"]["num5"] == state["role"]["num5"] == 10
 
 
-# ---------------- 定轨 ----------------
+def test_single_draw_and_no_budget_overshoot(sim_data):
+    result = simulate.do_gacha(SCOPE, "role", count=1, rng=FakeRng())
+    assert len(result["list"]) == 1 and result["list"][0]["star"] == 3
+    state = simulate.load_user(SCOPE)
+    assert state["today"]["num"] == state["role"]["num5"] == state["role"]["num4"] == 1
+    before = deepcopy(state)
+    assert simulate.do_gacha(SCOPE, "role", rng=FakeRng())["code"] == "limit"
+    assert simulate.load_user(SCOPE) == before
+    for _ in range(9):
+        simulate.do_gacha(SCOPE, "role", count=1, rng=FakeRng())
+    assert simulate.do_gacha(SCOPE, "role", count=1)["code"] == "limit"
+    assert simulate.do_gacha(SCOPE, "role", is_master=True)["code"] == "ok"
 
 
-def test_bing_weapon_at_life_num_2(data_dir):
-    """命定值到 2 后下次五星必为定轨武器（isBing），命定值清零"""
-    simulate.do_gacha(GROUP_SCOPE, "weapon", daily_limit=100, rng=FakeRng())
-    _set_counter(GROUP_SCOPE, "weapon", num5=80, lifeNum=2, type=1)
-    res = simulate.do_gacha(GROUP_SCOPE, "weapon", daily_limit=100, rng=FakeRng(roll_100=100))
-    five = [v for v in res["list"] if v["star"] == 5][0]
-    assert five["isBing"]
-    assert five["name"] == simulate.get_pool("weapon")["up5"][0]  # type=1 → 武器1
-    assert store.read_sim_state(GROUP_SCOPE)["weapon"]["lifeNum"] == 0
-    assert "定轨" in res["info"]
-    assert res["isWeapon"]
+def test_daily_reset_at_four_in_china(sim_data, monkeypatch):
+    monkeypatch.setattr(simulate, "_now", lambda: sim_pools.timestamp("2026-09-09 00:00:00"))
+    simulate.do_gacha(SCOPE, "role", rng=FakeRng())
+    assert simulate.load_user(SCOPE)["today"]["expire"] == sim_pools.timestamp("2026-09-09 04:00:00")
+    monkeypatch.setattr(simulate, "_now", lambda: sim_pools.timestamp("2026-09-09 03:59:59"))
+    assert simulate.do_gacha(SCOPE, "role")["code"] == "limit"
+    monkeypatch.setattr(simulate, "_now", lambda: sim_pools.timestamp("2026-09-09 04:00:00"))
+    assert simulate.do_gacha(SCOPE, "role", rng=FakeRng())["code"] == "ok"
+    assert simulate.load_user(SCOPE)["role"]["num5"] == 20
 
 
-def test_toggle_bing_cycle(data_dir):
-    """定轨 type 1→2→0 循环，命定值清零，文案含 [√] 列表"""
-    now_pool = simulate.get_now_pool()
-    # 初始 type=1，切换后 type=2 → 勾选武器2
-    msg = simulate.toggle_bing(GROUP_SCOPE)
-    assert msg.startswith("定轨成功")
-    assert f"[√] {now_pool['weapon5'][1]}" in msg
-    assert f"[  ] {now_pool['weapon5'][0]}" in msg
-    user = store.read_sim_state(GROUP_SCOPE)
-    assert user["weapon"]["type"] == 2
-
-    # type=2 → 0 取消
-    msg = simulate.toggle_bing(GROUP_SCOPE)
-    assert msg == "\n定轨已取消"
-    user = store.read_sim_state(GROUP_SCOPE)
-    assert user["weapon"]["type"] == 0
-
-    # type=0 → 1 → 勾选武器1
-    msg = simulate.toggle_bing(GROUP_SCOPE)
-    assert msg.startswith("定轨成功")
-    assert f"[√] {now_pool['weapon5'][0]}" in msg
-    assert store.read_sim_state(GROUP_SCOPE)["weapon"]["type"] == 1
+def test_old_genshin_state_migration(sim_data):
+    old = simulate._new_user()
+    old["role"].update(num5=60, isUp5=1)
+    old["weapon"].update(num5=55, isUp5=1, lifeNum=2, type=2)
+    store.write_sim_state(SCOPE, old)
+    simulate.do_gacha(SCOPE, "role2", count=1, rng=FakeRng())
+    simulate.do_gacha(SCOPE, "weapon", count=1, rng=FakeRng())
+    state = store.read_sim_state(SCOPE)
+    assert state["role"]["num5"] == 61 and state["role"]["isUp5"] == 1
+    assert state["weapon"]["num5"] == 56 and state["weapon"]["isUp5"] == 1
+    assert state["weapon"]["lifeNum"] == state["weapon"]["type"] == 0
 
 
-# ---------------- 每日限制 ----------------
+def test_invalid_pool_or_expired_never_consumes_draws(sim_data):
+    before = store.read_sim_state(SCOPE)
+    for kind in ("role99", "weapon2", "role0", "invalid"):
+        with pytest.raises(ValueError):
+            simulate.do_gacha(SCOPE, kind)
+    expired = deepcopy(simulate.get_pool("role"))
+    expired["end"] = 1
+    with pytest.raises(ValueError, match="已经结束"):
+        simulate.do_gacha(SCOPE, "role", pool=expired)
+    assert store.read_sim_state(SCOPE) == before
 
 
-def test_daily_limit(data_dir):
-    """超过 daily_limit 次后返回 limit 文案，master 不限"""
-    res = simulate.do_gacha(GROUP_SCOPE, "role", daily_limit=1, rng=FakeRng())
-    assert res["code"] == "ok"
-
-    res = simulate.do_gacha(GROUP_SCOPE, "role", daily_limit=1, rng=FakeRng())
-    assert res["code"] == "limit"
-    assert "今日" in res["msg"]
-    assert "10抽无五星" in res["msg"]  # 全歪三星时：今日已抽，累计10抽无五星
-
-    # master 不限
-    res = simulate.do_gacha(GROUP_SCOPE, "role", is_master=True, daily_limit=1, rng=FakeRng())
-    assert res["code"] == "ok"
-
-    # 私聊 scope 独立计数
-    res = simulate.do_gacha(PRIVATE_SCOPE, "role", daily_limit=1, rng=FakeRng())
-    assert res["code"] == "ok"
+def test_concurrent_draws_cannot_bypass_limit(sim_data):
+    def draw(_):
+        return simulate.do_gacha(SCOPE, "role", rng=FakeRng())
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        results = list(executor.map(draw, range(4)))
+    assert sum(r["code"] == "ok" for r in results) == 1
+    assert simulate.load_user(SCOPE)["today"]["num"] == 10
 
 
-# ---------------- 每日 4 点重置 ----------------
-
-
-def test_reset_at_4am(data_dir, monkeypatch):
-    """次日 4 点前不重置，4 点后 today 重置"""
-    monkeypatch.setattr(simulate, "_now", lambda: _ts(2025, 3, 10, 10))
-    res = simulate.do_gacha(GROUP_SCOPE, "role", daily_limit=1, rng=FakeRng())
-    assert res["code"] == "ok"
-    assert store.read_sim_state(GROUP_SCOPE)["today"]["num"] == 10
-
-    # 次日 02:00（4 点前）：仍未重置，超限
-    monkeypatch.setattr(simulate, "_now", lambda: _ts(2025, 3, 11, 2))
-    res = simulate.do_gacha(GROUP_SCOPE, "role", daily_limit=1, rng=FakeRng())
-    assert res["code"] == "limit"
-
-    # 次日 05:00（4 点后）：today 重置，可再抽
-    monkeypatch.setattr(simulate, "_now", lambda: _ts(2025, 3, 11, 5))
-    res = simulate.do_gacha(GROUP_SCOPE, "role", daily_limit=1, rng=FakeRng())
-    assert res["code"] == "ok"
-    assert store.read_sim_state(GROUP_SCOPE)["today"]["num"] == 10  # 重置后重新计 10
-
-
-# ---------------- 卡池选择 ----------------
-
-
-def test_pool_selection(data_dir, monkeypatch):
-    """时间落在某期池区间内时 up5 正确；十连2 用 up5_2"""
-    # 2025-03-10 落在 endTime=2025-03-25 14:59:59 的池（芙宁娜/莱欧斯利）区间内
-    monkeypatch.setattr(simulate, "_now", lambda: _ts(2025, 3, 10, 12))
-
-    pool = simulate.get_pool("role")
-    assert pool["up5"] == ["芙宁娜"]
-    assert "芙宁娜" not in pool["five"]
-
-    pool2 = simulate.get_pool("role2")
-    assert pool2["up5"] == ["莱欧斯利"]
-    # role 与 role2 共用 "role" 保底计数
-    assert simulate._gacha_type("role2") == "role"
-
-    weapon = simulate.get_pool("weapon")
-    assert weapon["up5"] == ["静水流涌之辉", "金流监督"]
-    assert weapon["up4"] == ["西风剑", "祭礼大剑", "匣里灭辰", "祭礼残章", "弓藏"]
-    # 常驻四星武器 = def.weapon4 差集 up4
-    assert set(weapon["weapon4"]) == set(simulate.meta.gacha_sim_config()["gacha"]["weapon4"]) - set(weapon["up4"])
-
-    permanent = simulate.get_pool("permanent")
-    gacha_def = simulate.meta.gacha_sim_config()["gacha"]
-    assert permanent["up5"] == [] and permanent["up4"] == []
-    assert permanent["five"] == gacha_def["role5"]
-    assert permanent["fiveW"] == gacha_def["weapon5"]
-
-
-def test_pool_fallback_when_expired(data_dir, monkeypatch):
-    """所有池都过期时用倒序最后一条（照 JS poolArr.pop()）"""
-    monkeypatch.setattr(simulate, "_now", lambda: _ts(2099, 1, 1))
-    pools = simulate.meta.gacha_sim_config()["pool"]
-    assert simulate.get_now_pool() == pools[0]  # pool.json 第一条是最新池
-
-
-# ---------------- 排序 ----------------
-
-
-def test_result_sorted_by_star(data_dir):
-    """结果按星级降序、index 升序排序"""
-    simulate.do_gacha(GROUP_SCOPE, "role", daily_limit=100, rng=FakeRng())
-    # 第 1 发中五星（num5=90），第 2 发中四星（num4 因五星 +1 后为 9 → 必中）
-    _set_counter(GROUP_SCOPE, "role", num5=90, num4=8)
-    res = simulate.do_gacha(GROUP_SCOPE, "role", daily_limit=100, rng=FakeRng())
-    stars = [v["star"] for v in res["list"]]
-    assert stars == sorted(stars, reverse=True)
-    assert stars[0] == 5 and stars[1] == 4
-    assert stars.count(3) == 8
-    # 同星级按 index 升序
-    indexes = [v["index"] for v in res["list"] if v["star"] == 3]
-    assert indexes == sorted(indexes)
+def test_result_sorting_and_game_item_types(sim_data):
+    for game in ("gs", "sr", "zzz"):
+        counter(game, "role", num5=89, num4=8)
+        result = simulate.do_gacha(SCOPE, "role", game=game, rng=FakeRng())
+        stars = [v["star"] for v in result["list"]]
+        assert stars == [5, 4] + [3] * 8
+        assert result["list"][0]["type"] == "role"
+        assert result["game"] == game

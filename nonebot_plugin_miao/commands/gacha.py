@@ -12,6 +12,7 @@ import json
 import os
 import re
 import tempfile
+from datetime import datetime
 
 import httpx
 from nonebot import get_plugin_config, logger, on_regex
@@ -20,6 +21,7 @@ from nonebot.permission import SUPERUSER
 
 from ..config import Config
 from ..core import store
+from ..datasource import sim_pools
 from ..datasource.gacha_log import (
     DEFAULT_POOLS,
     GACHA_TYPES,
@@ -43,8 +45,15 @@ RE_AUTHKEY = r"^/[\s\S]*authkey="
 RE_UPDATE = r"^/(星铁)?更新(抽卡|抽奖|祈愿|跃迁)?记录$"
 RE_ANALYSE = r"^/(星铁)?(抽卡|抽奖|角色|武器|光锥|常驻|集录|[uU][pP])+池?(记录|祈愿|分析)$"
 RE_STAT = r"^/(星铁)?(全部|抽卡|抽奖|角色|武器|光锥|常驻|集录|[uU][pP]|版本)+池?统计$"
-RE_SIMULATE = r"^[#/]?(10|[武器池常驻]*[十]+|抽|单)[连抽卡奖][123武器池常驻]*$"
-RE_BING = r"^/定轨$"
+_SIM_GAME = r"原神|崩坏星穹铁道|星穹铁道|星铁|崩铁|铁道|绝区零|绝区|ZZZ|zzz"
+_SIM_KIND = r"角色|武器|光锥|音擎|常驻"
+RE_SIMULATE = (
+    rf"^[#/]?(?P<game>{_SIM_GAME})?(?:(?P<kind>{_SIM_KIND})池?)?"
+    rf"(?P<action>十连|十抽|10连|10抽|单抽|抽卡|抽奖)(?P<index>\d+)?"
+    rf"(?:(?P<tail>{_SIM_KIND})池?)?$"
+)
+RE_BING = r"^/(?:原神)?定轨\s*(\d+|取消)?$"
+RE_SIM_POOLS = rf"^/(?:(?:{_SIM_GAME})?(?:卡池列表|当前卡池|卡池|更新卡池)|更新(?:{_SIM_GAME})?卡池)$"
 RE_IMPORT = r"^/(星铁)?导入记录"
 RE_EXPORT = r"^/(星铁)?导出记录$"
 
@@ -54,6 +63,7 @@ analyse_m = on_regex(RE_ANALYSE, priority=5, block=True)
 stat_m = on_regex(RE_STAT, priority=5, block=True)
 simulate_m = on_regex(RE_SIMULATE, priority=5, block=True)
 bing_m = on_regex(RE_BING, priority=5, block=True)
+sim_pools_m = on_regex(RE_SIM_POOLS, priority=5, block=True)
 import_m = on_regex(RE_IMPORT, priority=5, block=True)
 export_m = on_regex(RE_EXPORT, priority=5, block=True)
 
@@ -114,20 +124,32 @@ def stat_keyword(text: str) -> str:
 
 def sim_kind_of(text: str) -> str:
     """模拟抽卡文本 → do_gacha 的 kind"""
-    t = text.lstrip("#/")
-    if "武器" in t:
-        return "weapon"
-    if "常驻" in t:
-        return "permanent"
-    if "2" in t:
-        return "role2"
-    return "role"
+    match = re.fullmatch(RE_SIMULATE, text.strip())
+    if not match:
+        raise ValueError("模拟抽卡格式错误，请发送 /抽卡帮助")
+    before, after = match.group("kind"), match.group("tail")
+    if before and after and before != after:
+        raise ValueError("一次只能选择一种卡池")
+    label = before or after or "角色"
+    kind = {"角色": "role", "常驻": "permanent", "武器": "weapon", "光锥": "weapon", "音擎": "weapon"}[label]
+    index = int(match.group("index") or 1)
+    if index < 1:
+        raise ValueError("卡池编号从 1 开始，请查看对应游戏的 /卡池列表")
+    return kind + (str(index) if index > 1 else "")
+
+
+def sim_game_of(text: str) -> str:
+    if re.search(r"绝区|[zZ]{3}", text):
+        return "zzz"
+    if re.search(r"星铁|崩铁|铁道", text):
+        return "sr"
+    return "gs"
 
 
 def is_single(text: str) -> bool:
-    """是否单抽（不含 十/10），simulate 层只跑十连，单抽截取结果第 1 个"""
-    t = text.lstrip("#/")
-    return "十" not in t and "10" not in t
+    """单抽实际执行一次，不再通过截取十连结果实现。"""
+    match = re.fullmatch(RE_SIMULATE, text.strip())
+    return bool(match and match.group("action") in ("单抽", "抽卡", "抽奖"))
 
 
 def pool_new_summary(result: dict[int, int], game: str) -> str:
@@ -271,17 +293,22 @@ async def _(event: MessageEvent):
 @simulate_m.handle()
 @guard(simulate_m)
 async def _(bot: Bot, event: MessageEvent):
-    text = event.get_plaintext()
+    text = event.get_plaintext().strip()
     kind = sim_kind_of(text)
+    game = sim_game_of(text)
+    snapshot = await sim_pools.ensure_pools(game)
+    pool = sim_pools.select_pool(sim_pools.active_pools(snapshot), kind)
     is_master = await SUPERUSER(bot, event)
     daily_limit = get_plugin_config(Config).miao_gacha_daily_limit
-    result = do_gacha(_scope_key(event), kind, is_master=is_master, daily_limit=daily_limit)
+    result = await asyncio.to_thread(
+        do_gacha, _scope_key(event), kind, is_master=is_master, daily_limit=daily_limit,
+        game=game, count=1 if is_single(text) else 10, pool=pool,
+    )
     name = _sender_name(event)
     if result["code"] == "limit":
         await simulate_m.finish(_at_msg(event, f"{name}\n{result['msg']}"))
-    if is_single(text):
-        # simulate 层只跑十连，单抽截取结果第 1 个展示
-        result["list"] = result["list"][:1]
+    if snapshot.get("warning"):
+        await simulate_m.send(snapshot["warning"])
     png = await render_gacha_trial(result, name)
     await send_image(simulate_m, png)
     await simulate_m.finish()
@@ -295,8 +322,52 @@ async def _(bot: Bot, event: MessageEvent):
 @bing_m.handle()
 @guard(bing_m)
 async def _(event: MessageEvent):
-    msg = toggle_bing(_scope_key(event))
+    snapshot = await sim_pools.ensure_pools("gs")
+    pool = sim_pools.select_pool(sim_pools.active_pools(snapshot), "weapon")
+    match = re.fullmatch(RE_BING, event.get_plaintext().strip())
+    value = match.group(1) if match else None
+    target = 0 if value == "取消" else int(value) if value is not None else None
+    msg = await asyncio.to_thread(toggle_bing, _scope_key(event), target, pool=pool)
     await bing_m.finish(_at_msg(event, msg.strip()))
+
+
+def sim_pool_list_text(game: str, snapshot: dict) -> str:
+    prefix = {"gs": "", "sr": "星铁", "zzz": "绝区零"}[game]
+    weapon = {"gs": "武器", "sr": "光锥", "zzz": "音擎"}[game]
+    counts = {"role": 0, "weapon": 0, "permanent": 0}
+    lines = [f"{sim_pools.GAME_NAMES[game]}当前模拟卡池（国服）："]
+    for pool in sim_pools.active_pools(snapshot):
+        kind = pool["kind"]
+        counts[kind] += 1
+        suffix = str(counts[kind]) if counts[kind] > 1 else ""
+        label = {"role": "角色", "weapon": weapon, "permanent": "常驻"}[kind]
+        action = "" if kind == "role" else label
+        end = datetime.fromtimestamp(pool["end"], sim_pools.CN_TZ).strftime("%m-%d %H:%M")
+        lines.append(f"\n{label}池 {counts[kind]} · {pool['title']}")
+        if pool["up5"]:
+            lines.append("UP：" + "、".join(pool["up5"]))
+        lines.append(f"发送 {prefix}{action}十连{suffix} / {prefix}{action}单抽{suffix}")
+        if kind != "permanent":
+            lines.append(f"结束：{end}（北京时间）")
+        if pool["group"].startswith("collab"):
+            lines.append("联动跃迁：与普通活动跃迁保底独立")
+    if not any(counts.values()):
+        lines.append("暂无正在开放的受支持卡池")
+    if game == "gs" and counts["weapon"]:
+        lines.append("\n/定轨1、/定轨2 选择武器，/定轨0 取消；换期清空定轨与命定值")
+    lines.append("\n各游戏独立额度；同游戏普通角色池共享保底，装备池与常驻池各自独立")
+    if snapshot.get("warning"):
+        lines.append(snapshot["warning"])
+    return "\n".join(lines)
+
+
+@sim_pools_m.handle()
+@guard(sim_pools_m)
+async def _sim_pools(event: MessageEvent):
+    text = event.get_plaintext()
+    game = sim_game_of(text)
+    snapshot = await sim_pools.ensure_pools(game, force="更新" in text)
+    await sim_pools_m.finish(sim_pool_list_text(game, snapshot))
 
 
 # ---------------------------------------------------------------------------

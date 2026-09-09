@@ -396,3 +396,4 @@ def test_plugin_load_with_scheduler():
     # scheduler 未启动时任务在 pending 列表（(job, jobstore, replace_existing) 元组）
     job_ids |= {t[0].id for t in getattr(scheduler, "_pending_jobs", [])}
     assert "miao_res_auto_update" in job_ids
+    assert "miao_sim_pools_update" in job_ids

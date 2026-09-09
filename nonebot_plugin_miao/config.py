@@ -1,5 +1,5 @@
 """插件配置，全部带默认值，零配置可导入"""
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Config(BaseModel):
@@ -13,6 +13,8 @@ class Config(BaseModel):
     miao_mys_cookie: str = ""
     # 模拟抽卡每日十连次数限制
     miao_gacha_daily_limit: int = 1
+    # 三游戏官方模拟卡池后台同步/按需检查间隔（分钟）
+    miao_gacha_pool_interval: int = Field(default=60, ge=1)
     # 每日自动更新面板资源（凌晨 4:20，失败仅记日志）
     miao_res_auto_update: bool = True
     # 各游戏角色攻略图默认来源（可用“设置默认攻略”类指令持久化覆盖）

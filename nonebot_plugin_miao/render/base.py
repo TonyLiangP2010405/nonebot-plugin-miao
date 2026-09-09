@@ -365,7 +365,7 @@ async def _client() -> httpx.AsyncClient:
 
 
 async def fetch_image(rel_path: str) -> skia.Image | None:
-    """按相对 resources 的路径取图：包内资源 > 磁盘缓存 > 远程下载，失败返回 None"""
+    """支持资源相对路径及官方 HTTPS 图片地址，下载结果共用缓存。"""
     rel = str(rel_path or "").lstrip("/")
     if not rel:
         return None
@@ -385,7 +385,7 @@ async def fetch_image(rel_path: str) -> skia.Image | None:
             logger.debug(f"[miao-render] 图片缓存目录不可用: {e}")
             cache_file = None
         if img is None:
-            url = f"{_mirror()}/{rel}"
+            url = rel if rel.startswith("https://") else f"{_mirror()}/{rel}"
             try:
                 resp = await (await _client()).get(url)
                 if resp.status_code == 200 and resp.content:

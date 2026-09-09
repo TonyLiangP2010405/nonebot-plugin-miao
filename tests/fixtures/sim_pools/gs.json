@@ -1,0 +1,3570 @@
+{
+  "list": {
+    "retcode": 0,
+    "data": {
+      "list": [
+        {
+          "begin_time": "2026-08-12 07:00:00",
+          "end_time": "2027-09-22 15:59:59",
+          "gacha_id": "0b8509e29bf33a648cbec07be1ef2240326e7cd2",
+          "gacha_name": "常驻",
+          "gacha_type": 200,
+          "op_gacha_type": 200
+        },
+        {
+          "begin_time": "2026-09-01 18:00:00",
+          "end_time": "2026-09-22 14:59:59",
+          "gacha_id": "fdf07a3247173a53c091079cb032c320f043154f",
+          "gacha_name": "角色活动",
+          "gacha_type": 301,
+          "op_gacha_type": 301
+        },
+        {
+          "begin_time": "2026-09-01 18:00:00",
+          "end_time": "2026-09-22 14:59:59",
+          "gacha_id": "192a4e8066c743c67af6620e389470c466068c14",
+          "gacha_name": "角色活动-2",
+          "gacha_type": 400,
+          "op_gacha_type": 400
+        },
+        {
+          "begin_time": "2026-09-01 18:00:00",
+          "end_time": "2026-09-22 14:59:59",
+          "gacha_id": "f010a4603f4f977dcf4dc9cfeaec59b4fbcb72c3",
+          "gacha_name": "武器活动",
+          "gacha_type": 302,
+          "op_gacha_type": 302
+        }
+      ]
+    }
+  },
+  "details": {
+    "0b8509e29bf33a648cbec07be1ef2240326e7cd2": {
+      "date_range": "永久",
+      "gacha_type": 200,
+      "op_gacha_type": 200,
+      "r3_baodi_prob": "85.400%",
+      "r3_prob": "94.300%",
+      "r3_prob_list": [
+        {
+          "is_up": 0,
+          "item_id": -65,
+          "item_name": "飞天御剑",
+          "item_type": "武器",
+          "order_value": 65,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -66,
+          "item_name": "黎明神剑",
+          "item_type": "武器",
+          "order_value": 66,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -67,
+          "item_name": "冷刃",
+          "item_type": "武器",
+          "order_value": 67,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -74,
+          "item_name": "以理服人",
+          "item_type": "武器",
+          "order_value": 74,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -75,
+          "item_name": "沐浴龙血的剑",
+          "item_type": "武器",
+          "order_value": 75,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -76,
+          "item_name": "铁影阔剑",
+          "item_type": "武器",
+          "order_value": 76,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -81,
+          "item_name": "黑缨枪",
+          "item_type": "武器",
+          "order_value": 81,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -88,
+          "item_name": "翡玉法球",
+          "item_type": "武器",
+          "order_value": 88,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -89,
+          "item_name": "讨龙英杰谭",
+          "item_type": "武器",
+          "order_value": 89,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -90,
+          "item_name": "魔导绪论",
+          "item_type": "武器",
+          "order_value": 90,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -97,
+          "item_name": "弹弓",
+          "item_type": "武器",
+          "order_value": 97,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -98,
+          "item_name": "神射手之誓",
+          "item_type": "武器",
+          "order_value": 98,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -99,
+          "item_name": "鸦羽弓",
+          "item_type": "武器",
+          "order_value": 99,
+          "rank": 3
+        }
+      ],
+      "r4_baodi_prob": "13.000%",
+      "r4_prob": "5.100%",
+      "r4_prob_list": [
+        {
+          "is_up": 0,
+          "item_id": -1,
+          "item_name": "布伦妮",
+          "item_type": "角色",
+          "order_value": 1,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -2,
+          "item_name": "叶洛亚",
+          "item_type": "角色",
+          "order_value": 2,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -3,
+          "item_name": "雅珂达",
+          "item_type": "角色",
+          "order_value": 3,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -4,
+          "item_name": "爱诺",
+          "item_type": "角色",
+          "order_value": 4,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -5,
+          "item_name": "塔利雅",
+          "item_type": "角色",
+          "order_value": 5,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -6,
+          "item_name": "伊法",
+          "item_type": "角色",
+          "order_value": 6,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -7,
+          "item_name": "伊安珊",
+          "item_type": "角色",
+          "order_value": 7,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -9,
+          "item_name": "蓝砚",
+          "item_type": "角色",
+          "order_value": 9,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -10,
+          "item_name": "欧洛伦",
+          "item_type": "角色",
+          "order_value": 10,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -11,
+          "item_name": "卡齐娜",
+          "item_type": "角色",
+          "order_value": 11,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -12,
+          "item_name": "赛索斯",
+          "item_type": "角色",
+          "order_value": 12,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -13,
+          "item_name": "嘉明",
+          "item_type": "角色",
+          "order_value": 13,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -14,
+          "item_name": "夏沃蕾",
+          "item_type": "角色",
+          "order_value": 14,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -15,
+          "item_name": "夏洛蒂",
+          "item_type": "角色",
+          "order_value": 15,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -16,
+          "item_name": "菲米尼",
+          "item_type": "角色",
+          "order_value": 16,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -17,
+          "item_name": "琳妮特",
+          "item_type": "角色",
+          "order_value": 17,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -18,
+          "item_name": "卡维",
+          "item_type": "角色",
+          "order_value": 18,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -19,
+          "item_name": "米卡",
+          "item_type": "角色",
+          "order_value": 19,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -21,
+          "item_name": "瑶瑶",
+          "item_type": "角色",
+          "order_value": 21,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -22,
+          "item_name": "珐露珊",
+          "item_type": "角色",
+          "order_value": 22,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -23,
+          "item_name": "莱依拉",
+          "item_type": "角色",
+          "order_value": 23,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -24,
+          "item_name": "坎蒂丝",
+          "item_type": "角色",
+          "order_value": 24,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -26,
+          "item_name": "多莉",
+          "item_type": "角色",
+          "order_value": 26,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -27,
+          "item_name": "柯莱",
+          "item_type": "角色",
+          "order_value": 27,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -28,
+          "item_name": "久岐忍",
+          "item_type": "角色",
+          "order_value": 28,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -29,
+          "item_name": "云堇",
+          "item_type": "角色",
+          "order_value": 29,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -30,
+          "item_name": "绮良良",
+          "item_type": "角色",
+          "order_value": 30,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -31,
+          "item_name": "鹿野院平藏",
+          "item_type": "角色",
+          "order_value": 31,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -32,
+          "item_name": "九条裟罗",
+          "item_type": "角色",
+          "order_value": 32,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -33,
+          "item_name": "五郎",
+          "item_type": "角色",
+          "order_value": 33,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -34,
+          "item_name": "早柚",
+          "item_type": "角色",
+          "order_value": 34,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -35,
+          "item_name": "托马",
+          "item_type": "角色",
+          "order_value": 35,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -36,
+          "item_name": "烟绯",
+          "item_type": "角色",
+          "order_value": 36,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -37,
+          "item_name": "罗莎莉亚",
+          "item_type": "角色",
+          "order_value": 37,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -38,
+          "item_name": "辛焱",
+          "item_type": "角色",
+          "order_value": 38,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -39,
+          "item_name": "砂糖",
+          "item_type": "角色",
+          "order_value": 39,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -42,
+          "item_name": "迪奥娜",
+          "item_type": "角色",
+          "order_value": 42,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -43,
+          "item_name": "重云",
+          "item_type": "角色",
+          "order_value": 43,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -45,
+          "item_name": "诺艾尔",
+          "item_type": "角色",
+          "order_value": 45,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -46,
+          "item_name": "班尼特",
+          "item_type": "角色",
+          "order_value": 46,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -47,
+          "item_name": "菲谢尔",
+          "item_type": "角色",
+          "order_value": 47,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -48,
+          "item_name": "凝光",
+          "item_type": "角色",
+          "order_value": 48,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -49,
+          "item_name": "行秋",
+          "item_type": "角色",
+          "order_value": 49,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -50,
+          "item_name": "北斗",
+          "item_type": "角色",
+          "order_value": 50,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -51,
+          "item_name": "香菱",
+          "item_type": "角色",
+          "order_value": 51,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -52,
+          "item_name": "安柏",
+          "item_type": "角色",
+          "order_value": 52,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -53,
+          "item_name": "雷泽",
+          "item_type": "角色",
+          "order_value": 53,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -55,
+          "item_name": "凯亚",
+          "item_type": "角色",
+          "order_value": 55,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -56,
+          "item_name": "芭芭拉",
+          "item_type": "角色",
+          "order_value": 56,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -57,
+          "item_name": "丽莎",
+          "item_type": "角色",
+          "order_value": 57,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -61,
+          "item_name": "匣里龙吟",
+          "item_type": "武器",
+          "order_value": 61,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -62,
+          "item_name": "祭礼剑",
+          "item_type": "武器",
+          "order_value": 62,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -63,
+          "item_name": "笛剑",
+          "item_type": "武器",
+          "order_value": 63,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -64,
+          "item_name": "西风剑",
+          "item_type": "武器",
+          "order_value": 64,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -70,
+          "item_name": "雨裁",
+          "item_type": "武器",
+          "order_value": 70,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -71,
+          "item_name": "祭礼大剑",
+          "item_type": "武器",
+          "order_value": 71,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -72,
+          "item_name": "钟剑",
+          "item_type": "武器",
+          "order_value": 72,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -73,
+          "item_name": "西风大剑",
+          "item_type": "武器",
+          "order_value": 73,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -79,
+          "item_name": "西风长枪",
+          "item_type": "武器",
+          "order_value": 79,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -80,
+          "item_name": "匣里灭辰",
+          "item_type": "武器",
+          "order_value": 80,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -84,
+          "item_name": "昭心",
+          "item_type": "武器",
+          "order_value": 84,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -85,
+          "item_name": "祭礼残章",
+          "item_type": "武器",
+          "order_value": 85,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -86,
+          "item_name": "流浪乐章",
+          "item_type": "武器",
+          "order_value": 86,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -87,
+          "item_name": "西风秘典",
+          "item_type": "武器",
+          "order_value": 87,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -93,
+          "item_name": "弓藏",
+          "item_type": "武器",
+          "order_value": 93,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -94,
+          "item_name": "祭礼弓",
+          "item_type": "武器",
+          "order_value": 94,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -95,
+          "item_name": "绝弦",
+          "item_type": "武器",
+          "order_value": 95,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -96,
+          "item_name": "西风猎弓",
+          "item_type": "武器",
+          "order_value": 96,
+          "rank": 4
+        }
+      ],
+      "r4_up_items": null,
+      "r4_up_prob": "0%",
+      "r5_2_prob_list": [
+        {
+          "is_up": 0,
+          "item_id": -8,
+          "item_name": "梦见月瑞希",
+          "item_type": "角色",
+          "order_value": 8,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -20,
+          "item_name": "迪希雅",
+          "item_type": "角色",
+          "order_value": 20,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -25,
+          "item_name": "提纳里",
+          "item_type": "角色",
+          "order_value": 25,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -40,
+          "item_name": "刻晴",
+          "item_type": "角色",
+          "order_value": 40,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -41,
+          "item_name": "莫娜",
+          "item_type": "角色",
+          "order_value": 41,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -44,
+          "item_name": "七七",
+          "item_type": "角色",
+          "order_value": 44,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -54,
+          "item_name": "迪卢克",
+          "item_type": "角色",
+          "order_value": 54,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -58,
+          "item_name": "琴",
+          "item_type": "角色",
+          "order_value": 58,
+          "rank": 5
+        }
+      ],
+      "r5_4_prob_list": [
+        {
+          "is_up": 0,
+          "item_id": -59,
+          "item_name": "天空之刃",
+          "item_type": "武器",
+          "order_value": 59,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -60,
+          "item_name": "风鹰剑",
+          "item_type": "武器",
+          "order_value": 60,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -68,
+          "item_name": "狼的末路",
+          "item_type": "武器",
+          "order_value": 68,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -69,
+          "item_name": "天空之傲",
+          "item_type": "武器",
+          "order_value": 69,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -77,
+          "item_name": "和璞鸢",
+          "item_type": "武器",
+          "order_value": 77,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -78,
+          "item_name": "天空之脊",
+          "item_type": "武器",
+          "order_value": 78,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -82,
+          "item_name": "四风原典",
+          "item_type": "武器",
+          "order_value": 82,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -83,
+          "item_name": "天空之卷",
+          "item_type": "武器",
+          "order_value": 83,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -91,
+          "item_name": "阿莫斯之弓",
+          "item_type": "武器",
+          "order_value": 91,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -92,
+          "item_name": "天空之翼",
+          "item_type": "武器",
+          "order_value": 92,
+          "rank": 5
+        }
+      ],
+      "r5_baodi_prob": "1.600%",
+      "r5_prob": "0.600%",
+      "r5_prob_list": [
+        {
+          "is_up": 0,
+          "item_id": -8,
+          "item_name": "梦见月瑞希",
+          "item_type": "角色",
+          "order_value": 8,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -20,
+          "item_name": "迪希雅",
+          "item_type": "角色",
+          "order_value": 20,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -25,
+          "item_name": "提纳里",
+          "item_type": "角色",
+          "order_value": 25,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -40,
+          "item_name": "刻晴",
+          "item_type": "角色",
+          "order_value": 40,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -41,
+          "item_name": "莫娜",
+          "item_type": "角色",
+          "order_value": 41,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -44,
+          "item_name": "七七",
+          "item_type": "角色",
+          "order_value": 44,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -54,
+          "item_name": "迪卢克",
+          "item_type": "角色",
+          "order_value": 54,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -58,
+          "item_name": "琴",
+          "item_type": "角色",
+          "order_value": 58,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -59,
+          "item_name": "天空之刃",
+          "item_type": "武器",
+          "order_value": 59,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -60,
+          "item_name": "风鹰剑",
+          "item_type": "武器",
+          "order_value": 60,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -68,
+          "item_name": "狼的末路",
+          "item_type": "武器",
+          "order_value": 68,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -69,
+          "item_name": "天空之傲",
+          "item_type": "武器",
+          "order_value": 69,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -77,
+          "item_name": "和璞鸢",
+          "item_type": "武器",
+          "order_value": 77,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -78,
+          "item_name": "天空之脊",
+          "item_type": "武器",
+          "order_value": 78,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -82,
+          "item_name": "四风原典",
+          "item_type": "武器",
+          "order_value": 82,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -83,
+          "item_name": "天空之卷",
+          "item_type": "武器",
+          "order_value": 83,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -91,
+          "item_name": "阿莫斯之弓",
+          "item_type": "武器",
+          "order_value": 91,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -92,
+          "item_name": "天空之翼",
+          "item_type": "武器",
+          "order_value": 92,
+          "rank": 5
+        }
+      ],
+      "r5_up_items": null,
+      "r5_up_prob": "0%",
+      "title": "「奔行<color=#757acdFF>世间</color>」常驻祈愿"
+    },
+    "fdf07a3247173a53c091079cb032c320f043154f": {
+      "date_range": "限时活动",
+      "gacha_type": 301,
+      "op_gacha_type": 301,
+      "r3_baodi_prob": "85.400%",
+      "r3_prob": "94.300%",
+      "r3_prob_list": [
+        {
+          "is_up": 0,
+          "item_id": -61,
+          "item_name": "飞天御剑",
+          "item_type": "武器",
+          "order_value": 61,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -62,
+          "item_name": "黎明神剑",
+          "item_type": "武器",
+          "order_value": 62,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -63,
+          "item_name": "冷刃",
+          "item_type": "武器",
+          "order_value": 63,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -68,
+          "item_name": "以理服人",
+          "item_type": "武器",
+          "order_value": 68,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -69,
+          "item_name": "沐浴龙血的剑",
+          "item_type": "武器",
+          "order_value": 69,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -70,
+          "item_name": "铁影阔剑",
+          "item_type": "武器",
+          "order_value": 70,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -73,
+          "item_name": "黑缨枪",
+          "item_type": "武器",
+          "order_value": 73,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -78,
+          "item_name": "翡玉法球",
+          "item_type": "武器",
+          "order_value": 78,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -79,
+          "item_name": "讨龙英杰谭",
+          "item_type": "武器",
+          "order_value": 79,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -80,
+          "item_name": "魔导绪论",
+          "item_type": "武器",
+          "order_value": 80,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -85,
+          "item_name": "弹弓",
+          "item_type": "武器",
+          "order_value": 85,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -86,
+          "item_name": "神射手之誓",
+          "item_type": "武器",
+          "order_value": 86,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -87,
+          "item_name": "鸦羽弓",
+          "item_type": "武器",
+          "order_value": 87,
+          "rank": 3
+        }
+      ],
+      "r4_baodi_prob": "13.000%",
+      "r4_prob": "5.100%",
+      "r4_prob_list": [
+        {
+          "is_up": 1,
+          "item_id": -1,
+          "item_name": "爱诺",
+          "item_type": "角色",
+          "order_value": 1,
+          "rank": 4
+        },
+        {
+          "is_up": 1,
+          "item_id": -3,
+          "item_name": "伊安珊",
+          "item_type": "角色",
+          "order_value": 3,
+          "rank": 4
+        },
+        {
+          "is_up": 1,
+          "item_id": -4,
+          "item_name": "蓝砚",
+          "item_type": "角色",
+          "order_value": 4,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -5,
+          "item_name": "布伦妮",
+          "item_type": "角色",
+          "order_value": 5,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -6,
+          "item_name": "叶洛亚",
+          "item_type": "角色",
+          "order_value": 6,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -7,
+          "item_name": "雅珂达",
+          "item_type": "角色",
+          "order_value": 7,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -8,
+          "item_name": "塔利雅",
+          "item_type": "角色",
+          "order_value": 8,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -9,
+          "item_name": "伊法",
+          "item_type": "角色",
+          "order_value": 9,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -11,
+          "item_name": "欧洛伦",
+          "item_type": "角色",
+          "order_value": 11,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -12,
+          "item_name": "卡齐娜",
+          "item_type": "角色",
+          "order_value": 12,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -13,
+          "item_name": "赛索斯",
+          "item_type": "角色",
+          "order_value": 13,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -14,
+          "item_name": "嘉明",
+          "item_type": "角色",
+          "order_value": 14,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -15,
+          "item_name": "夏沃蕾",
+          "item_type": "角色",
+          "order_value": 15,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -16,
+          "item_name": "夏洛蒂",
+          "item_type": "角色",
+          "order_value": 16,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -17,
+          "item_name": "菲米尼",
+          "item_type": "角色",
+          "order_value": 17,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -18,
+          "item_name": "琳妮特",
+          "item_type": "角色",
+          "order_value": 18,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -19,
+          "item_name": "卡维",
+          "item_type": "角色",
+          "order_value": 19,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -20,
+          "item_name": "米卡",
+          "item_type": "角色",
+          "order_value": 20,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -22,
+          "item_name": "瑶瑶",
+          "item_type": "角色",
+          "order_value": 22,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -23,
+          "item_name": "珐露珊",
+          "item_type": "角色",
+          "order_value": 23,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -24,
+          "item_name": "莱依拉",
+          "item_type": "角色",
+          "order_value": 24,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -25,
+          "item_name": "坎蒂丝",
+          "item_type": "角色",
+          "order_value": 25,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -27,
+          "item_name": "多莉",
+          "item_type": "角色",
+          "order_value": 27,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -28,
+          "item_name": "柯莱",
+          "item_type": "角色",
+          "order_value": 28,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -29,
+          "item_name": "久岐忍",
+          "item_type": "角色",
+          "order_value": 29,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -30,
+          "item_name": "云堇",
+          "item_type": "角色",
+          "order_value": 30,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -31,
+          "item_name": "绮良良",
+          "item_type": "角色",
+          "order_value": 31,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -32,
+          "item_name": "鹿野院平藏",
+          "item_type": "角色",
+          "order_value": 32,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -33,
+          "item_name": "九条裟罗",
+          "item_type": "角色",
+          "order_value": 33,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -34,
+          "item_name": "五郎",
+          "item_type": "角色",
+          "order_value": 34,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -35,
+          "item_name": "早柚",
+          "item_type": "角色",
+          "order_value": 35,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -36,
+          "item_name": "托马",
+          "item_type": "角色",
+          "order_value": 36,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -37,
+          "item_name": "烟绯",
+          "item_type": "角色",
+          "order_value": 37,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -38,
+          "item_name": "罗莎莉亚",
+          "item_type": "角色",
+          "order_value": 38,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -39,
+          "item_name": "辛焱",
+          "item_type": "角色",
+          "order_value": 39,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -40,
+          "item_name": "砂糖",
+          "item_type": "角色",
+          "order_value": 40,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -43,
+          "item_name": "迪奥娜",
+          "item_type": "角色",
+          "order_value": 43,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -44,
+          "item_name": "重云",
+          "item_type": "角色",
+          "order_value": 44,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -46,
+          "item_name": "诺艾尔",
+          "item_type": "角色",
+          "order_value": 46,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -47,
+          "item_name": "班尼特",
+          "item_type": "角色",
+          "order_value": 47,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -48,
+          "item_name": "菲谢尔",
+          "item_type": "角色",
+          "order_value": 48,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -49,
+          "item_name": "凝光",
+          "item_type": "角色",
+          "order_value": 49,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -50,
+          "item_name": "行秋",
+          "item_type": "角色",
+          "order_value": 50,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -51,
+          "item_name": "北斗",
+          "item_type": "角色",
+          "order_value": 51,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -52,
+          "item_name": "香菱",
+          "item_type": "角色",
+          "order_value": 52,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -53,
+          "item_name": "雷泽",
+          "item_type": "角色",
+          "order_value": 53,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -55,
+          "item_name": "芭芭拉",
+          "item_type": "角色",
+          "order_value": 55,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -57,
+          "item_name": "匣里龙吟",
+          "item_type": "武器",
+          "order_value": 57,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -58,
+          "item_name": "祭礼剑",
+          "item_type": "武器",
+          "order_value": 58,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -59,
+          "item_name": "笛剑",
+          "item_type": "武器",
+          "order_value": 59,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -60,
+          "item_name": "西风剑",
+          "item_type": "武器",
+          "order_value": 60,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -64,
+          "item_name": "雨裁",
+          "item_type": "武器",
+          "order_value": 64,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -65,
+          "item_name": "祭礼大剑",
+          "item_type": "武器",
+          "order_value": 65,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -66,
+          "item_name": "钟剑",
+          "item_type": "武器",
+          "order_value": 66,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -67,
+          "item_name": "西风大剑",
+          "item_type": "武器",
+          "order_value": 67,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -71,
+          "item_name": "西风长枪",
+          "item_type": "武器",
+          "order_value": 71,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -72,
+          "item_name": "匣里灭辰",
+          "item_type": "武器",
+          "order_value": 72,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -74,
+          "item_name": "昭心",
+          "item_type": "武器",
+          "order_value": 74,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -75,
+          "item_name": "祭礼残章",
+          "item_type": "武器",
+          "order_value": 75,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -76,
+          "item_name": "流浪乐章",
+          "item_type": "武器",
+          "order_value": 76,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -77,
+          "item_name": "西风秘典",
+          "item_type": "武器",
+          "order_value": 77,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -81,
+          "item_name": "弓藏",
+          "item_type": "武器",
+          "order_value": 81,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -82,
+          "item_name": "祭礼弓",
+          "item_type": "武器",
+          "order_value": 82,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -83,
+          "item_name": "绝弦",
+          "item_type": "武器",
+          "order_value": 83,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -84,
+          "item_name": "西风猎弓",
+          "item_type": "武器",
+          "order_value": 84,
+          "rank": 4
+        }
+      ],
+      "r4_up_items": [
+        {
+          "item_attr": "水",
+          "item_color": "#498fccFF",
+          "item_id": -1,
+          "item_img": "https://operation-webstatic.mihoyo.com/gacha_info/hk4e/_pic_source_/id3m11toUTnT5Cnjobpk_HEY2eEpr5O.png",
+          "item_name": "爱诺",
+          "item_type": "角色",
+          "item_type_cn": "角色"
+        },
+        {
+          "item_attr": "雷",
+          "item_color": "#6957C2FF",
+          "item_id": -3,
+          "item_img": "https://operation-webstatic.mihoyo.com/gacha_info/hk4e/_pic_source_/nRDRpaupVWFr6ujlKDzJ_YxdQ5x7uxb.png",
+          "item_name": "伊安珊",
+          "item_type": "角色",
+          "item_type_cn": "角色"
+        },
+        {
+          "item_attr": "风",
+          "item_color": "#359697",
+          "item_id": -4,
+          "item_img": "https://operation-webstatic.mihoyo.com/gacha_info/hk4e/_pic_source_/c00xQmKe1xutdRlr8kWq_KTEWpDNv0j.png",
+          "item_name": "蓝砚",
+          "item_type": "角色",
+          "item_type_cn": "角色"
+        }
+      ],
+      "r4_up_prob": "50.000%",
+      "r5_2_prob_list": [
+        {
+          "is_up": 1,
+          "item_id": -2,
+          "item_name": "菲林斯",
+          "item_type": "角色",
+          "order_value": 2,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -10,
+          "item_name": "梦见月瑞希",
+          "item_type": "角色",
+          "order_value": 10,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -21,
+          "item_name": "迪希雅",
+          "item_type": "角色",
+          "order_value": 21,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -26,
+          "item_name": "提纳里",
+          "item_type": "角色",
+          "order_value": 26,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -41,
+          "item_name": "刻晴",
+          "item_type": "角色",
+          "order_value": 41,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -42,
+          "item_name": "莫娜",
+          "item_type": "角色",
+          "order_value": 42,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -45,
+          "item_name": "七七",
+          "item_type": "角色",
+          "order_value": 45,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -54,
+          "item_name": "迪卢克",
+          "item_type": "角色",
+          "order_value": 54,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -56,
+          "item_name": "琴",
+          "item_type": "角色",
+          "order_value": 56,
+          "rank": 5
+        }
+      ],
+      "r5_baodi_prob": "1.600%",
+      "r5_prob": "0.600%",
+      "r5_prob_list": [
+        {
+          "is_up": 1,
+          "item_id": -2,
+          "item_name": "菲林斯",
+          "item_type": "角色",
+          "order_value": 2,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -10,
+          "item_name": "梦见月瑞希",
+          "item_type": "角色",
+          "order_value": 10,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -21,
+          "item_name": "迪希雅",
+          "item_type": "角色",
+          "order_value": 21,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -26,
+          "item_name": "提纳里",
+          "item_type": "角色",
+          "order_value": 26,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -41,
+          "item_name": "刻晴",
+          "item_type": "角色",
+          "order_value": 41,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -42,
+          "item_name": "莫娜",
+          "item_type": "角色",
+          "order_value": 42,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -45,
+          "item_name": "七七",
+          "item_type": "角色",
+          "order_value": 45,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -54,
+          "item_name": "迪卢克",
+          "item_type": "角色",
+          "order_value": 54,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -56,
+          "item_name": "琴",
+          "item_type": "角色",
+          "order_value": 56,
+          "rank": 5
+        }
+      ],
+      "r5_up_items": [
+        {
+          "item_attr": "雷",
+          "item_color": "#6957C2FF",
+          "item_id": -2,
+          "item_img": "https://operation-webstatic.mihoyo.com/gacha_info/hk4e/_pic_source_/IZQDNJl9iBed39qgKjt7_AECqhXMJdk.png",
+          "item_name": "菲林斯",
+          "item_type": "角色",
+          "item_type_cn": "角色"
+        }
+      ],
+      "r5_up_prob": "50.000%",
+      "title": "「<color=#6957C2FF>孤灯</color>夜访」活动祈愿"
+    },
+    "192a4e8066c743c67af6620e389470c466068c14": {
+      "date_range": "限时活动",
+      "gacha_type": 400,
+      "op_gacha_type": 400,
+      "r3_baodi_prob": "85.400%",
+      "r3_prob": "94.300%",
+      "r3_prob_list": [
+        {
+          "is_up": 0,
+          "item_id": -61,
+          "item_name": "飞天御剑",
+          "item_type": "武器",
+          "order_value": 61,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -62,
+          "item_name": "黎明神剑",
+          "item_type": "武器",
+          "order_value": 62,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -63,
+          "item_name": "冷刃",
+          "item_type": "武器",
+          "order_value": 63,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -68,
+          "item_name": "以理服人",
+          "item_type": "武器",
+          "order_value": 68,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -69,
+          "item_name": "沐浴龙血的剑",
+          "item_type": "武器",
+          "order_value": 69,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -70,
+          "item_name": "铁影阔剑",
+          "item_type": "武器",
+          "order_value": 70,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -73,
+          "item_name": "黑缨枪",
+          "item_type": "武器",
+          "order_value": 73,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -78,
+          "item_name": "翡玉法球",
+          "item_type": "武器",
+          "order_value": 78,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -79,
+          "item_name": "讨龙英杰谭",
+          "item_type": "武器",
+          "order_value": 79,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -80,
+          "item_name": "魔导绪论",
+          "item_type": "武器",
+          "order_value": 80,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -85,
+          "item_name": "弹弓",
+          "item_type": "武器",
+          "order_value": 85,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -86,
+          "item_name": "神射手之誓",
+          "item_type": "武器",
+          "order_value": 86,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -87,
+          "item_name": "鸦羽弓",
+          "item_type": "武器",
+          "order_value": 87,
+          "rank": 3
+        }
+      ],
+      "r4_baodi_prob": "13.000%",
+      "r4_prob": "5.100%",
+      "r4_prob_list": [
+        {
+          "is_up": 1,
+          "item_id": -1,
+          "item_name": "爱诺",
+          "item_type": "角色",
+          "order_value": 1,
+          "rank": 4
+        },
+        {
+          "is_up": 1,
+          "item_id": -3,
+          "item_name": "伊安珊",
+          "item_type": "角色",
+          "order_value": 3,
+          "rank": 4
+        },
+        {
+          "is_up": 1,
+          "item_id": -4,
+          "item_name": "蓝砚",
+          "item_type": "角色",
+          "order_value": 4,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -5,
+          "item_name": "布伦妮",
+          "item_type": "角色",
+          "order_value": 5,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -6,
+          "item_name": "叶洛亚",
+          "item_type": "角色",
+          "order_value": 6,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -7,
+          "item_name": "雅珂达",
+          "item_type": "角色",
+          "order_value": 7,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -8,
+          "item_name": "塔利雅",
+          "item_type": "角色",
+          "order_value": 8,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -9,
+          "item_name": "伊法",
+          "item_type": "角色",
+          "order_value": 9,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -11,
+          "item_name": "欧洛伦",
+          "item_type": "角色",
+          "order_value": 11,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -12,
+          "item_name": "卡齐娜",
+          "item_type": "角色",
+          "order_value": 12,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -13,
+          "item_name": "赛索斯",
+          "item_type": "角色",
+          "order_value": 13,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -14,
+          "item_name": "嘉明",
+          "item_type": "角色",
+          "order_value": 14,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -15,
+          "item_name": "夏沃蕾",
+          "item_type": "角色",
+          "order_value": 15,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -16,
+          "item_name": "夏洛蒂",
+          "item_type": "角色",
+          "order_value": 16,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -17,
+          "item_name": "菲米尼",
+          "item_type": "角色",
+          "order_value": 17,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -18,
+          "item_name": "琳妮特",
+          "item_type": "角色",
+          "order_value": 18,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -19,
+          "item_name": "卡维",
+          "item_type": "角色",
+          "order_value": 19,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -20,
+          "item_name": "米卡",
+          "item_type": "角色",
+          "order_value": 20,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -22,
+          "item_name": "瑶瑶",
+          "item_type": "角色",
+          "order_value": 22,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -23,
+          "item_name": "珐露珊",
+          "item_type": "角色",
+          "order_value": 23,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -24,
+          "item_name": "莱依拉",
+          "item_type": "角色",
+          "order_value": 24,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -25,
+          "item_name": "坎蒂丝",
+          "item_type": "角色",
+          "order_value": 25,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -27,
+          "item_name": "多莉",
+          "item_type": "角色",
+          "order_value": 27,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -28,
+          "item_name": "柯莱",
+          "item_type": "角色",
+          "order_value": 28,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -29,
+          "item_name": "久岐忍",
+          "item_type": "角色",
+          "order_value": 29,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -30,
+          "item_name": "云堇",
+          "item_type": "角色",
+          "order_value": 30,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -31,
+          "item_name": "绮良良",
+          "item_type": "角色",
+          "order_value": 31,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -32,
+          "item_name": "鹿野院平藏",
+          "item_type": "角色",
+          "order_value": 32,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -33,
+          "item_name": "九条裟罗",
+          "item_type": "角色",
+          "order_value": 33,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -34,
+          "item_name": "五郎",
+          "item_type": "角色",
+          "order_value": 34,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -35,
+          "item_name": "早柚",
+          "item_type": "角色",
+          "order_value": 35,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -36,
+          "item_name": "托马",
+          "item_type": "角色",
+          "order_value": 36,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -37,
+          "item_name": "烟绯",
+          "item_type": "角色",
+          "order_value": 37,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -38,
+          "item_name": "罗莎莉亚",
+          "item_type": "角色",
+          "order_value": 38,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -39,
+          "item_name": "辛焱",
+          "item_type": "角色",
+          "order_value": 39,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -40,
+          "item_name": "砂糖",
+          "item_type": "角色",
+          "order_value": 40,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -43,
+          "item_name": "迪奥娜",
+          "item_type": "角色",
+          "order_value": 43,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -44,
+          "item_name": "重云",
+          "item_type": "角色",
+          "order_value": 44,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -46,
+          "item_name": "诺艾尔",
+          "item_type": "角色",
+          "order_value": 46,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -47,
+          "item_name": "班尼特",
+          "item_type": "角色",
+          "order_value": 47,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -48,
+          "item_name": "菲谢尔",
+          "item_type": "角色",
+          "order_value": 48,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -49,
+          "item_name": "凝光",
+          "item_type": "角色",
+          "order_value": 49,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -50,
+          "item_name": "行秋",
+          "item_type": "角色",
+          "order_value": 50,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -51,
+          "item_name": "北斗",
+          "item_type": "角色",
+          "order_value": 51,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -52,
+          "item_name": "香菱",
+          "item_type": "角色",
+          "order_value": 52,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -53,
+          "item_name": "雷泽",
+          "item_type": "角色",
+          "order_value": 53,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -55,
+          "item_name": "芭芭拉",
+          "item_type": "角色",
+          "order_value": 55,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -57,
+          "item_name": "匣里龙吟",
+          "item_type": "武器",
+          "order_value": 57,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -58,
+          "item_name": "祭礼剑",
+          "item_type": "武器",
+          "order_value": 58,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -59,
+          "item_name": "笛剑",
+          "item_type": "武器",
+          "order_value": 59,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -60,
+          "item_name": "西风剑",
+          "item_type": "武器",
+          "order_value": 60,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -64,
+          "item_name": "雨裁",
+          "item_type": "武器",
+          "order_value": 64,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -65,
+          "item_name": "祭礼大剑",
+          "item_type": "武器",
+          "order_value": 65,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -66,
+          "item_name": "钟剑",
+          "item_type": "武器",
+          "order_value": 66,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -67,
+          "item_name": "西风大剑",
+          "item_type": "武器",
+          "order_value": 67,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -71,
+          "item_name": "西风长枪",
+          "item_type": "武器",
+          "order_value": 71,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -72,
+          "item_name": "匣里灭辰",
+          "item_type": "武器",
+          "order_value": 72,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -74,
+          "item_name": "昭心",
+          "item_type": "武器",
+          "order_value": 74,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -75,
+          "item_name": "祭礼残章",
+          "item_type": "武器",
+          "order_value": 75,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -76,
+          "item_name": "流浪乐章",
+          "item_type": "武器",
+          "order_value": 76,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -77,
+          "item_name": "西风秘典",
+          "item_type": "武器",
+          "order_value": 77,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -81,
+          "item_name": "弓藏",
+          "item_type": "武器",
+          "order_value": 81,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -82,
+          "item_name": "祭礼弓",
+          "item_type": "武器",
+          "order_value": 82,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -83,
+          "item_name": "绝弦",
+          "item_type": "武器",
+          "order_value": 83,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -84,
+          "item_name": "西风猎弓",
+          "item_type": "武器",
+          "order_value": 84,
+          "rank": 4
+        }
+      ],
+      "r4_up_items": [
+        {
+          "item_attr": "水",
+          "item_color": "#498fccFF",
+          "item_id": -1,
+          "item_img": "https://operation-webstatic.mihoyo.com/gacha_info/hk4e/_pic_source_/id3m11toUTnT5Cnjobpk_HEY2eEpr5O.png",
+          "item_name": "爱诺",
+          "item_type": "角色",
+          "item_type_cn": "角色"
+        },
+        {
+          "item_attr": "雷",
+          "item_color": "#6957C2FF",
+          "item_id": -3,
+          "item_img": "https://operation-webstatic.mihoyo.com/gacha_info/hk4e/_pic_source_/nRDRpaupVWFr6ujlKDzJ_YxdQ5x7uxb.png",
+          "item_name": "伊安珊",
+          "item_type": "角色",
+          "item_type_cn": "角色"
+        },
+        {
+          "item_attr": "风",
+          "item_color": "#359697",
+          "item_id": -4,
+          "item_img": "https://operation-webstatic.mihoyo.com/gacha_info/hk4e/_pic_source_/c00xQmKe1xutdRlr8kWq_KTEWpDNv0j.png",
+          "item_name": "蓝砚",
+          "item_type": "角色",
+          "item_type_cn": "角色"
+        }
+      ],
+      "r4_up_prob": "50.000%",
+      "r5_2_prob_list": [
+        {
+          "is_up": 1,
+          "item_id": -2,
+          "item_name": "伊涅芙",
+          "item_type": "角色",
+          "order_value": 2,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -10,
+          "item_name": "梦见月瑞希",
+          "item_type": "角色",
+          "order_value": 10,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -21,
+          "item_name": "迪希雅",
+          "item_type": "角色",
+          "order_value": 21,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -26,
+          "item_name": "提纳里",
+          "item_type": "角色",
+          "order_value": 26,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -41,
+          "item_name": "刻晴",
+          "item_type": "角色",
+          "order_value": 41,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -42,
+          "item_name": "莫娜",
+          "item_type": "角色",
+          "order_value": 42,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -45,
+          "item_name": "七七",
+          "item_type": "角色",
+          "order_value": 45,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -54,
+          "item_name": "迪卢克",
+          "item_type": "角色",
+          "order_value": 54,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -56,
+          "item_name": "琴",
+          "item_type": "角色",
+          "order_value": 56,
+          "rank": 5
+        }
+      ],
+      "r5_baodi_prob": "1.600%",
+      "r5_prob": "0.600%",
+      "r5_prob_list": [
+        {
+          "is_up": 1,
+          "item_id": -2,
+          "item_name": "伊涅芙",
+          "item_type": "角色",
+          "order_value": 2,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -10,
+          "item_name": "梦见月瑞希",
+          "item_type": "角色",
+          "order_value": 10,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -21,
+          "item_name": "迪希雅",
+          "item_type": "角色",
+          "order_value": 21,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -26,
+          "item_name": "提纳里",
+          "item_type": "角色",
+          "order_value": 26,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -41,
+          "item_name": "刻晴",
+          "item_type": "角色",
+          "order_value": 41,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -42,
+          "item_name": "莫娜",
+          "item_type": "角色",
+          "order_value": 42,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -45,
+          "item_name": "七七",
+          "item_type": "角色",
+          "order_value": 45,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -54,
+          "item_name": "迪卢克",
+          "item_type": "角色",
+          "order_value": 54,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -56,
+          "item_name": "琴",
+          "item_type": "角色",
+          "order_value": 56,
+          "rank": 5
+        }
+      ],
+      "r5_up_items": [
+        {
+          "item_attr": "雷",
+          "item_color": "#6957C2FF",
+          "item_id": -2,
+          "item_img": "https://operation-webstatic.mihoyo.com/gacha_info/hk4e/_pic_source_/pSic6ldveiFoY7eUlh93_vyHvEmuD0Q.png",
+          "item_name": "伊涅芙",
+          "item_type": "角色",
+          "item_type_cn": "角色"
+        }
+      ],
+      "r5_up_prob": "50.000%",
+      "title": "「<color=#6957C2FF>聚星</color>源动」活动祈愿"
+    },
+    "f010a4603f4f977dcf4dc9cfeaec59b4fbcb72c3": {
+      "date_range": "限时活动",
+      "gacha_type": 302,
+      "op_gacha_type": 302,
+      "r3_baodi_prob": "83.650%",
+      "r3_prob": "93.300%",
+      "r3_prob_list": [
+        {
+          "is_up": 0,
+          "item_id": -60,
+          "item_name": "飞天御剑",
+          "item_type": "武器",
+          "order_value": 60,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -61,
+          "item_name": "黎明神剑",
+          "item_type": "武器",
+          "order_value": 61,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -62,
+          "item_name": "冷刃",
+          "item_type": "武器",
+          "order_value": 62,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -68,
+          "item_name": "以理服人",
+          "item_type": "武器",
+          "order_value": 68,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -69,
+          "item_name": "沐浴龙血的剑",
+          "item_type": "武器",
+          "order_value": 69,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -70,
+          "item_name": "铁影阔剑",
+          "item_type": "武器",
+          "order_value": 70,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -74,
+          "item_name": "黑缨枪",
+          "item_type": "武器",
+          "order_value": 74,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -80,
+          "item_name": "翡玉法球",
+          "item_type": "武器",
+          "order_value": 80,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -81,
+          "item_name": "讨龙英杰谭",
+          "item_type": "武器",
+          "order_value": 81,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -82,
+          "item_name": "魔导绪论",
+          "item_type": "武器",
+          "order_value": 82,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -88,
+          "item_name": "弹弓",
+          "item_type": "武器",
+          "order_value": 88,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -89,
+          "item_name": "神射手之誓",
+          "item_type": "武器",
+          "order_value": 89,
+          "rank": 3
+        },
+        {
+          "is_up": 0,
+          "item_id": -90,
+          "item_name": "鸦羽弓",
+          "item_type": "武器",
+          "order_value": 90,
+          "rank": 3
+        }
+      ],
+      "r4_baodi_prob": "14.500%",
+      "r4_prob": "6.000%",
+      "r4_prob_list": [
+        {
+          "is_up": 1,
+          "item_id": -1,
+          "item_name": "笛剑",
+          "item_type": "武器",
+          "order_value": 1,
+          "rank": 4
+        },
+        {
+          "is_up": 1,
+          "item_id": -2,
+          "item_name": "西风大剑",
+          "item_type": "武器",
+          "order_value": 2,
+          "rank": 4
+        },
+        {
+          "is_up": 1,
+          "item_id": -5,
+          "item_name": "西风长枪",
+          "item_type": "武器",
+          "order_value": 5,
+          "rank": 4
+        },
+        {
+          "is_up": 1,
+          "item_id": -6,
+          "item_name": "昭心",
+          "item_type": "武器",
+          "order_value": 6,
+          "rank": 4
+        },
+        {
+          "is_up": 1,
+          "item_id": -7,
+          "item_name": "绝弦",
+          "item_type": "武器",
+          "order_value": 7,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -8,
+          "item_name": "布伦妮",
+          "item_type": "角色",
+          "order_value": 8,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -9,
+          "item_name": "叶洛亚",
+          "item_type": "角色",
+          "order_value": 9,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -10,
+          "item_name": "雅珂达",
+          "item_type": "角色",
+          "order_value": 10,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -11,
+          "item_name": "爱诺",
+          "item_type": "角色",
+          "order_value": 11,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -12,
+          "item_name": "塔利雅",
+          "item_type": "角色",
+          "order_value": 12,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -13,
+          "item_name": "伊法",
+          "item_type": "角色",
+          "order_value": 13,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -14,
+          "item_name": "伊安珊",
+          "item_type": "角色",
+          "order_value": 14,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -15,
+          "item_name": "蓝砚",
+          "item_type": "角色",
+          "order_value": 15,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -16,
+          "item_name": "欧洛伦",
+          "item_type": "角色",
+          "order_value": 16,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -17,
+          "item_name": "卡齐娜",
+          "item_type": "角色",
+          "order_value": 17,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -18,
+          "item_name": "赛索斯",
+          "item_type": "角色",
+          "order_value": 18,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -19,
+          "item_name": "嘉明",
+          "item_type": "角色",
+          "order_value": 19,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -20,
+          "item_name": "夏沃蕾",
+          "item_type": "角色",
+          "order_value": 20,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -21,
+          "item_name": "夏洛蒂",
+          "item_type": "角色",
+          "order_value": 21,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -22,
+          "item_name": "菲米尼",
+          "item_type": "角色",
+          "order_value": 22,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -23,
+          "item_name": "琳妮特",
+          "item_type": "角色",
+          "order_value": 23,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -24,
+          "item_name": "卡维",
+          "item_type": "角色",
+          "order_value": 24,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -25,
+          "item_name": "米卡",
+          "item_type": "角色",
+          "order_value": 25,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -26,
+          "item_name": "瑶瑶",
+          "item_type": "角色",
+          "order_value": 26,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -27,
+          "item_name": "珐露珊",
+          "item_type": "角色",
+          "order_value": 27,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -28,
+          "item_name": "莱依拉",
+          "item_type": "角色",
+          "order_value": 28,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -29,
+          "item_name": "坎蒂丝",
+          "item_type": "角色",
+          "order_value": 29,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -30,
+          "item_name": "多莉",
+          "item_type": "角色",
+          "order_value": 30,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -31,
+          "item_name": "柯莱",
+          "item_type": "角色",
+          "order_value": 31,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -32,
+          "item_name": "久岐忍",
+          "item_type": "角色",
+          "order_value": 32,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -33,
+          "item_name": "云堇",
+          "item_type": "角色",
+          "order_value": 33,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -34,
+          "item_name": "绮良良",
+          "item_type": "角色",
+          "order_value": 34,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -35,
+          "item_name": "鹿野院平藏",
+          "item_type": "角色",
+          "order_value": 35,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -36,
+          "item_name": "九条裟罗",
+          "item_type": "角色",
+          "order_value": 36,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -37,
+          "item_name": "五郎",
+          "item_type": "角色",
+          "order_value": 37,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -38,
+          "item_name": "早柚",
+          "item_type": "角色",
+          "order_value": 38,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -39,
+          "item_name": "托马",
+          "item_type": "角色",
+          "order_value": 39,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -40,
+          "item_name": "烟绯",
+          "item_type": "角色",
+          "order_value": 40,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -41,
+          "item_name": "罗莎莉亚",
+          "item_type": "角色",
+          "order_value": 41,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -42,
+          "item_name": "辛焱",
+          "item_type": "角色",
+          "order_value": 42,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -43,
+          "item_name": "砂糖",
+          "item_type": "角色",
+          "order_value": 43,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -44,
+          "item_name": "迪奥娜",
+          "item_type": "角色",
+          "order_value": 44,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -45,
+          "item_name": "重云",
+          "item_type": "角色",
+          "order_value": 45,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -46,
+          "item_name": "诺艾尔",
+          "item_type": "角色",
+          "order_value": 46,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -47,
+          "item_name": "班尼特",
+          "item_type": "角色",
+          "order_value": 47,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -48,
+          "item_name": "菲谢尔",
+          "item_type": "角色",
+          "order_value": 48,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -49,
+          "item_name": "凝光",
+          "item_type": "角色",
+          "order_value": 49,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -50,
+          "item_name": "行秋",
+          "item_type": "角色",
+          "order_value": 50,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -51,
+          "item_name": "北斗",
+          "item_type": "角色",
+          "order_value": 51,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -52,
+          "item_name": "香菱",
+          "item_type": "角色",
+          "order_value": 52,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -53,
+          "item_name": "雷泽",
+          "item_type": "角色",
+          "order_value": 53,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -54,
+          "item_name": "芭芭拉",
+          "item_type": "角色",
+          "order_value": 54,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -57,
+          "item_name": "匣里龙吟",
+          "item_type": "武器",
+          "order_value": 57,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -58,
+          "item_name": "祭礼剑",
+          "item_type": "武器",
+          "order_value": 58,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -59,
+          "item_name": "西风剑",
+          "item_type": "武器",
+          "order_value": 59,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -65,
+          "item_name": "雨裁",
+          "item_type": "武器",
+          "order_value": 65,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -66,
+          "item_name": "祭礼大剑",
+          "item_type": "武器",
+          "order_value": 66,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -67,
+          "item_name": "钟剑",
+          "item_type": "武器",
+          "order_value": 67,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -73,
+          "item_name": "匣里灭辰",
+          "item_type": "武器",
+          "order_value": 73,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -77,
+          "item_name": "祭礼残章",
+          "item_type": "武器",
+          "order_value": 77,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -78,
+          "item_name": "流浪乐章",
+          "item_type": "武器",
+          "order_value": 78,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -79,
+          "item_name": "西风秘典",
+          "item_type": "武器",
+          "order_value": 79,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -85,
+          "item_name": "弓藏",
+          "item_type": "武器",
+          "order_value": 85,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -86,
+          "item_name": "祭礼弓",
+          "item_type": "武器",
+          "order_value": 86,
+          "rank": 4
+        },
+        {
+          "is_up": 0,
+          "item_id": -87,
+          "item_name": "西风猎弓",
+          "item_type": "武器",
+          "order_value": 87,
+          "rank": 4
+        }
+      ],
+      "r4_up_items": [
+        {
+          "item_attr": "",
+          "item_color": "",
+          "item_id": -1,
+          "item_img": "https://operation-webstatic.mihoyo.com/gacha_info/hk4e/_pic_source_/963bufKcKNvSYhEP2bIA_Au9ss48jXT.png",
+          "item_name": "笛剑",
+          "item_type": "武器",
+          "item_type_cn": "武器"
+        },
+        {
+          "item_attr": "",
+          "item_color": "",
+          "item_id": -2,
+          "item_img": "https://operation-webstatic.mihoyo.com/gacha_info/hk4e/_pic_source_/eTMfzztFid33sibapoVO_Wa7yvIPGA7.png",
+          "item_name": "西风大剑",
+          "item_type": "武器",
+          "item_type_cn": "武器"
+        },
+        {
+          "item_attr": "",
+          "item_color": "",
+          "item_id": -5,
+          "item_img": "https://operation-webstatic.mihoyo.com/gacha_info/hk4e/_pic_source_/VSplP3vgkxrdTl7j9Myk_D0E0UsEoxt.png",
+          "item_name": "西风长枪",
+          "item_type": "武器",
+          "item_type_cn": "武器"
+        },
+        {
+          "item_attr": "",
+          "item_color": "",
+          "item_id": -6,
+          "item_img": "https://operation-webstatic.mihoyo.com/gacha_info/hk4e/_pic_source_/jtd4X7LaQegCMpDHhmj4_KrQ0MEHiuC.png",
+          "item_name": "昭心",
+          "item_type": "武器",
+          "item_type_cn": "武器"
+        },
+        {
+          "item_attr": "",
+          "item_color": "",
+          "item_id": -7,
+          "item_img": "https://operation-webstatic.mihoyo.com/gacha_info/hk4e/_pic_source_/7uknIQ8T0ifqbfUwiekQ_dRkuY9Yi8F.png",
+          "item_name": "绝弦",
+          "item_type": "武器",
+          "item_type_cn": "武器"
+        }
+      ],
+      "r4_up_prob": "75.000%",
+      "r5_4_prob_list": [
+        {
+          "is_up": 1,
+          "item_id": -3,
+          "item_name": "血染荒城",
+          "item_type": "武器",
+          "order_value": 3,
+          "rank": 5
+        },
+        {
+          "is_up": 1,
+          "item_id": -4,
+          "item_name": "支离轮光",
+          "item_type": "武器",
+          "order_value": 4,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -55,
+          "item_name": "天空之刃",
+          "item_type": "武器",
+          "order_value": 55,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -56,
+          "item_name": "风鹰剑",
+          "item_type": "武器",
+          "order_value": 56,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -63,
+          "item_name": "狼的末路",
+          "item_type": "武器",
+          "order_value": 63,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -64,
+          "item_name": "天空之傲",
+          "item_type": "武器",
+          "order_value": 64,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -71,
+          "item_name": "和璞鸢",
+          "item_type": "武器",
+          "order_value": 71,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -72,
+          "item_name": "天空之脊",
+          "item_type": "武器",
+          "order_value": 72,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -75,
+          "item_name": "四风原典",
+          "item_type": "武器",
+          "order_value": 75,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -76,
+          "item_name": "天空之卷",
+          "item_type": "武器",
+          "order_value": 76,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -83,
+          "item_name": "阿莫斯之弓",
+          "item_type": "武器",
+          "order_value": 83,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -84,
+          "item_name": "天空之翼",
+          "item_type": "武器",
+          "order_value": 84,
+          "rank": 5
+        }
+      ],
+      "r5_baodi_prob": "1.850%",
+      "r5_prob": "0.700%",
+      "r5_prob_list": [
+        {
+          "is_up": 1,
+          "item_id": -3,
+          "item_name": "血染荒城",
+          "item_type": "武器",
+          "order_value": 3,
+          "rank": 5
+        },
+        {
+          "is_up": 1,
+          "item_id": -4,
+          "item_name": "支离轮光",
+          "item_type": "武器",
+          "order_value": 4,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -55,
+          "item_name": "天空之刃",
+          "item_type": "武器",
+          "order_value": 55,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -56,
+          "item_name": "风鹰剑",
+          "item_type": "武器",
+          "order_value": 56,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -63,
+          "item_name": "狼的末路",
+          "item_type": "武器",
+          "order_value": 63,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -64,
+          "item_name": "天空之傲",
+          "item_type": "武器",
+          "order_value": 64,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -71,
+          "item_name": "和璞鸢",
+          "item_type": "武器",
+          "order_value": 71,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -72,
+          "item_name": "天空之脊",
+          "item_type": "武器",
+          "order_value": 72,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -75,
+          "item_name": "四风原典",
+          "item_type": "武器",
+          "order_value": 75,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -76,
+          "item_name": "天空之卷",
+          "item_type": "武器",
+          "order_value": 76,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -83,
+          "item_name": "阿莫斯之弓",
+          "item_type": "武器",
+          "order_value": 83,
+          "rank": 5
+        },
+        {
+          "is_up": 0,
+          "item_id": -84,
+          "item_name": "天空之翼",
+          "item_type": "武器",
+          "order_value": 84,
+          "rank": 5
+        }
+      ],
+      "r5_up_items": [
+        {
+          "item_attr": "",
+          "item_color": "",
+          "item_id": -3,
+          "item_img": "https://operation-webstatic.mihoyo.com/gacha_info/hk4e/_pic_source_/UwUlvPV0KgU3gg0z8iat_yLI1Iq1G8K.png",
+          "item_name": "血染荒城",
+          "item_type": "武器",
+          "item_type_cn": "武器"
+        },
+        {
+          "item_attr": "",
+          "item_color": "",
+          "item_id": -4,
+          "item_img": "https://operation-webstatic.mihoyo.com/gacha_info/hk4e/_pic_source_/IEUPYvMjzeRujhrWpu18_fSSlWAvDf3.png",
+          "item_name": "支离轮光",
+          "item_type": "武器",
+          "item_type_cn": "武器"
+        }
+      ],
+      "r5_up_prob": "75.000%",
+      "title": "「<color=#EF7C1AFF>神铸</color>赋形」活动祈愿"
+    }
+  }
+}

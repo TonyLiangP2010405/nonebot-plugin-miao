@@ -393,3 +393,95 @@ async def test_my_bind_unbound(app, cmds, data_dir):
             "tester 的绑定信息：\n原神 UID：未绑定\n星铁 UID：未绑定\n米游社 cookie：未绑定",
         )
         ctx.should_finished()
+
+
+@pytest.mark.parametrize("text,game,kind,single", [
+    ("十抽2", "gs", "role2", False),
+    ("原神武器十连", "gs", "weapon", False),
+    ("星铁十连2", "sr", "role2", False),
+    ("/铁道光锥单抽2", "sr", "weapon2", True),
+    ("#星穹铁道常驻10抽", "sr", "permanent", False),
+    ("绝区零十连2", "zzz", "role2", False),
+    ("ZZZ音擎十连2", "zzz", "weapon2", False),
+    ("绝区零常驻单抽", "zzz", "permanent", True),
+    ("星铁角色十连12", "sr", "role12", False),
+])
+def test_multigame_simulation_commands(cmds, text, game, kind, single):
+    g = cmds.gacha
+    assert re.fullmatch(g.RE_SIMULATE, text)
+    assert g.sim_game_of(text) == game
+    assert g.sim_kind_of(text) == kind
+    assert g.is_single(text) == single
+    assert not re.match(g.RE_ANALYSE, text)
+    assert not re.match(g.RE_STAT, text)
+
+
+def test_simulation_invalid_commands(cmds):
+    for text in ("星铁十连0", "武器十连常驻"):
+        with pytest.raises(ValueError):
+            cmds.gacha.sim_kind_of(text)
+    for text in ("/绝区零抽卡记录", "今天星铁十连出金", "星铁十连2次"):
+        assert not re.fullmatch(cmds.gacha.RE_SIMULATE, text)
+
+
+def test_pool_list_commands_and_content(cmds, sim_data):
+    for game, prefix in (("gs", ""), ("sr", "星铁"), ("zzz", "绝区零")):
+        for text in (f"/{prefix}卡池列表", f"/{prefix}当前卡池", f"/更新{prefix}卡池", f"/{prefix}更新卡池"):
+            assert re.fullmatch(cmds.gacha.RE_SIM_POOLS, text)
+            assert cmds.gacha.sim_game_of(text) == game
+        text = cmds.gacha.sim_pool_list_text(game, sim_data[game])
+        assert prefix + "十连2" in text
+        assert sim_data[game]["pools"][0]["title"] in text
+    for text in ("卡池列表", "#星铁卡池列表", "/更新面板资源", "/更新星铁记录"):
+        assert not re.fullmatch(cmds.gacha.RE_SIM_POOLS, text)
+    for text in ("/定轨", "/定轨1", "/定轨2", "/定轨0", "/定轨取消"):
+        assert re.fullmatch(cmds.gacha.RE_BING, text)
+
+
+@pytest.mark.parametrize("private", [False, True])
+async def test_simulation_handler_single_draw_real_state(cmds, app, sim_data, monkeypatch, private):
+    from nonebot.adapters.onebot.v11 import (
+        Adapter,
+        Bot,
+        GroupMessageEvent,
+        Message,
+        PrivateMessageEvent,
+    )
+    from nonebot.adapters.onebot.v11.event import Sender
+
+    from nonebot_plugin_miao.gacha import simulate
+
+    async def ensure(game):
+        return sim_data[game]
+
+    rendered = []
+
+    async def render(result, name):
+        rendered.append(result)
+        return b"test-image"
+
+    monkeypatch.setattr(cmds.gacha.sim_pools, "ensure_pools", ensure)
+    monkeypatch.setattr(cmds.gacha, "render_gacha_trial", render)
+    message = "绝区零音擎单抽2"
+    cls = PrivateMessageEvent if private else GroupMessageEvent
+    event = cls(
+        time=int(time.time()), self_id=123456, post_type="message", sub_type="friend" if private else "normal",
+        user_id=12345, **({} if private else {"group_id": 88888}),
+        message_type="private" if private else "group", message_id=1,
+        message=Message(message), original_message=Message(message), raw_message=message, font=0,
+        sender=Sender(user_id=12345, nickname="tester"),
+    )
+    from nonebot.adapters.onebot.v11 import MessageSegment
+
+    async with app.test_matcher(cmds.gacha.simulate_m) as ctx:
+        adapter = ctx.create_adapter(base=Adapter)
+        bot = ctx.create_bot(base=Bot, adapter=adapter, self_id="123456")
+        ctx.receive_event(bot, event)
+        ctx.should_call_send(event, MessageSegment.image(b"test-image"))
+        ctx.should_finished()
+    assert len(rendered) == 1
+    result = rendered[0]
+    assert result["game"] == "zzz" and len(result["list"]) == 1
+    assert "音擎池" in result["poolName"]
+    scope = "private:12345" if private else "88888:12345"
+    assert simulate.load_user(scope, "zzz")["today"]["weaponNum"] == 1

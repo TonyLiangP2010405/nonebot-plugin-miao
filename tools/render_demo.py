@@ -70,6 +70,9 @@ async def main() -> None:
     # 模拟抽卡会落盘 sim 状态，数据目录切到临时目录，避免污染 fixtures
     with tempfile.TemporaryDirectory() as tmp:
         store._data_dir = lambda: Path(tmp)  # noqa: SLF001
+        from nonebot_plugin_miao.datasource.sim_pools import ensure_pools
+
+        await ensure_pools("gs")
         rng = random.Random(42).randint
         result = simulate.do_gacha("demo:1", "role", is_master=True, rng=rng)
         assert result["code"] == "ok", result

@@ -8,6 +8,7 @@
 """
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 
 import skia
@@ -31,21 +32,26 @@ async def render_gacha_trial(result: dict, sender_name: str) -> bytes:
     is_weapon = bool(result.get("isWeapon"))
     bing_weapon = result.get("bingWeapon")
     life_num = result.get("lifeNum", 0)
+    game = result.get("game", "gs")
+    game_name = {"gs": "原神", "sr": "星铁", "zzz": "绝区零"}[game]
 
-    images: list[skia.Image | None] = [await base.fetch_image(it.get("imgFile", "")) for it in items]
+    images: list[skia.Image | None] = await asyncio.gather(
+        *(base.fetch_image(it.get("imgFile", "")) for it in items)
+    )
 
     grid_w = COLS * CARD_W + (COLS - 1) * GAP
     gx0 = (W - grid_w) / 2
 
     def builder(canvas: skia.Canvas, w: int, h: int) -> int:
         if h > 0:
-            base.draw_gradient(canvas, 0, 0, w, h, base.elem_gradient("hydro"))
+            base.draw_gradient(canvas, 0, 0, w, h, base.elem_gradient({"gs": "hydro", "sr": "sr", "zzz": "geo"}[game]))
         y = 18.0
 
         # ---------------- 头部（对照 info-name / poor-info / poor-bing） ----------------
-        base.draw_text(canvas, "十连抽卡", 26, y + 38, base.font(34, "title"), base.color(base.TEXT_MAIN))
+        title = f"{game_name} · {'单抽' if len(items) == 1 else '十连'}"
+        base.draw_text(canvas, title, 26, y + 38, base.font(30, "title"), base.color(base.TEXT_MAIN))
         rf = base.font(16)
-        right_txt = pool_name
+        right_txt = base.ellipsize(pool_name, rf, 420)
         base.draw_text(canvas, right_txt, w - 26 - base.measure(right_txt, rf), y + 30, rf, base.color(base.GOLD))
         if is_weapon and bing_weapon:
             bing_txt = f"定轨：{bing_weapon} · 命定值：{life_num}"
@@ -71,7 +77,10 @@ async def render_gacha_trial(result: dict, sender_name: str) -> bytes:
                 base.draw_image_contain(canvas, img, ix, iy, iw, ih, r=8)
             else:
                 ef = base.font(18)
-                base.draw_text_center(canvas, it.get("element", ""), ix + iw / 2,
+                item_label = ("代理人" if game == "zzz" else "角色") if it.get("type") == "role" else {
+                    "gs": "武器", "sr": "光锥", "zzz": "音擎"
+                }[game]
+                base.draw_text_center(canvas, it.get("element") or item_label, ix + iw / 2,
                                       iy + ih / 2 - 16, ef, base.color("#ccffffff"))
             # 底部名字条
             name_h = 30
@@ -81,7 +90,11 @@ async def render_gacha_trial(result: dict, sender_name: str) -> bytes:
                                   base.baseline_center(iy + ih - name_h, name_h, nf), nf,
                                   base.color(base.TEXT_MAIN))
             # 星星排（对照 item-star）
-            base.draw_stars(canvas, ix + iw / 2, iy + ih - name_h - 14, star, r=7)
+            if game == "zzz":
+                base.draw_text_center(canvas, {5: "S 级", 4: "A 级", 3: "B 级"}[star], ix + iw / 2,
+                                      iy + ih - name_h - 8, base.font(18), border_c)
+            else:
+                base.draw_stars(canvas, ix + iw / 2, iy + ih - name_h - 14, star, r=7)
             # 角标（左上竖排：大保底/定轨/已拥有；右上：N 抽）
             bx, by = ix + 6, iy + 6
             badges = [
@@ -113,7 +126,8 @@ async def render_gacha_trial(result: dict, sender_name: str) -> bytes:
         # ---------------- 底部 info 行（对照 info-count） ----------------
         info_f = base.font(17)
         base.draw_rounded(canvas, 26, y, w - 52, 40, 8, base.color("#73000000"))
-        base.draw_text_center(canvas, f"{info} · {sender_name}", w / 2, base.baseline_center(y, 40, info_f),
+        base.draw_text_center(canvas, base.ellipsize(f"{info} · {sender_name}", info_f, w - 76),
+                              w / 2, base.baseline_center(y, 40, info_f),
                               info_f, base.color(base.TEXT_MAIN))
         y += 40 + 10
         base.draw_text_center(canvas, f"生成于 {datetime.now():%Y-%m-%d %H:%M} · nonebot-plugin-miao",
@@ -121,4 +135,4 @@ async def render_gacha_trial(result: dict, sender_name: str) -> bytes:
         y += 32
         return int(y)
 
-    return base.render_card(W, builder)
+    return await asyncio.to_thread(base.render_card, W, builder)
