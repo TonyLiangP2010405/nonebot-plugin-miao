@@ -16,6 +16,29 @@ from . import base
 
 W, M = 860, 24
 
+
+async def _material_images(materials: dict) -> list:
+    entries = [(kind, str(name)) for kind, name in materials.items() if name]
+    images = await asyncio.gather(*(
+        base.fetch_image(f"meta-gs/material/{kind}/{name}.webp") for kind, name in entries
+    ))
+    return [(name, image) for (_, name), image in zip(entries, images)]
+
+
+def _draw_materials(canvas, cards: list, y: float, width: int) -> float:
+    columns = 3
+    cell_width = (width - M * 2 - 20) / columns
+    for index, (name, image) in enumerate(cards):
+        x = M + (index % columns) * (cell_width + 10)
+        yy = y + (index // columns) * 124
+        base.draw_rounded(canvas, x, yy, cell_width, 114, 10, base.color("#68000000"))
+        if image is not None:
+            base.draw_image_contain(canvas, image, x + (cell_width - 68) / 2, yy + 8, 68, 68)
+        else:
+            base.draw_image_or_placeholder(canvas, None, (x + (cell_width - 68) / 2, yy + 8, 68, 68), name)
+        base.draw_text_center(canvas, name, x + cell_width / 2, yy + 98, base.font(13), base.color(base.TEXT_MAIN))
+    return y + ((len(cards) + columns - 1) // columns) * 124 + 4
+
 _WEAPON_TYPE = {
     "sword": "单手剑",
     "claymore": "双手剑",
@@ -130,18 +153,41 @@ def weapon_affix_text(weapon: dict[str, Any], rank: int = 1) -> str:
     return text
 
 
+def talent_image_path(character: meta.CharacterMeta, key: str) -> str:
+    """遵循上游 CharImg：普攻按武器类型，战技/爆发复用技能升级命座图标。"""
+    if key == "a":
+        return f"common/item/atk-{character.get('weapon') or 'sword'}.webp"
+    constellation = (character.get("talentCons") or {}).get(key)
+    if constellation:
+        return meta.char_img(character.name, f"cons{constellation}", "gs")
+    return meta.char_img(character.name, f"talent-{key}", "gs")
+
+
 async def render_character_encyclopedia(character: meta.CharacterMeta) -> bytes:
     """渲染原神角色图鉴，无需玩家面板数据。"""
     name = character.name
-    splash, talent_a, talent_e, talent_q = await asyncio.gather(
-        base.fetch_image(meta.char_img(name, "splash", "gs")),
-        base.fetch_image(meta.char_img(name, "talent-a", "gs")),
-        base.fetch_image(meta.char_img(name, "talent-e", "gs")),
-        base.fetch_image(meta.char_img(name, "talent-q", "gs")),
-    )
+    splash = await base.fetch_image(meta.char_img(name, "splash", "gs"))
     talents = character.get("talent") or {}
-    talent_rows = [(key, talents.get(key) or {}, image) for key, image in (("a", talent_a), ("e", talent_e), ("q", talent_q))]
+    talent_rows = [(key, talents.get(key) or {}) for key in ("a", "e", "q")]
     stats = character_level_stats(character)
+    material_cards = await _material_images(character.get("materials") or {})
+    passives = character.get("passive") or []
+    constellations = character.get("cons") or {}
+    paths = {f"talent-{key}": talent_image_path(character, key) for key, talent in talent_rows if talent}
+    paths.update({f"passive-{i}": meta.char_img(name, f"passive{i}", "gs") for i, item in enumerate(passives) if item})
+    paths.update({f"cons-{i}": meta.char_img(name, f"cons{i}", "gs") for i in range(1, 7) if constellations.get(str(i))})
+    # 技能与命座复用同一图标，去重后并发下载。
+    unique_paths = list(dict.fromkeys(paths.values()))
+    downloaded = await asyncio.gather(*(base.fetch_image(path) for path in unique_paths))
+    images_by_path = dict(zip(unique_paths, downloaded))
+    icons = {key: images_by_path[path] for key, path in paths.items()}
+
+    def draw_icon(canvas, image, y, label):
+        rect = (M + 8, y + 7, 48, 48)
+        if image is not None:
+            base.draw_image_contain(canvas, image, *rect)
+        else:
+            base.draw_image_or_placeholder(canvas, None, rect, label, 8)
 
     def builder(canvas: skia.Canvas, width: int, height: int) -> int:
         if height:
@@ -187,30 +233,29 @@ async def render_character_encyclopedia(character: meta.CharacterMeta) -> bytes:
             base.draw_text(canvas, f"{_format_number(value)}{suffix}", x, y + 57, base.font(21, "number"), base.color(base.NUM_GOLD))
         y += 92
 
-        materials = character.get("materials") or {}
         y = _section_title(canvas, "培养材料", y)
-        material_text = "　".join(str(value) for value in materials.values() if value)
-        base.draw_rounded(canvas, M, y, width - M * 2, 66, 12, base.color("#68000000"))
-        _draw_wrapped(canvas, material_text, M + 14, y + 26, width - M * 2 - 28, base.font(14), base.color(base.TEXT_MAIN), 21)
-        y += 80
+        y = _draw_materials(canvas, material_cards, y, width)
 
         y = _section_title(canvas, "战斗天赋", y)
-        for key, talent, image in talent_rows:
+        for key, talent in talent_rows:
             if not talent:
                 continue
             base.draw_rounded(canvas, M, y, width - M * 2, 62, 10, base.color("#68000000"))
-            base.draw_image_or_placeholder(canvas, image, (M + 8, y + 7, 48, 48), talent.get("name") or key, 8)
+            draw_icon(canvas, icons.get(f"talent-{key}"), y, key.upper())
             label = {"a": "普通攻击", "e": "元素战技", "q": "元素爆发"}[key]
             base.draw_text(canvas, label, M + 70, y + 24, base.font(13), base.color(base.TEXT_SUB))
             base.draw_text_ellipsis(canvas, talent.get("name") or "-", M + 70, y + 49, width - M * 2 - 86, base.font(17), base.color(base.TEXT_MAIN))
             y += 70
 
-        passive_names = [str(item.get("name")) for item in (character.get("passive") or []) if item.get("name")]
-        if passive_names:
+        if passives:
             y = _section_title(canvas, "固有天赋", y + 2)
-            base.draw_rounded(canvas, M, y, width - M * 2, 52, 10, base.color("#68000000"))
-            base.draw_text_ellipsis(canvas, " · ".join(passive_names), M + 14, y + 33, width - M * 2 - 28, base.font(15), base.color(base.TEXT_MAIN))
-            y += 66
+            for index, item in enumerate(passives):
+                if not item:
+                    continue
+                base.draw_rounded(canvas, M, y, width - M * 2, 62, 10, base.color("#68000000"))
+                draw_icon(canvas, icons.get(f"passive-{index}"), y, item.get("name") or "天赋")
+                base.draw_text_ellipsis(canvas, item.get("name") or "-", M + 70, y + 38, width - M * 2 - 86, base.font(16), base.color(base.TEXT_MAIN))
+                y += 70
 
         constellations = character.get("cons") or {}
         if constellations:
@@ -219,10 +264,11 @@ async def render_character_encyclopedia(character: meta.CharacterMeta) -> bytes:
                 item = constellations.get(number) or {}
                 if not item:
                     continue
-                base.draw_rounded(canvas, M, y, width - M * 2, 38, 8, base.color("#58000000"))
-                base.draw_text(canvas, f"{number}命", M + 12, y + 25, base.font(14), base.color(base.NUM_GOLD))
-                base.draw_text_ellipsis(canvas, item.get("name") or "-", M + 64, y + 25, width - M * 2 - 78, base.font(14), base.color(base.TEXT_MAIN))
-                y += 44
+                base.draw_rounded(canvas, M, y, width - M * 2, 62, 8, base.color("#58000000"))
+                draw_icon(canvas, icons.get(f"cons-{number}"), y, number)
+                base.draw_text(canvas, f"{number}命", M + 70, y + 24, base.font(13), base.color(base.NUM_GOLD))
+                base.draw_text_ellipsis(canvas, item.get("name") or "-", M + 70, y + 49, width - M * 2 - 86, base.font(15), base.color(base.TEXT_MAIN))
+                y += 70
         return int(y + M)
 
     return base.render_card(W, builder)
@@ -236,6 +282,7 @@ async def render_weapon_encyclopedia(weapon: dict[str, Any]) -> bytes:
     star = int(weapon.get("star") or 0)
     passive_r1 = weapon_affix_text(weapon, 1)
     passive_r5 = weapon_affix_text(weapon, 5)
+    material_cards = await _material_images(weapon.get("materials") or {})
 
     def builder(canvas: skia.Canvas, width: int, height: int) -> int:
         if height:
@@ -283,12 +330,9 @@ async def render_weapon_encyclopedia(weapon: dict[str, Any]) -> bytes:
                 base.draw_text_ellipsis(canvas, f"精炼5数值：{' / '.join(values)}", M + 14, y + box_h - 12, width - M * 2 - 28, base.font(13), base.color(base.GOLD))
             y += box_h + 14
 
-        materials = weapon.get("materials") or {}
         y = _section_title(canvas, "突破材料", y)
-        material_text = "　".join(str(value) for value in materials.values() if value)
-        base.draw_rounded(canvas, M, y, width - M * 2, 66, 12, base.color("#68000000"))
-        _draw_wrapped(canvas, material_text, M + 14, y + 26, width - M * 2 - 28, base.font(14), base.color(base.TEXT_MAIN), 21)
-        return int(y + 66 + M)
+        y = _draw_materials(canvas, material_cards, y, width)
+        return int(y + M)
 
     return base.render_card(W, builder)
 

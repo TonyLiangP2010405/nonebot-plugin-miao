@@ -369,7 +369,7 @@ async def fetch_image(rel_path: str) -> skia.Image | None:
     rel = str(rel_path or "").lstrip("/")
     if not rel:
         return None
-    if rel in _IMG_MEM:
+    if _IMG_MEM.get(rel) is not None:
         return _IMG_MEM[rel]
 
     img = get_local_image(rel)
@@ -385,20 +385,28 @@ async def fetch_image(rel_path: str) -> skia.Image | None:
             logger.debug(f"[miao-render] 图片缓存目录不可用: {e}")
             cache_file = None
         if img is None:
-            url = rel if rel.startswith("https://") else f"{_mirror()}/{rel}"
-            try:
-                resp = await (await _client()).get(url)
-                if resp.status_code == 200 and resp.content:
-                    img = _decode(resp.content)
-                    if img and cache_file is not None:
-                        cache_file.parent.mkdir(parents=True, exist_ok=True)
-                        cache_file.write_bytes(resp.content)
-                else:
-                    logger.warning(f"[miao-render] 图片下载失败 HTTP {resp.status_code}: {url}")
-            except Exception as e:
-                logger.warning(f"[miao-render] 图片获取失败 {rel}: {e}")
-                img = None
-    _IMG_MEM[rel] = img
+            urls = [rel] if rel.startswith("https://") else list(dict.fromkeys([
+                f"{_mirror()}/{rel}",
+                f"https://raw.githubusercontent.com/yoimiya-kokomi/miao-plugin/master/resources/{rel}",
+            ]))
+            for url in urls:
+                try:
+                    resp = await (await _client()).get(url, follow_redirects=True)
+                    if resp.status_code == 200 and resp.content:
+                        img = _decode(resp.content)
+                    if img is not None:
+                        if cache_file is not None:
+                            try:
+                                cache_file.parent.mkdir(parents=True, exist_ok=True)
+                                cache_file.write_bytes(resp.content)
+                            except OSError as e:
+                                logger.debug(f"[miao-render] 图片缓存写入失败: {e}")
+                        break
+                    logger.warning(f"[miao-render] 图片不可用 HTTP {resp.status_code}: {url}")
+                except Exception as e:
+                    logger.warning(f"[miao-render] 图片获取失败 {url}: {e}")
+    if img is not None:
+        _IMG_MEM[rel] = img
     return img
 
 
