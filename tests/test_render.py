@@ -77,6 +77,13 @@ async def test_character_encyclopedia(no_images):
     assert character is not None
     png = await encyclopedia.render_character_encyclopedia(character)
     _check_png(png)
+    image = skia.Image.MakeFromEncoded(png)
+    assert image is not None and image.height() > 2600
+
+
+def test_encyclopedia_description_cleanup():
+    text = encyclopedia._clean_text(["<h3>普通攻击</h3>", "造成伤害。", "<i>说明文字</i>"])
+    assert text == "普通攻击\n造成伤害。\n说明文字"
 
 
 async def test_weapon_encyclopedia(no_images):

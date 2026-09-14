@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import re
 from collections import defaultdict
+from html import unescape
 from typing import Any
 
 import skia
@@ -75,9 +76,13 @@ _PERCENT_ATTRS = {"atkPct", "defPct", "hpPct", "cpct", "cdmg", "recharge", "phy"
 
 def _clean_text(value: Any) -> str:
     if isinstance(value, list):
-        value = " ".join(str(item) for item in value)
-    text = re.sub(r"<[^>]+>", " ", str(value or ""))
-    return re.sub(r"\s+", " ", text).strip()
+        value = "\n".join(str(item) for item in value if item)
+    text = str(value or "")
+    text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"</?(?:h[1-6]|p|div|li)[^>]*>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", "", text)
+    lines = [re.sub(r"[ \t\r\f\v]+", " ", line).strip() for line in unescape(text).splitlines()]
+    return "\n".join(line for line in lines if line)
 
 
 def _wrap_text(text: str, font: skia.Font, max_width: float) -> list[str]:
@@ -189,6 +194,22 @@ async def render_character_encyclopedia(character: meta.CharacterMeta) -> bytes:
         else:
             base.draw_image_or_placeholder(canvas, None, rect, label, 8)
 
+    def draw_detail_card(canvas, y, image, fallback, label, title, description):
+        description = _clean_text(description)
+        description_font = base.font(14)
+        lines = _wrap_text(description, description_font, W - M * 2 - 28) if description else []
+        card_height = 72 if not lines else 80 + len(lines) * 21
+        base.draw_rounded(canvas, M, y, W - M * 2, card_height, 10, base.color("#68000000"))
+        draw_icon(canvas, image, y, fallback)
+        base.draw_text(canvas, label, M + 70, y + 24, base.font(13), base.color(base.NUM_GOLD))
+        base.draw_text_ellipsis(canvas, title or "-", M + 70, y + 50, W - M * 2 - 86, base.font(17), base.color(base.TEXT_MAIN))
+        if lines:
+            text_y = y + 82
+            for line in lines:
+                base.draw_text(canvas, line, M + 14, text_y, description_font, base.color(base.TEXT_MAIN))
+                text_y += 21
+        return y + card_height + 8
+
     def builder(canvas: skia.Canvas, width: int, height: int) -> int:
         if height:
             base.draw_gradient(canvas, 0, 0, width, height, base.elem_gradient(character.get("elem")))
@@ -240,22 +261,31 @@ async def render_character_encyclopedia(character: meta.CharacterMeta) -> bytes:
         for key, talent in talent_rows:
             if not talent:
                 continue
-            base.draw_rounded(canvas, M, y, width - M * 2, 62, 10, base.color("#68000000"))
-            draw_icon(canvas, icons.get(f"talent-{key}"), y, key.upper())
             label = {"a": "普通攻击", "e": "元素战技", "q": "元素爆发"}[key]
-            base.draw_text(canvas, label, M + 70, y + 24, base.font(13), base.color(base.TEXT_SUB))
-            base.draw_text_ellipsis(canvas, talent.get("name") or "-", M + 70, y + 49, width - M * 2 - 86, base.font(17), base.color(base.TEXT_MAIN))
-            y += 70
+            y = draw_detail_card(
+                canvas,
+                y,
+                icons.get(f"talent-{key}"),
+                key.upper(),
+                label,
+                talent.get("name") or "-",
+                talent.get("desc"),
+            )
 
         if passives:
             y = _section_title(canvas, "固有天赋", y + 2)
             for index, item in enumerate(passives):
                 if not item:
                     continue
-                base.draw_rounded(canvas, M, y, width - M * 2, 62, 10, base.color("#68000000"))
-                draw_icon(canvas, icons.get(f"passive-{index}"), y, item.get("name") or "天赋")
-                base.draw_text_ellipsis(canvas, item.get("name") or "-", M + 70, y + 38, width - M * 2 - 86, base.font(16), base.color(base.TEXT_MAIN))
-                y += 70
+                y = draw_detail_card(
+                    canvas,
+                    y,
+                    icons.get(f"passive-{index}"),
+                    item.get("name") or "天赋",
+                    f"固有天赋 {index + 1}",
+                    item.get("name") or "-",
+                    item.get("desc"),
+                )
 
         constellations = character.get("cons") or {}
         if constellations:
@@ -264,11 +294,15 @@ async def render_character_encyclopedia(character: meta.CharacterMeta) -> bytes:
                 item = constellations.get(number) or {}
                 if not item:
                     continue
-                base.draw_rounded(canvas, M, y, width - M * 2, 62, 8, base.color("#58000000"))
-                draw_icon(canvas, icons.get(f"cons-{number}"), y, number)
-                base.draw_text(canvas, f"{number}命", M + 70, y + 24, base.font(13), base.color(base.NUM_GOLD))
-                base.draw_text_ellipsis(canvas, item.get("name") or "-", M + 70, y + 49, width - M * 2 - 86, base.font(15), base.color(base.TEXT_MAIN))
-                y += 70
+                y = draw_detail_card(
+                    canvas,
+                    y,
+                    icons.get(f"cons-{number}"),
+                    number,
+                    f"{number}命",
+                    item.get("name") or "-",
+                    item.get("desc"),
+                )
         return int(y + M)
 
     return base.render_card(W, builder)
