@@ -1,4 +1,5 @@
 """pytest 全局配置：让 nonebug 使用无第三方依赖的 none 驱动初始化 nonebot"""
+
 import pytest
 from nonebug import NONEBOT_INIT_KWARGS
 
@@ -13,8 +14,10 @@ def official_pools():
     import json
     from pathlib import Path
 
-    return {g: json.loads((Path(__file__).parent / "fixtures" / "sim_pools" / f"{g}.json").read_text())
-            for g in ("gs", "sr", "zzz")}
+    return {
+        g: json.loads((Path(__file__).parent / "fixtures" / "sim_pools" / f"{g}.json").read_text())
+        for g in ("gs", "sr", "zzz")
+    }
 
 
 @pytest.fixture
@@ -27,13 +30,14 @@ def sim_data(tmp_path, monkeypatch, official_pools, request):
     monkeypatch.setattr(getattr(request.module, "store", store), "_data_dir", lambda: tmp_path)
     snapshots = {}
     for game, data in official_pools.items():
-        pools = [sim_pools.parse_pool(game, row, data["details"][row["gacha_id"]])
-                 for row in data["list"]["data"]["list"]]
+        pools = [
+            sim_pools.parse_pool(game, row, data["details"][row["gacha_id"]]) for row in data["list"]["data"]["list"]
+        ]
         pools.sort(key=lambda p: p["group"].startswith("collab"))
         for pool in pools:
             # 模拟器测试固定有效区间，解析/真实日期过滤在数据层测试覆盖。
             pool.update(start=0, end=4102444800)
-        snapshot = {"schema": 1, "fetchedAt": 1, "pools": pools}
+        snapshot = {"schema": sim_pools.SNAPSHOT_SCHEMA, "fetchedAt": 1, "pools": pools}
         store.save_json(sim_pools.cache_path(game), snapshot)
         snapshots[game] = snapshot
     return snapshots
