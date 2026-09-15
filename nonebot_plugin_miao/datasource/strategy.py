@@ -2,6 +2,7 @@
 
 行为参考 Yunzai-genshin 的 strategy 模块，网络与文件操作改为异步实现。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -121,8 +122,8 @@ def cache_path(role_name: str, source: int, game: str = "gs") -> Path:
     """生成跨平台安全的攻略图片缓存路径。"""
     _check_game(game)
     safe_name = _INVALID_FILENAME.sub("_", role_name).strip(". ") or "unknown"
-    # 原神沿用旧目录；星铁与绝区零升级缓存版本，自动淘汰 0.1.12 错存的合集封面。
-    base = _cache_root() if game == "gs" else _cache_root() / "guide-v2" / game
+    # 三游戏统一换缓存版本，避免旧的合集封面、多人总览和正文小图继续被返回。
+    base = _cache_root() / "guide-v4" / game
     return base / str(source) / f"{safe_name}.jpg"
 
 
@@ -225,26 +226,44 @@ def _image_size(image: dict[str, Any]) -> int:
             return 0
 
 
-def _largest_image_url(images: list[dict[str, Any]]) -> str | None:
-    valid = [image for image in images if isinstance(image, dict) and image.get("url")]
-    if not valid:
-        return None
-    return str(max(valid, key=_image_size)["url"])
-
-
 def _source_four_image_url(content: str, role_name: str, images: list[dict[str, Any]]) -> str | None:
-    """OH是姜姜呀合集在正文中标记角色对应图片，按 image_id 精确取图。"""
-    position = content.find(role_name)
-    if position < 0:
-        return None
-    fragment = content[position:]
-    match = re.search(r'image\\?"\s*:\s*\\?"([^"\\]+)', fragment)
-    if not match:
-        return None
-    image_id = match.group(1)
-    for image in images:
-        if isinstance(image, dict) and str(image.get("image_id") or "") == image_id and image.get("url"):
-            return str(image["url"])
+    """按正文角色小节和折叠标题关联图片，避免前言提及多个角色时串图。"""
+    by_id = {
+        str(image.get("image_id")): str(image["url"])
+        for image in images
+        if isinstance(image, dict) and image.get("image_id") and image.get("url")
+    }
+    text_since_image = ""
+    for operation in _structured_operations(content):
+        inserted = operation.get("insert")
+        if isinstance(inserted, str):
+            text_since_image += inserted
+            continue
+        if not isinstance(inserted, dict):
+            continue
+        fold = inserted.get("fold")
+        if isinstance(fold, dict):
+            title = "".join(
+                part["insert"]
+                for part in _structured_operations(str(fold.get("title") or ""))
+                if isinstance(part.get("insert"), str)
+            )
+            if _role_in_text(role_name, title):
+                for part in _structured_operations(str(fold.get("content") or "")):
+                    image = part.get("insert")
+                    if isinstance(image, dict):
+                        url = by_id.get(str(image.get("image") or ""))
+                        if url:
+                            return url
+        image_id = inserted.get("image")
+        if image_id:
+            headings = re.findall(r"【([^】]+)】", text_since_image)
+            label = headings[-1] if headings else text_since_image[-120:]
+            if _role_in_text(role_name, label):
+                url = by_id.get(str(image_id))
+                if url:
+                    return url
+            text_since_image = ""
     return None
 
 
@@ -262,6 +281,89 @@ def _role_search_keys(role_name: str) -> tuple[str, ...]:
     return tuple(key for key in keys if key)
 
 
+def _role_in_text(role_name: str, text: str) -> bool:
+    """匹配角色名，同时排除“大黑塔”“千冶·刃”等不同形态的误命中。"""
+    enhanced = _normalized_text(role_name).endswith("pro")
+    for key in _role_search_keys(role_name):
+        pattern = r"[\W_]*".join(map(re.escape, key))
+        for match in re.finditer(pattern, text, flags=re.IGNORECASE):
+            before = text[: match.start()]
+            after = text[match.end() :]
+            if not enhanced and before.endswith("大"):
+                continue
+            if not enhanced and re.search(r"[\u4e00-\u9fff]+[·•]$", before):
+                continue
+            suffix = re.match(r"[·•]([\u4e00-\u9fff]+)", after)
+            if (
+                not enhanced
+                and suffix
+                and not suffix.group(1).startswith(
+                    ("攻略", "角色", "合集", "培养", "配队", "配装", "机制", "养成", "一图流", "图鉴", "指南")
+                )
+            ):
+                continue
+            if not enhanced and re.match(r"LV[\W_]*\d+", after, flags=re.IGNORECASE):
+                continue
+            return True
+    return False
+
+
+def _is_collection_overview(subject: str) -> bool:
+    """多人总览及合集封面不能作为单个角色攻略。"""
+    if any(marker in subject for marker in ("合集", "全角色", "卡池全攻略", "、", "✿")):
+        return True
+    guide_sections = (
+        "武器",
+        "圣遗物",
+        "天赋",
+        "命座",
+        "配队",
+        "光锥",
+        "遗器",
+        "星魂",
+        "技能",
+        "机制",
+        "养成",
+        "培养",
+        "配装",
+        "驱动",
+        "音擎",
+        "面板",
+        "加点",
+        "手法",
+        "连招",
+        "打法",
+        "装备",
+        "攻略",
+        "一图流",
+        "精通",
+        "精血",
+        "攻击",
+        "生命",
+        "防御",
+        "暴击",
+        "充能",
+        "速度",
+        "血量",
+    )
+    for separator in ("/",):
+        if separator in subject:
+            second = subject.split(separator, 2)[1].strip()
+            if second and len(second) <= 12 and not second.startswith(guide_sections):
+                return True
+    return bool(re.search(r"(?<![A-Za-z])[A-Za-z]{3,}\s*[丨&＆/]\s*[A-Za-z]{3,}(?![A-Za-z])", subject))
+
+
+def _is_role_guide(subject: str) -> bool:
+    """排除误区、抽取建议和纯前瞻等非角色培养攻略。"""
+    if _is_collection_overview(subject):
+        return False
+    one_page = any(marker in subject for marker in ("一图流", "一图总结", "一图看懂"))
+    if not one_page and any(marker in subject for marker in ("误区", "抽取建议", "材料统计", "前瞻", "测评", "对比")):
+        return False
+    return one_page or any(marker in subject for marker in ("攻略", "图鉴", "配队", "养成", "培养"))
+
+
 def _structured_operations(content: str) -> list[dict[str, Any]]:
     """解析米游社富文本操作列表，异常内容按空列表处理。"""
     try:
@@ -273,10 +375,24 @@ def _structured_operations(content: str) -> list[dict[str, Any]]:
     return [operation for operation in operations if isinstance(operation, dict)]
 
 
-def find_strategy_article_ids(role_name: str, payloads: list[dict[str, Any]]) -> list[int]:
+def _guide_link_score(title: str) -> int:
+    """合集链接优先选择角色一图流，降低对比、复刻推荐和目录帖的优先级。"""
+    version = re.search(r"\bV(\d+(?:\.\d+)?)", title, flags=re.IGNORECASE)
+    version_score = int(float(version.group(1)) * 2) if version else 0
+    return (
+        8 * any(marker in title for marker in ("一图流", "一图看懂"))
+        + int("全方位" in title)
+        + int(any(marker in title for marker in ("培养", "养成")))
+        + version_score
+        - 8 * int("对比" in title)
+        - 4 * int("抽取建议" in title)
+        - 10 * int("合集" in title)
+    )
+
+
+def find_strategy_article_ids(role_name: str, payloads: list[dict[str, Any]], game: str | None = None) -> list[int]:
     """从角色合集里提取对应攻略正文链接，并以合集帖自身作为最后回退。"""
-    search_keys = _role_search_keys(role_name)
-    linked_ids: list[int] = []
+    linked: list[tuple[int, int, int]] = []
     own_ids: list[int] = []
     for payload in payloads:
         posts = ((payload.get("data") or {}).get("posts") or []) if isinstance(payload, dict) else []
@@ -286,24 +402,42 @@ def find_strategy_article_ids(role_name: str, payloads: list[dict[str, Any]]) ->
             post = item.get("post") or {}
             if not isinstance(post, dict):
                 continue
-            subject = _normalized_text(str(post.get("subject") or ""))
-            if not any(key in subject for key in search_keys):
+            subject = str(post.get("subject") or "")
+            if not _role_in_text(role_name, subject):
                 continue
             for operation in _structured_operations(str(post.get("structured_content") or "")):
                 inserted = operation.get("insert")
                 attributes = operation.get("attributes") or {}
                 if not isinstance(inserted, str) or not isinstance(attributes, dict):
                     continue
-                if not any(key in _normalized_text(inserted) for key in search_keys):
+                if not _role_in_text(role_name, inserted):
                     continue
-                match = re.search(r"/article/(\d+)", str(attributes.get("link") or ""))
+                link = str(attributes.get("link") or "")
+                if game and re.search(r"/(gs|sr|zzz)/article/", link) and f"/{game}/article/" not in link:
+                    continue
+                match = re.search(r"/article/(\d+)", link)
                 if match:
-                    linked_ids.append(int(match.group(1)))
-            try:
-                own_ids.append(int(post.get("post_id")))
-            except (TypeError, ValueError):
-                pass
-    return list(dict.fromkeys((*linked_ids, *own_ids)))
+                    linked.append((-_guide_link_score(inserted), len(linked), int(match.group(1))))
+            if not _is_collection_overview(subject):
+                try:
+                    own_ids.append(int(post.get("post_id")))
+                except (TypeError, ValueError):
+                    pass
+    ranked_ids = (article_id for _, _, article_id in sorted(linked))
+    return list(dict.fromkeys((*ranked_ids, *own_ids)))
+
+
+def _guide_image_rank(image: dict[str, Any]) -> tuple[int, int, int]:
+    """长图优先；正常图片按像素面积排序，仅缺尺寸时才参考文件字节数。"""
+    try:
+        width = int(image.get("width") or 0)
+        height = int(image.get("height") or 0)
+    except (TypeError, ValueError):
+        width = height = 0
+    area = width * height
+    long_guide = width >= 800 and height >= 3000 and height >= width * 2
+    portrait_guide = width >= 800 and height >= 1800 and height >= width * 1.25
+    return int(long_guide), int(portrait_guide), area or _image_size(image)
 
 
 def find_post_guide_image_url(payload: dict[str, Any]) -> str | None:
@@ -328,7 +462,7 @@ def find_post_guide_image_url(payload: dict[str, Any]) -> str | None:
         candidates.append(image)
     if not candidates:
         return None
-    return str(max(candidates, key=_image_size)["url"])
+    return str(max(candidates, key=_guide_image_rank)["url"])
 
 
 def find_strategy_image_url(
@@ -341,7 +475,6 @@ def find_strategy_image_url(
     _check_game(game)
     if game != "gs":
         return None
-    search_keys = _role_search_keys(role_name)
     for payload in payloads:
         posts = ((payload.get("data") or {}).get("posts") or []) if isinstance(payload, dict) else []
         for item in posts:
@@ -354,15 +487,16 @@ def find_strategy_image_url(
             subject = str(post.get("subject") or "")
             content = str(post.get("structured_content") or "")
 
-            if game == "gs" and source == 4 and role_name in content:
+            if source == 4:
                 url = _source_four_image_url(content, role_name, images)
                 if url:
                     return url
-            normalized_subject = _normalized_text(subject)
-            if any(key in normalized_subject for key in search_keys):
-                url = _largest_image_url(images)
-                if url:
-                    return url
+            if source == 4 or not _role_in_text(role_name, subject) or not _is_role_guide(subject):
+                continue
+            valid = [image for image in images if isinstance(image, dict) and image.get("url")]
+            if valid:
+                image = max(valid, key=_guide_image_rank)
+                return str(image["url"])
     return None
 
 
@@ -395,10 +529,15 @@ async def _download_image(client: httpx.AsyncClient, url: str) -> bytes:
 async def _fetch_remote(role_name: str, source: int, game: str, client: httpx.AsyncClient) -> bytes | None:
     payloads = await _fetch_payloads(client, source, game)
     if game != "gs":
-        article_ids = find_strategy_article_ids(role_name, payloads)
+        article_ids = find_strategy_article_ids(role_name, payloads, game)
         for article_id in article_ids:
             try:
                 post_payload = await _fetch_post(client, article_id, game)
+                wrapper = (post_payload.get("data") or {}).get("post") or {}
+                article = wrapper.get("post") or wrapper
+                title = str(article.get("subject") or "") if isinstance(article, dict) else ""
+                if not title or not _role_in_text(role_name, title) or not _is_role_guide(title):
+                    continue
                 image_url = find_post_guide_image_url(post_payload)
                 if image_url:
                     return await _download_image(client, image_url)
