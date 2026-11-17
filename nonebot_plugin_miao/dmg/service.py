@@ -194,9 +194,12 @@ def calc_dmg(avatar: dict[str, Any], game: str, idx: int | None = None) -> dict[
     # 原版 elemName 只查 gs 元素映射（sr 元素靠中文别名恰好命中）
     element = elem_name(avatar.get("elem") or char.get("elem") or "", "gs")
     pieces = resolve_artis(avatar, game)
+    # 私服数据可能超过等级上限；伤害表只到 100（原神）/80（星铁），超出时按上限计算
+    level = int(avatar.get("level") or 90)
+    level = min(max(level, 1), 100 if game == "gs" else 80)
     payload = {
         "game": game,
-        "level": int(avatar.get("level") or 90),
+        "level": level,
         "cons": int(avatar.get("cons") or 0),
         "sp": char.get("sp") if game == "sr" else None,
         "uid": avatar.get("uid") or "",

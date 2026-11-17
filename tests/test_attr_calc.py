@@ -250,3 +250,39 @@ def test_char_weight_emblem4():
     ret = get_char_weight("优菈", {"cpct": 50, "cdmg": 100}, "gs", abbrs=["绝缘4", "绝缘之旗印4"])
     assert ret["attrWeight"]["recharge"] == 75
     assert "绝缘4" in ret["title"]
+
+
+# ---------------------------------------------------------------------------
+# 私服 / 异常等级：等级超过 90 时按最高段计算，不抛 IndexError
+# ---------------------------------------------------------------------------
+
+
+def test_char_attr_level_above_90(gs_avatars):
+    avatar = gs_avatars["10000051"]  # 优菈
+    lv90 = calc_attr({**avatar, "level": 90}, "gs")
+    lv95 = calc_attr({**avatar, "level": 95}, "gs")
+    lv100 = calc_attr({**avatar, "level": 100}, "gs")
+    lv120 = calc_attr({**avatar, "level": 120}, "gs")
+    assert lv90["hpBase"] == pytest.approx(13226)
+    assert lv95["hpBase"] == pytest.approx(13696)
+    assert lv100["hpBase"] == pytest.approx(14166)
+    # 超出 100 级时夹到最高等级，不能继续外推
+    assert lv120["hpBase"] == pytest.approx(lv100["hpBase"])
+    mark = calc_mark({**avatar, "level": 100}, lv100, "gs")
+    assert mark["mark"] > 0
+
+
+def test_weapon_level_above_90(gs_avatars):
+    avatar = gs_avatars["10000051"]
+    weapon90 = {**avatar["weapon"], "level": 90}
+    weapon100 = {**avatar["weapon"], "level": 100}
+    attr90 = calc_attr({**avatar, "weapon": weapon90}, "gs")
+    attr100 = calc_attr({**avatar, "weapon": weapon100}, "gs")
+    assert attr100["atkBase"] == pytest.approx(attr90["atkBase"])
+
+
+def test_sr_attr_level_above_80(sr_avatars):
+    avatar = sr_avatars["2006"]  # 银狼Pro
+    lv80 = calc_attr({**avatar, "level": 80}, "sr")
+    lv90 = calc_attr({**avatar, "level": 90}, "sr")
+    assert lv90["hpBase"] == pytest.approx(lv80["hpBase"])

@@ -267,6 +267,7 @@ def _calc_gs_weapon(wm: dict[str, Any], level: int, promote: int) -> tuple[float
     if not atk:
         return None
     steps = [1, 20, 40, 50, 60, 70, 80, 90]
+    level = min(max(level, 1), steps[-1])
     lv_left, lv_right = 1, 20
     found = False
     for i in range(len(steps) - 1):
@@ -300,6 +301,7 @@ def _calc_sr_weapon(wm: dict[str, Any], level: int, promote: int) -> dict[str, f
     attr = wm.get("attr") or {}
     if not attr:
         return {}
+    level = min(max(level, 1), 80)
     keys = sorted(attr, key=lambda k: int(k))
     cfg = attr.get(str(promote)) or attr.get(keys[-1])
     ret = {k: float(v) for k, v in (cfg.get("attrs") or {}).items()}

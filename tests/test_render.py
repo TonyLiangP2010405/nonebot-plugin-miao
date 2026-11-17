@@ -241,3 +241,13 @@ async def test_artis_list_card(no_images):
     image = skia.Image.MakeFromEncoded(png)
     assert image.height() > 1000
     assert image.width() == 960
+
+
+async def test_profile_detail_level_100(no_images):
+    """私服 100 级角色也要能正常出详情卡。"""
+    avatar = {**_avatars("gs")["10000051"], "level": 100}
+    attr = calc_attr(avatar, "gs")
+    mark = calc_mark(avatar, attr, "gs")
+    dmg = calc_dmg(avatar, "gs")
+    png = await profile_detail.render_profile_detail(avatar, attr, mark, "gs", dmg, uid="800055548")
+    _check_png(png)

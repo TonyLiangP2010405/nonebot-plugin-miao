@@ -250,3 +250,19 @@ def test_calc_dmg_unknown_character():
 def test_calc_dmg_character_without_rule():
     with pytest.raises(DamageError, match="乱破 暂无伤害计算规则"):
         calc_dmg({"name": "乱破"}, "sr")
+
+
+def test_gs_level_100_damage_rows_are_numeric(gs_avatars):
+    """私服角色等级 100：伤害表按 100 级计算，条目不能出现 NaN。"""
+    avatar = {**gs_avatars["10000051"], "level": 100}
+    result = calc_dmg(avatar, "gs")
+    assert result["dmgData"]
+    assert all(row.get("avg") is not None for row in result["dmgData"])
+
+
+def test_sr_level_above_80_is_clamped(sr_avatars):
+    """星铁等级超过 80 时按 80 级伤害表计算，击破等条目不能变成 NaN。"""
+    avatar = {**sr_avatars["2006"], "level": 90}
+    result = calc_dmg(avatar, "sr")
+    assert result["dmgData"]
+    assert all(row.get("avg") is not None and row.get("avg") > 0 for row in result["dmgData"])

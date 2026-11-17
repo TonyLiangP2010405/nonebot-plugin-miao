@@ -169,7 +169,11 @@ def calc_promote(lv: int, game: str = "gs") -> int:
 
 
 def _lv_segment(level: int, promote: int, lv_step: list[int]) -> tuple[int, int]:
-    """移植 Attr.setCharAttr 的 lvLeft/lvRight 查找（promote 段内）"""
+    """移植 Attr.setCharAttr 的 lvLeft/lvRight 查找（promote 段内）
+
+    私服 / 异常数据里突破数可能与等级不一致（如等级 95 但突破仍是 6），
+    或等级超出常规上限（如 120）。查不到时按等级回退，超出上限则夹到最高段。
+    """
     lv_left = lv_right = 0
     curr = 0
     for idx in range(len(lv_step) - 1):
@@ -178,7 +182,12 @@ def _lv_segment(level: int, promote: int, lv_step: list[int]) -> tuple[int, int]
                 lv_left, lv_right = lv_step[idx], lv_step[idx + 1]
                 break
         curr += 1
-    return lv_left, lv_right
+    if lv_left:
+        return lv_left, lv_right
+    for idx in range(len(lv_step) - 1):
+        if lv_step[idx] <= level <= lv_step[idx + 1]:
+            return lv_step[idx], lv_step[idx + 1]
+    return lv_step[-2], lv_step[-1]
 
 
 # ---------------------------------------------------------------------------
@@ -194,6 +203,8 @@ _CHAR_SELF_ATTRS = {
 
 def _set_char_attr(ad: AttrData, avatar: dict[str, Any], char: meta.CharacterMeta, game: str) -> None:
     level = int(avatar.get("level") or 1)
+    # 私服数据可能超过面板等级上限；超出时按最高等级计算，展示仍用原始等级
+    level = min(max(level, 1), _LV_STEP[game][-1])
     promote = int(avatar.get("promote") or 0)
     if game == "sr":
         # Character.getLvAttr：attrs + grow*(level-1)
@@ -285,14 +296,21 @@ def _weapon_calc_attr_gs(w_meta: dict[str, Any], level: int, promote: int) -> di
     if not attr:
         return None
     lv_step = [1, 20, 40, 50, 60, 70, 80, 90]
+    level = min(max(level, 1), lv_step[-1])
     lv_left, lv_right = 1, 20
+    found = False
     curr = 0
     for idx in range(len(lv_step) - 1):
         if promote == -1 or curr == promote:
             if lv_step[idx] <= level <= lv_step[idx + 1]:
-                lv_left, lv_right = lv_step[idx], lv_step[idx + 1]
+                lv_left, lv_right, found = lv_step[idx], lv_step[idx + 1], True
                 break
         curr += 1
+    if not found:
+        for idx in range(len(lv_step) - 1):
+            if lv_step[idx] <= level <= lv_step[idx + 1]:
+                lv_left, lv_right = lv_step[idx], lv_step[idx + 1]
+                break
     w_atk = attr.get("atk") or {}
     v_left = w_atk.get(f"{lv_left}+") or w_atk.get(str(lv_left)) or 0
     v_right = w_atk.get(str(lv_right)) or 0
@@ -311,6 +329,7 @@ def _weapon_calc_attr_gs(w_meta: dict[str, Any], level: int, promote: int) -> di
 
 def _weapon_calc_attr_sr(w_meta: dict[str, Any], level: int, promote: int) -> dict[str, float] | None:
     """移植 Weapon.calcAttr 星铁分支：attr[promote].attrs + growAttr*(level-1)"""
+    level = min(max(level, 1), 80)
     meta_attr = w_meta.get("attr") or {}
     lv_attr = meta_attr.get(str(promote))
     if not lv_attr:
