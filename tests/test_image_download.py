@@ -31,7 +31,7 @@ async def test_fallback_and_retry(tmp_path, monkeypatch):
 
 
 async def test_material_images(monkeypatch):
-    from nonebot_plugin_miao.render.encyclopedia import _material_images
+    from nonebot_plugin_miao.render import encyclopedia
 
     paths = []
 
@@ -39,10 +39,44 @@ async def test_material_images(monkeypatch):
         paths.append(path)
         return None
 
+    async def no_fallback():
+        return {}
+
     monkeypatch.setattr(base, "fetch_image", fetch)
-    cards = await _material_images({"specialty": "湖光铃兰", "gem": "涤净青金"})
+    monkeypatch.setattr(encyclopedia, "_yatta_material_icon_index", no_fallback)
+    monkeypatch.setattr(encyclopedia, "_MATERIAL_IMAGE_SOURCES", {})
+    cards = await encyclopedia._material_images({"specialty": "湖光铃兰", "gem": "涤净青金"})
     assert paths == ["meta-gs/material/specialty/湖光铃兰.webp", "meta-gs/material/gem/涤净青金.webp"]
     assert [name for name, _ in cards] == ["湖光铃兰", "涤净青金"]
+
+
+async def test_material_images_use_yatta_fallback(monkeypatch):
+    from nonebot_plugin_miao.render import encyclopedia
+
+    paths = []
+    fallback_image = object()
+
+    async def fetch(path):
+        paths.append(path)
+        return fallback_image if path == "https://gi.yatta.moe/assets/UI/UI_ItemIcon_101277.png" else None
+
+    async def fallback_index():
+        return {"金蕨": "UI_ItemIcon_101277"}
+
+    monkeypatch.setattr(base, "fetch_image", fetch)
+    monkeypatch.setattr(encyclopedia, "_yatta_material_icon_index", fallback_index)
+    monkeypatch.setattr(encyclopedia, "_MATERIAL_IMAGE_SOURCES", {})
+    cards = await encyclopedia._material_images({"specialty": "金蕨", "boss": "游离者的裂甲"})
+
+    assert paths == [
+        "meta-gs/material/specialty/金蕨.webp",
+        "meta-gs/material/boss/游离者的裂甲.webp",
+        "https://gi.yatta.moe/assets/UI/UI_ItemIcon_101277.png",
+    ]
+    assert cards == [("金蕨", fallback_image), ("游离者的裂甲", None)]
+    assert encyclopedia._MATERIAL_IMAGE_SOURCES == {
+        "金蕨": "https://gi.yatta.moe/assets/UI/UI_ItemIcon_101277.png"
+    }
 
 
 async def test_character_icons_use_upstream_mapping(monkeypatch):

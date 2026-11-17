@@ -8,7 +8,9 @@ from collections import defaultdict
 from html import unescape
 from typing import Any
 
+import httpx
 import skia
+from nonebot import logger
 
 from ..core import meta
 from ..core.artis_mark import key_title
@@ -17,12 +19,56 @@ from . import base
 
 W, M = 860, 24
 
+_YATTA_MATERIAL_API = "https://gi.yatta.moe/api/v2/CHS/material"
+_YATTA_ASSET_BASE = "https://gi.yatta.moe/assets/UI"
+_YATTA_MATERIAL_ICONS: dict[str, str] | None = None
+_MATERIAL_IMAGE_SOURCES: dict[str, str] = {}
+
+
+async def _yatta_material_icon_index() -> dict[str, str]:
+    """获取 Yatta 的素材名到 UI 图标键映射，作为 miao 素材目录的补充。"""
+    global _YATTA_MATERIAL_ICONS
+    if _YATTA_MATERIAL_ICONS is not None:
+        return _YATTA_MATERIAL_ICONS
+    try:
+        async with httpx.AsyncClient(timeout=15, headers={"User-Agent": "nonebot-plugin-miao"}) as client:
+            response = await client.get(_YATTA_MATERIAL_API, follow_redirects=True)
+            response.raise_for_status()
+            items = (response.json().get("data") or {}).get("items") or {}
+        icons = {
+            str(item.get("name")): str(item.get("icon"))
+            for item in items.values()
+            if isinstance(item, dict)
+            and item.get("name")
+            and re.fullmatch(r"UI_[A-Za-z0-9_]+", str(item.get("icon") or ""))
+        }
+    except (httpx.HTTPError, TypeError, ValueError) as error:
+        logger.warning(f"[miao-render] Yatta 素材索引获取失败: {error}")
+        return {}
+    _YATTA_MATERIAL_ICONS = icons
+    return icons
+
 
 async def _material_images(materials: dict) -> list:
     entries = [(kind, str(name)) for kind, name in materials.items() if name]
-    images = await asyncio.gather(*(
-        base.fetch_image(f"meta-gs/material/{kind}/{name}.webp") for kind, name in entries
-    ))
+    primary_paths = [
+        _MATERIAL_IMAGE_SOURCES.get(name, f"meta-gs/material/{kind}/{name}.webp") for kind, name in entries
+    ]
+    images = list(await asyncio.gather(*(base.fetch_image(path) for path in primary_paths)))
+
+    missing = [index for index, image in enumerate(images) if image is None]
+    if missing:
+        icon_index = await _yatta_material_icon_index()
+        fallback_entries = [
+            (index, f"{_YATTA_ASSET_BASE}/{icon_index[entries[index][1]]}.png")
+            for index in missing
+            if entries[index][1] in icon_index
+        ]
+        fallback_images = await asyncio.gather(*(base.fetch_image(path) for _, path in fallback_entries))
+        for (index, path), image in zip(fallback_entries, fallback_images):
+            if image is not None:
+                images[index] = image
+                _MATERIAL_IMAGE_SOURCES[entries[index][1]] = path
     return [(name, image) for (_, name), image in zip(entries, images)]
 
 
