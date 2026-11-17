@@ -25,9 +25,10 @@ async def test_fallback_and_retry(tmp_path, monkeypatch):
         assert await base.fetch_image(path) is None
         available = True
         assert await base.fetch_image(path) is not None
-        assert len(requests) == 4
+        # 主镜像 + fastly + raw 三个源各试一次，然后重试一轮
+        assert len(requests) == 6
         assert await base.fetch_image(path) is not None
-        assert len(requests) == 4
+        assert len(requests) == 6
 
 
 async def test_material_images(monkeypatch):

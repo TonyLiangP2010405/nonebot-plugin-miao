@@ -146,55 +146,119 @@ def del_cookie(user_id: str | int) -> bool:
     return True
 
 
-# ---------------- 面板调用限流（data/panel_usage.json：{group_id: [时间戳]}） ----------------
+# ---------------- 面板总开关（data/panel_switch.json） ----------------
+
+_PANEL_SWITCH_FILE = "panel_switch.json"
+
+
+def get_panel_enabled_override() -> bool | None:
+    """读取面板总开关的运行时覆盖；未设置时返回 None（使用配置默认值）"""
+    data = load_json(_data_dir() / _PANEL_SWITCH_FILE, {}) or {}
+    value = data.get("value")
+    return value if isinstance(value, bool) else None
+
+
+def set_panel_enabled_override(value: bool | None) -> None:
+    """设置/清除面板总开关的运行时覆盖（None 表示恢复配置默认值）"""
+    path = _data_dir() / _PANEL_SWITCH_FILE
+    with _LOCK:
+        if value is None:
+            if path.is_file():
+                try:
+                    path.unlink()
+                except OSError:
+                    pass
+            return
+        save_json(path, {"value": bool(value)})
+
+
+# ---------------- 面板调用限流（data/panel_usage.json） ----------------
+#
+# v2 结构：{"version": 2, "groups": {group_id: {user_id: [{"t": 时间戳, "k": kind}]}}}
+# kind: draw（转盘次数）/ free（每小时免费）/ paid（好感度付费）
+# 旧版按群的纯时间戳列表会被忽略并重建。
 
 _PANEL_USAGE_FILE = "panel_usage.json"
+_PANEL_USAGE_VERSION = 2
 
 
-def _prune_panel_calls(values: Any, now: float, window: int) -> list[float]:
-    calls: list[float] = []
-    for value in values or []:
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
-            continue
-        stamp = float(value)
-        if now - stamp < window:
-            calls.append(stamp)
-    return calls
-
-
-def panel_group_used(group_id: str | int, window: int = 3600) -> int:
-    """本群在 window 秒内调用面板的次数（滑动窗口）"""
-    now = time.time()
+def _panel_usage_load() -> dict[str, Any]:
     data = load_json(_data_dir() / _PANEL_USAGE_FILE, {}) or {}
-    return len(_prune_panel_calls(data.get(str(group_id)), now, window))
+    if not isinstance(data, dict) or data.get("version") != _PANEL_USAGE_VERSION:
+        return {"version": _PANEL_USAGE_VERSION, "groups": {}}
+    if not isinstance(data.get("groups"), dict):
+        return {"version": _PANEL_USAGE_VERSION, "groups": {}}
+    return data
 
 
-def panel_group_wait(group_id: str | int, limit: int, window: int = 3600) -> int:
-    """本群还需等待多少秒才能再次调用面板（0 表示现在可用）"""
+def _panel_records(
+    data: dict[str, Any], group_id: str | int, user_id: str | int, now: float, window: int
+) -> list[dict[str, Any]]:
+    members = (data.get("groups") or {}).get(str(group_id)) or {}
+    records = members.get(str(user_id)) or []
+    ret: list[dict[str, Any]] = []
+    for rec in records:
+        if not isinstance(rec, dict):
+            continue
+        stamp = rec.get("t")
+        if isinstance(stamp, bool) or not isinstance(stamp, (int, float)):
+            continue
+        if now - float(stamp) < window:
+            ret.append({"t": float(stamp), "k": str(rec.get("k") or "free")})
+    return ret
+
+
+def panel_user_usage(group_id: str | int, user_id: str | int, window: int = 3600) -> list[dict[str, Any]]:
+    """某群某人在 window 秒内的面板调用记录（滑动窗口）"""
+    now = time.time()
+    return _panel_records(_panel_usage_load(), group_id, user_id, now, window)
+
+
+def panel_user_calls(group_id: str | int, user_id: str | int, window: int = 3600) -> int:
+    """某群某人在 window 秒内的面板调用总次数"""
+    return len(panel_user_usage(group_id, user_id, window))
+
+
+def panel_user_free_used(group_id: str | int, user_id: str | int, window: int = 3600) -> int:
+    """某群某人在 window 秒内已经用掉的免费次数"""
+    return sum(1 for rec in panel_user_usage(group_id, user_id, window) if rec["k"] == "free")
+
+
+def panel_user_wait(group_id: str | int, user_id: str | int, limit: int, window: int = 3600) -> int:
+    """本小时还需等待多少秒才能再次调用面板（0 表示现在可用）"""
     if limit <= 0:
         return 0
     now = time.time()
-    data = load_json(_data_dir() / _PANEL_USAGE_FILE, {}) or {}
-    calls = _prune_panel_calls(data.get(str(group_id)), now, window)
-    if len(calls) < limit:
+    records = panel_user_usage(group_id, user_id, window)
+    if len(records) < limit:
         return 0
-    oldest = min(calls[len(calls) - limit:])
+    oldest = min(rec["t"] for rec in records[len(records) - limit:])
     return max(0, math.ceil(window - (now - oldest)))
 
 
-def record_panel_group_call(group_id: str | int, window: int = 3600) -> None:
-    """记录一次面板调用，并顺手清理已过期的记录"""
-    group_id = str(group_id)
+def record_panel_user_call(
+    group_id: str | int, user_id: str | int, kind: str = "free", window: int = 3600
+) -> None:
+    """记录一次面板调用（draw/free/paid），并清理过期记录"""
+    group_id, user_id = str(group_id), str(user_id)
     now = time.time()
     with _LOCK:
-        data = load_json(_data_dir() / _PANEL_USAGE_FILE, {}) or {}
-        usage: dict[str, list[float]] = {}
-        for key, values in data.items():
-            calls = _prune_panel_calls(values, now, window)
-            if calls:
-                usage[str(key)] = calls
-        usage.setdefault(group_id, []).append(now)
-        save_json(_data_dir() / _PANEL_USAGE_FILE, usage)
+        data = _panel_usage_load()
+        groups: dict[str, dict[str, list[dict[str, Any]]]] = {}
+        for gid, members in (data.get("groups") or {}).items():
+            if not isinstance(members, dict):
+                continue
+            cleaned_members: dict[str, list[dict[str, Any]]] = {}
+            for uid, records in members.items():
+                if not isinstance(records, list):
+                    continue
+                kept = _panel_records(data, gid, uid, now, window)
+                if kept:
+                    cleaned_members[str(uid)] = kept
+            if cleaned_members:
+                groups[str(gid)] = cleaned_members
+        groups.setdefault(group_id, {}).setdefault(user_id, []).append({"t": now, "k": kind})
+        save_json(_data_dir() / _PANEL_USAGE_FILE, {"version": _PANEL_USAGE_VERSION, "groups": groups})
 
 
 # ---------------- 冷却（data/cd.json：{key: 到期时间戳}） ----------------

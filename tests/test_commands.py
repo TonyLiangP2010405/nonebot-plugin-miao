@@ -340,6 +340,16 @@ def test_profile_list_regex(cmds):
         assert not re.match(p.RE_LIST, text), text
 
 
+def test_profile_switch_regex(cmds):
+    p = cmds.profile
+    for text in ("/面板开关", "/面板开关 开", "/面板开关 关", "/面板开关 重置", "/面板开关 启用", "/面板开关 on"):
+        assert re.match(p.RE_PANEL_SWITCH, text), text
+    for text in ("面板开关", "/面板开关 坏", "/面板开关关", "/面板 开关"):
+        assert not re.match(p.RE_PANEL_SWITCH, text), text
+    # 不能被角色详情正则吃掉
+    assert not re.match(p.RE_DETAIL, "/面板开关")
+
+
 def test_profile_quota_regex(cmds):
     p = cmds.profile
     assert re.match(p.RE_PANEL_QUOTA, "/面板次数")
@@ -494,3 +504,11 @@ async def test_simulation_handler_single_draw_real_state(cmds, app, sim_data, mo
     assert "音擎池" in result["poolName"]
     scope = "private:12345" if private else "88888:12345"
     assert simulate.load_user(scope, "zzz")["today"]["weaponNum"] == 1
+
+
+def test_profile_error_is_business_error():
+    """展示柜为空等 ProfileError 必须回中文提示，而不是走“出错了”通用分支。"""
+    from nonebot_plugin_miao.commands import common
+    from nonebot_plugin_miao.datasource.errors import ProfileError
+
+    assert ProfileError in common._BIZ_ERRORS

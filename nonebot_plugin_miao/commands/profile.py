@@ -8,13 +8,25 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from nonebot import on_regex
-from nonebot.adapters.onebot.v11 import MessageEvent
+from nonebot import on_message, on_regex
+from nonebot.adapters.onebot.v11 import GroupMessageEvent, MessageEvent
 
 from ..core import meta
 from ..core.artis_mark import calc_mark, format_value, key_title
 from ..core.attr_calc import calc_attr, elem_name
-from ..core.panel_quota import authorize_panel_call, panel_status
+from ..core.panel_quota import (
+    authorize_panel_call,
+    clear_pending,
+    confirm_timeout,
+    has_pending,
+    is_superuser,
+    panel_enabled,
+    panel_enabled_source,
+    panel_status,
+    pop_pending,
+    register_pending,
+    set_panel_enabled,
+)
 from ..core.player import Player
 from ..datasource.errors import ProfileError
 from ..datasource.mys import update_profile_mys
@@ -22,7 +34,7 @@ from ..datasource.profile_service import update_profile
 from ..dmg import calc_dmg
 from ..render import render_artis_list, render_profile_detail, render_profile_list
 from ..render.profile_detail import dmg_row_text
-from .common import game_of, guard, resolve_uid, send_image
+from .common import ensure_panel_enabled, game_of, guard, resolve_uid, send_image
 
 _GAME_NAME = {"gs": "原神", "sr": "星铁"}
 # 部位简称（花羽沙杯冠 / 头手衣鞋球绳）
@@ -34,6 +46,7 @@ RE_MYS_UPDATE = r"^/(星铁|原神)?(米游社|mys)(更新面板|面板更新)\s
 RE_LIST = r"^/(星铁|原神)?(面板角色|角色面板|面板)(列表)?\s*(\d{9,10})?$"
 RE_ARTIS_LIST = r"^/(星铁|原神)?(圣遗物|遗器)列表\s*(\d{9,10})?$"
 RE_PANEL_QUOTA = r"^/面板次数$"
+RE_PANEL_SWITCH = r"^/面板开关(?:\s+(开|关|启用|停用|重置|on|off))?$"
 # 角色名面板：负向前瞻排除 更新面板/面板列表/圣遗物列表/米游社更新面板 等指令（另有优先级兜底）
 RE_DETAIL = (
     r"^/(?!(?:星铁|原神)?(?:(?:米游社|mys)(?:更新面板|面板更新)|全部面板更新|更新全部面板|获取游戏角色详情|"
@@ -46,8 +59,22 @@ mys_update_m = on_regex(RE_MYS_UPDATE, priority=5, block=True)
 list_m = on_regex(RE_LIST, priority=5, block=True)
 artis_list_m = on_regex(RE_ARTIS_LIST, priority=5, block=True)
 quota_m = on_regex(RE_PANEL_QUOTA, priority=5, block=True)
+switch_m = on_regex(RE_PANEL_SWITCH, priority=5, block=True)
 # 角色名面板为正则兜底，优先级低于上面三条，避免吃掉更新、列表指令
 detail_m = on_regex(RE_DETAIL, priority=10, block=True)
+
+
+async def _panel_confirm_rule(event: MessageEvent) -> bool:
+    """只拦截处于面板付费确认中的「确认 / 取消」，其余消息留给其它插件。"""
+    if not isinstance(event, GroupMessageEvent):
+        return False
+    if event.get_plaintext().strip() not in ("确认", "取消"):
+        return False
+    return has_pending(event.group_id, event.get_user_id(), confirm_timeout())
+
+
+# 轮盘/其它插件也用「确认」，所以必须挂在有 pending 的群友身上才激活
+confirm_m = on_message(priority=1, block=True, rule=_panel_confirm_rule)
 
 
 def _bind_tip(game: str) -> str:
@@ -70,6 +97,7 @@ def _avatar_line(avatar: dict[str, Any], fallback: str = "") -> str:
 @update_m.handle()
 @guard(update_m)
 async def _(event: MessageEvent):
+    await ensure_panel_enabled(update_m)
     text = event.get_plaintext()
     game = game_of(text)
     uid = resolve_uid(event, text, game)
@@ -93,6 +121,7 @@ async def _(event: MessageEvent):
 @mys_update_m.handle()
 @guard(mys_update_m)
 async def _(event: MessageEvent):
+    await ensure_panel_enabled(mys_update_m)
     text = event.get_plaintext()
     game = game_of(text)
     uid = resolve_uid(event, text, game)
@@ -121,6 +150,7 @@ async def _(event: MessageEvent):
 @list_m.handle()
 @guard(list_m)
 async def _(event: MessageEvent):
+    await ensure_panel_enabled(list_m)
     text = event.get_plaintext()
     game = game_of(text)
     uid = resolve_uid(event, text, game)
@@ -141,7 +171,33 @@ async def _(event: MessageEvent):
 @quota_m.handle()
 @guard(quota_m)
 async def _(event: MessageEvent):
+    await ensure_panel_enabled(quota_m)
     await quota_m.finish(await panel_status(event))
+
+
+@switch_m.handle()
+@guard(switch_m)
+async def _(event: MessageEvent):
+    if not is_superuser(event.get_user_id()):
+        await switch_m.finish("仅 SUPERUSER 可以切换面板开关")
+    m = re.match(RE_PANEL_SWITCH, event.get_plaintext())
+    action = ((m.group(1) if m else "") or "").lower()
+    if not action:
+        state = "开启" if panel_enabled() else "关闭"
+        await switch_m.finish(
+            f"面板功能当前：{state}（来源：{panel_enabled_source()}）\n"
+            "用法：/面板开关 开｜/面板开关 关｜/面板开关 重置（恢复配置默认值）"
+        )
+    if action in ("开", "启用", "on"):
+        set_panel_enabled(True)
+        await switch_m.finish("面板功能已开启")
+    if action in ("关", "停用", "off"):
+        cancelled = set_panel_enabled(False)
+        tip = f"，已取消 {cancelled} 个待确认请求" if cancelled else ""
+        await switch_m.finish(f"面板功能已关闭{tip}，发送 /面板开关 开 可恢复")
+    set_panel_enabled(None)
+    state = "开启" if panel_enabled() else "关闭"
+    await switch_m.finish(f"已恢复配置默认值，当前面板：{state}")
 
 
 # ---------------------------------------------------------------------------
@@ -216,6 +272,7 @@ def _fmt_dmg_text(dmg: dict[str, Any]) -> str:
 @detail_m.handle()
 @guard(detail_m)
 async def _(event: MessageEvent):
+    await ensure_panel_enabled(detail_m)
     text = event.get_plaintext()
     m = re.match(RE_DETAIL, text)
     if not m:
@@ -232,18 +289,64 @@ async def _(event: MessageEvent):
     avatar = player.get_avatar(name)
     if not avatar:
         await detail_m.finish(f"本地没有 {char.name} 的面板数据，{_update_tip(game)}")
+    detail_type = m.group(2)
+    show_dmg = detail_type.startswith("伤害")
+    tail = detail_type[2:] if show_dmg else ""
+    dmg_idx = int(tail) if tail else None
+
     check = await authorize_panel_call(event)
+    if check.needs_confirm:
+        register_pending(
+            event,
+            avatar=avatar,
+            game=game,
+            uid=player.uid,
+            show_dmg=show_dmg,
+            dmg_idx=dmg_idx,
+        )
+        await detail_m.finish(check.message)
     if not check.allowed:
         await detail_m.finish(check.message)
-    attr = calc_attr(avatar, game)
-    detail_type = m.group(2)
-    if detail_type.startswith("伤害"):
-        tail = detail_type[2:]
-        dmg = calc_dmg(avatar, game, int(tail) if tail else None)
-    mark = calc_mark(avatar, attr, game)
-    dmg_data = dmg if detail_type.startswith("伤害") else None
-    await send_image(detail_m, await render_profile_detail(avatar, attr, mark, game, dmg_data, uid=player.uid))
+    clear_pending(event.group_id, event.get_user_id())
+    await _send_detail_card(detail_m, avatar, game, player.uid, show_dmg, dmg_idx)
     await detail_m.finish()
+
+
+async def _send_detail_card(matcher, avatar: dict, game: str, uid: str, show_dmg: bool, dmg_idx: int | None) -> None:
+    """计算属性/评分/伤害并发送详情卡。"""
+    attr = calc_attr(avatar, game)
+    dmg = calc_dmg(avatar, game, dmg_idx) if show_dmg else None
+    mark = calc_mark(avatar, attr, game)
+    await send_image(matcher, await render_profile_detail(avatar, attr, mark, game, dmg, uid=uid))
+
+
+@confirm_m.handle()
+@guard(confirm_m)
+async def _(event: MessageEvent):
+    await ensure_panel_enabled(confirm_m)
+    # guard 的 functools.wraps 会让 NoneBot 用 common.py 的 globals 解析注解，
+    # 这里统一用 MessageEvent，运行时再确认是群消息。
+    if not isinstance(event, GroupMessageEvent):
+        await confirm_m.finish()
+    group_id = str(event.group_id)
+    timeout = confirm_timeout()
+    pending = pop_pending(group_id, event.get_user_id(), timeout)
+    if pending is None:
+        await confirm_m.finish()
+    if event.get_plaintext().strip() == "取消":
+        await confirm_m.finish("已取消本次面板查看。")
+    check = await authorize_panel_call(event, confirmed=True)
+    if not check.allowed:
+        await confirm_m.finish(check.message)
+    await _send_detail_card(
+        confirm_m,
+        pending.avatar,
+        pending.game,
+        pending.uid,
+        pending.show_dmg,
+        pending.dmg_idx,
+    )
+    await confirm_m.finish()
 
 
 # ---------------------------------------------------------------------------
@@ -254,6 +357,7 @@ async def _(event: MessageEvent):
 @artis_list_m.handle()
 @guard(artis_list_m)
 async def _(event: MessageEvent):
+    await ensure_panel_enabled(artis_list_m)
     text = event.get_plaintext()
     game = game_of(text)
     uid = resolve_uid(event, text, game)

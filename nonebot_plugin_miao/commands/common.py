@@ -14,13 +14,15 @@ from nonebot.exception import MatcherException
 from nonebot.matcher import Matcher
 
 from ..core import store
+from ..core.panel_quota import panel_enabled
+from ..datasource.errors import ProfileError
 from ..datasource.gacha_log import GachaLogError
 
 # 消息文本中的 UID：9-10 位数字，18 开头允许 11 位（与 store._UID_RE 同规则，但用于 search）
 _UID_RE = re.compile(r"(18|[1-9])\d{8,9}")
 
 # 业务异常：直接回中文提示
-_BIZ_ERRORS = (GachaLogError, ValueError)
+_BIZ_ERRORS = (GachaLogError, ProfileError, ValueError)
 
 
 async def _delete_tmp_after(path: str, delay: int = 30) -> None:
@@ -31,6 +33,13 @@ async def _delete_tmp_after(path: str, delay: int = 30) -> None:
             os.unlink(path)
     except OSError as e:
         logger.warning(f"[miao] 删除临时文件失败: {path} - {e}")
+
+
+async def ensure_panel_enabled(matcher: type[Matcher]) -> None:
+    """面板总开关关闭时直接结束当前指令。"""
+    if panel_enabled():
+        return
+    await matcher.finish("面板功能已关闭，SUPERUSER 发送 /面板开关 开 可恢复")
 
 
 async def send_image(matcher: type[Matcher], png_bytes: bytes) -> None:

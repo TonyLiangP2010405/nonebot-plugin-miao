@@ -17,11 +17,17 @@ class Config(BaseModel):
     miao_gacha_pool_interval: int = Field(default=60, ge=1)
     # 每日自动更新面板资源（凌晨 4:20，失败仅记日志）
     miao_res_auto_update: bool = True
+    # 面板功能总开关（SUPERUSER 也可用 /面板开关 运行时切换）
+    miao_panel_enabled: bool = True
     # 面板查看限流（与 nonebot-plugin-mantou-affection 联动）
-    # 每个群每小时最多查看几次角色面板（SUPERUSER 不受限）
-    miao_panel_group_hourly_limit: int = Field(default=5, ge=0)
-    # 面板次数用完后，每次查看消耗的好感度（0 表示不允许用好感度抵扣）
+    # 每人每小时免费查看次数
+    miao_panel_free_per_hour: int = Field(default=2, ge=0)
+    # 每人每小时最多查看次数（含免费、转盘次数和付费次数）
+    miao_panel_user_hourly_limit: int = Field(default=4, ge=0)
+    # 免费次数用完后，每次查看消耗的好感度（0 表示不允许用好感度抵扣）
     miao_panel_affection_cost: int = Field(default=10, ge=0)
+    # 付费查看的确认有效期（秒）
+    miao_panel_confirm_timeout: int = Field(default=30, ge=5, le=300)
     # 各游戏角色攻略图默认来源（可用“设置默认攻略”类指令持久化覆盖）
     miao_strategy_default_source: int = 1
     miao_sr_strategy_default_source: int = 1

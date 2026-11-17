@@ -8,6 +8,7 @@
 """
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import math
 import re
@@ -302,6 +303,13 @@ def draw_stars(canvas: skia.Canvas, cx: float, cy: float, count: int, r: float =
 
 _IMG_MEM: dict[str, skia.Image | None] = {}
 _HTTP_CLIENT: httpx.AsyncClient | None = None
+# 并发上限：面板一次要取十几张图，全部同时打 jsDelivr 容易被限流
+_IMG_SEM = asyncio.Semaphore(6)
+# 主镜像之外的兜底源（顺序尝试）
+_RES_FALLBACKS = (
+    "https://fastly.jsdelivr.net/gh/yoimiya-kokomi/miao-plugin@master/resources",
+    "https://raw.githubusercontent.com/yoimiya-kokomi/miao-plugin/master/resources",
+)
 
 
 def get_local_image(rel: str) -> skia.Image | None:
@@ -360,7 +368,10 @@ def _decode(data: bytes) -> skia.Image | None:
 async def _client() -> httpx.AsyncClient:
     global _HTTP_CLIENT
     if _HTTP_CLIENT is None or _HTTP_CLIENT.is_closed:
-        _HTTP_CLIENT = httpx.AsyncClient(timeout=15, headers={"User-Agent": "nonebot-plugin-miao"})
+        _HTTP_CLIENT = httpx.AsyncClient(
+            timeout=10,
+            headers={"User-Agent": "nonebot-plugin-miao", "Accept": "image/webp,image/*,*/*"},
+        )
     return _HTTP_CLIENT
 
 
@@ -385,26 +396,27 @@ async def fetch_image(rel_path: str) -> skia.Image | None:
             logger.debug(f"[miao-render] 图片缓存目录不可用: {e}")
             cache_file = None
         if img is None:
-            urls = [rel] if rel.startswith("https://") else list(dict.fromkeys([
-                f"{_mirror()}/{rel}",
-                f"https://raw.githubusercontent.com/yoimiya-kokomi/miao-plugin/master/resources/{rel}",
-            ]))
-            for url in urls:
-                try:
-                    resp = await (await _client()).get(url, follow_redirects=True)
-                    if resp.status_code == 200 and resp.content:
-                        img = _decode(resp.content)
-                    if img is not None:
-                        if cache_file is not None:
-                            try:
-                                cache_file.parent.mkdir(parents=True, exist_ok=True)
-                                cache_file.write_bytes(resp.content)
-                            except OSError as e:
-                                logger.debug(f"[miao-render] 图片缓存写入失败: {e}")
-                        break
-                    logger.warning(f"[miao-render] 图片不可用 HTTP {resp.status_code}: {url}")
-                except Exception as e:
-                    logger.warning(f"[miao-render] 图片获取失败 {url}: {e}")
+            if rel.startswith("https://"):
+                urls = [rel]
+            else:
+                urls = list(dict.fromkeys([f"{_mirror()}/{rel}", *(f"{m}/{rel}" for m in _RES_FALLBACKS)]))
+            async with _IMG_SEM:
+                for url in urls:
+                    try:
+                        resp = await (await _client()).get(url, follow_redirects=True)
+                        if resp.status_code == 200 and resp.content:
+                            img = _decode(resp.content)
+                        if img is not None:
+                            if cache_file is not None:
+                                try:
+                                    cache_file.parent.mkdir(parents=True, exist_ok=True)
+                                    cache_file.write_bytes(resp.content)
+                                except OSError as e:
+                                    logger.debug(f"[miao-render] 图片缓存写入失败: {e}")
+                            break
+                        logger.warning(f"[miao-render] 图片不可用 HTTP {resp.status_code}: {url}")
+                    except Exception as e:
+                        logger.warning(f"[miao-render] 图片获取失败 {url}（{type(e).__name__}: {e}）")
     if img is not None:
         _IMG_MEM[rel] = img
     return img
