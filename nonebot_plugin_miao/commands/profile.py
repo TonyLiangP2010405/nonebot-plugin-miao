@@ -20,6 +20,7 @@ from ..datasource.mys import update_profile_mys
 from ..datasource.profile_service import update_profile
 from ..dmg import calc_dmg
 from ..render import render_artis_list, render_profile_detail, render_profile_list
+from ..render.profile_detail import dmg_row_text
 from .common import game_of, guard, resolve_uid, send_image
 
 _GAME_NAME = {"gs": "原神", "sr": "星铁"}
@@ -191,10 +192,10 @@ def _fmt_dmg_text(dmg: dict[str, Any]) -> str:
     selected = dmg["selected"]
     lines = [f"{dmg['character']} 伤害计算（默认敌人 Lv103）："]
     for idx, row in enumerate(dmg["dmgData"], 1):
-        lines.append(f"{idx}. {row['title']}：期望 {row['avg']:.0f} / 暴击 {row['dmg']:.0f}")
+        lines.append(f"{idx}. {dmg_row_text(row)}")
     if dmg.get("dmgMsg"):
         lines.append("Buff：" + "；".join(filter(None, dmg["dmgMsg"])))
-    lines.append(f"当前：{selected['title']}，期望 {selected['avg']:.0f} / 暴击 {selected['dmg']:.0f}")
+    lines.append(f"当前：{dmg_row_text(selected)}")
     return "\n".join(lines)
 
 

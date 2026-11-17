@@ -37,7 +37,13 @@ const lodash = {
   extend (target, ...srcs) { return Object.assign(target, ...srcs) },
   concat (...args) { return [].concat(...args) },
   filter (arr, fn) { return (arr || []).filter(fn) },
-  isPlainObject (x) { return x !== null && typeof x === 'object' && !Array.isArray(x) },
+  // 与真实 lodash 一致：类实例（如 AttrItem）不算 plain object，
+  // 否则 merge 会深拷丢原型，attr.def * 0.07 之类直接运算得到 NaN。
+  isPlainObject (x) {
+    if (x === null || typeof x !== 'object' || Array.isArray(x)) return false
+    const proto = Object.getPrototypeOf(x)
+    return proto === Object.prototype || proto === null
+  },
   isFunction (x) { return typeof x === 'function' },
   isString (x) { return typeof x === 'string' },
   isNumber (x) { return typeof x === 'number' },

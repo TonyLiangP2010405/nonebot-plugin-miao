@@ -12,6 +12,26 @@ from . import base
 W, M = 820, 18
 
 
+def _fmt_num(value: Any) -> str:
+    return f"{value:.0f}" if isinstance(value, (int, float)) else "-"
+
+
+def dmg_row_text(row: dict[str, Any]) -> str:
+    """伤害条目文案。
+
+    治疗 / 护盾 / 反应 / 击破类条目在上游规则里只返回 ``avg``（没有暴击值），
+    不能按普通输出条目格式化 ``row['dmg']``，否则会 KeyError。
+    """
+    title = row.get("title") or ""
+    avg = row.get("avg")
+    crit = row.get("dmg")
+    if crit is None:
+        return f"{title}：{_fmt_num(avg)}"
+    if avg is None:
+        return f"{title}：暴击 {_fmt_num(crit)}"
+    return f"{title}：期望 {_fmt_num(avg)} / 暴击 {_fmt_num(crit)}"
+
+
 def _stat(attr: dict[str, Any], key: str) -> str:
     return f"{key_title(key, 'gs') if key not in ('hp', 'atk', 'def') else {'hp':'生命','atk':'攻击','def':'防御'}[key]} {attr.get(key, 0):.0f}"
 
@@ -62,7 +82,7 @@ async def render_profile_detail(avatar: dict, attr: dict, mark: dict, game: str,
         if dmg:
             y += 4; base.draw_text(canvas, '伤害计算', M, y + 22, base.font(20, 'title'), base.color(base.TEXT_MAIN)); y += 32
             for row in dmg.get('dmgData') or []:
-                base.draw_text_ellipsis(canvas, f"{row['title']}：期望 {row['avg']:.0f} / 暴击 {row['dmg']:.0f}", M + 8, y + 20, w - 2 * M - 16, base.font(14), base.color(base.TEXT_MAIN)); y += 27
+                base.draw_text_ellipsis(canvas, dmg_row_text(row), M + 8, y + 20, w - 2 * M - 16, base.font(14), base.color(base.TEXT_MAIN)); y += 27
         return int(y + 20)
 
     return base.render_card(W, builder)

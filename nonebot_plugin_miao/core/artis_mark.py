@@ -155,7 +155,12 @@ def get_char_weight(
     if rule_file.is_file():
         attr_args = {k: v for k, v in attr.items() if not str(k).startswith("_") and k != "staticAttr"}
         code = meta._strip_esm(rule_file.read_text(encoding="utf-8"))
+        # artis.js 通过 `import { usefulAttr } from "../../artifact/artis-mark.js"`
+        # 引用通用权重表，_strip_esm 会删掉 import，这里把表注入为全局变量
+        useful = dict(_useful_attr(game))
+        useful.setdefault(char.name, _DEFAULT_WEIGHT[game])
         script = f"""
+var usefulAttr = {json.dumps(useful, ensure_ascii=False)}
 {code}
 var rule = function (title, attrWeight) {{ return {{ title: title, attrWeight: attrWeight, kind: 'rule' }} }}
 var def = function (attrWeight) {{ return {{ attrWeight: attrWeight || null, kind: 'def' }} }}

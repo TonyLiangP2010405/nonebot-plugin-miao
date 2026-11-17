@@ -212,6 +212,27 @@ def test_welt_rows_match_baseline(sr_avatars):
 
 
 # ---------------------------------------------------------------------------
+# 治疗 / 护盾条目：只有 avg，没有暴击值（渲染层不能假设每行都有 dmg）
+# ---------------------------------------------------------------------------
+
+
+def test_heal_rows_without_crit_value(gs_avatars):
+    result = calc_dmg(gs_avatars["10000035"], "gs")  # 七七
+    heal_rows = [r for r in result["dmgData"] if r["title"].endswith("治疗")]
+    assert len(heal_rows) == 2
+    assert all("dmg" not in r and r["avg"] > 0 for r in heal_rows)
+
+
+def test_aventurine_shield_value_not_nan(sr_avatars):
+    """砂金规则直接对 attr.def 做算术；AttrItem 被 merge 深拷丢原型时会算出 NaN。"""
+    result = calc_dmg(sr_avatars["1304"], "sr")
+    rows = {r["title"]: r for r in result["dmgData"]}
+    assert rows["战技护盾量"]["avg"] == pytest.approx(488.0690555759999, rel=TOL)
+    assert rows["追击护盾量"]["avg"] == pytest.approx(252.92255229599994, rel=TOL)
+    assert "dmg" not in rows["战技护盾量"]
+
+
+# ---------------------------------------------------------------------------
 # 错误路径
 # ---------------------------------------------------------------------------
 

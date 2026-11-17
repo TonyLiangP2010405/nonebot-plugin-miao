@@ -12,7 +12,15 @@ var lodash = {
   },
   concat: function () { return Array.prototype.concat.apply([], Array.prototype.slice.call(arguments)) },
   filter: function (arr, fn) { return (arr || []).filter(fn) },
-  isPlainObject: function (x) { return x !== null && typeof x === 'object' && !Array.isArray(x) },
+  // 与真实 lodash 一致：只认真字面量对象（原型为 Object.prototype / null），
+  // 类实例（如 AttrItem）不算 plain object。若放宽到任意 object，lodash.merge
+  // 会把 AttrItem 深拷成普通对象、丢掉 toString，规则里 `attr.def * 0.07`
+  // 之类的直接运算会得到 NaN。
+  isPlainObject: function (x) {
+    if (x === null || typeof x !== 'object' || Array.isArray(x)) return false
+    var proto = Object.getPrototypeOf(x)
+    return proto === Object.prototype || proto === null
+  },
   isFunction: function (x) { return typeof x === 'function' },
   isString: function (x) { return typeof x === 'string' },
   isUndefined: function (x) { return typeof x === 'undefined' },

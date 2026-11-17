@@ -1,14 +1,21 @@
 """渲染层测试：纯占位分支（fetch_image 打桩为 None）下 3 个 render 函数输出合法 PNG"""
+import json
 from pathlib import Path
 
 import pytest
 import skia
 
 from nonebot_plugin_miao.core import meta, store
+from nonebot_plugin_miao.core.artis_mark import calc_mark
+from nonebot_plugin_miao.core.attr_calc import calc_attr
+from nonebot_plugin_miao.datasource.enka import parse_enka
+from nonebot_plugin_miao.datasource.mihomo import parse_mihomo
+from nonebot_plugin_miao.dmg import calc_dmg
 from nonebot_plugin_miao.gacha import analyse, simulate
-from nonebot_plugin_miao.render import base, encyclopedia, gacha_detail, gacha_stat, gacha_trial
+from nonebot_plugin_miao.render import base, encyclopedia, gacha_detail, gacha_stat, gacha_trial, profile_detail
 
 FIXTURE_DIR = Path(__file__).resolve().parent.parent / "tools" / "fixtures"
+AVATAR_FIXTURES = Path(__file__).resolve().parent / "fixtures"
 GS_UID, SR_UID = "100000001", "800000001"
 
 
@@ -164,3 +171,45 @@ async def test_multigame_gacha_images(sim_data, no_images, game, count):
     result = simulate.do_gacha("render:1", "role2", game=game, count=count, is_master=True)
     png = await gacha_trial.render_gacha_trial(result, "三游戏测试")
     _check_png(png)
+
+
+# ---------------- 角色面板卡片 ----------------
+
+
+def _avatars(game: str) -> dict:
+    if game == "gs":
+        raw = json.loads((AVATAR_FIXTURES / "enka_800055548.json").read_text(encoding="utf-8"))
+        return parse_enka(raw, "800055548")["avatars"]
+    raw = json.loads((AVATAR_FIXTURES / "mihomo_702762444.json").read_text(encoding="utf-8"))
+    return parse_mihomo(raw, "702762444")["avatars"]
+
+
+@pytest.mark.parametrize(("game", "avatar_id"), [("gs", "10000035"), ("sr", "1304")])
+async def test_profile_damage_card_without_crit_rows(no_images, game, avatar_id):
+    """七七（治疗）/ 砂金（护盾）的条目没有 dmg 字段，伤害卡仍须正常出图。"""
+    avatar = _avatars(game)[avatar_id]
+    attr = calc_attr(avatar, game)
+    mark = calc_mark(avatar, attr, game)
+    dmg = calc_dmg(avatar, game)
+    assert any("dmg" not in row for row in dmg["dmgData"])
+    _check_png(await profile_detail.render_profile_detail(avatar, attr, mark, game, dmg))
+
+
+@pytest.mark.parametrize(("game", "avatar_id"), [("gs", "10000030"), ("sr", "1211")])
+async def test_profile_detail_with_custom_artis_rule(no_images, game, avatar_id):
+    """钟离 / 白露走 artis.js 评分规则，详情卡须正常出图（评分不能抛错）。"""
+    avatar = _avatars(game)[avatar_id]
+    attr = calc_attr(avatar, game)
+    mark = calc_mark(avatar, attr, game)
+    assert mark["mark"] > 0
+    _check_png(await profile_detail.render_profile_detail(avatar, attr, mark, game, None))
+
+
+def test_dmg_row_text():
+    assert profile_detail.dmg_row_text({"title": "战技护盾量", "avg": 488.4}) == "战技护盾量：488"
+    assert (
+        profile_detail.dmg_row_text({"title": "普攻伤害", "avg": 407.5, "dmg": 662.1})
+        == "普攻伤害：期望 408 / 暴击 662"
+    )
+    assert profile_detail.dmg_row_text({"title": "测试", "avg": None, "dmg": 100}) == "测试：暴击 100"
+    assert profile_detail.dmg_row_text({"title": "测试"}) == "测试：-"

@@ -185,6 +185,33 @@ def test_char_weight_useful_attr():
     assert ret["attrWeight"]["dmg"] == 100
 
 
+def test_char_weight_custom_rule_uses_useful_attr():
+    # artis.js 通过 import 引用 usefulAttr；_strip_esm 删掉 import 后必须注入该表，
+    # 否则钟离/莫娜等 25 个原神角色的评分规则会抛 ReferenceError
+    ret = get_char_weight("钟离", {"hp": 30000, "atk": 1000, "def": 900}, "gs")
+    assert ret["title"] == "钟离-通用"
+    assert ret["attrWeight"]["hp"] == 100
+    assert ret["attrWeight"]["dmg"] == 80
+
+
+def test_char_weight_custom_rule_uses_useful_attr_sr():
+    # 星铁同样有 artis.js 依赖 usefulAttr（风堇/椒丘/缇宝）
+    ret = get_char_weight("风堇", {"hp": 5000, "speed": 134}, "sr")
+    assert ret["title"] == "风堇-通用"
+    assert ret["attrWeight"]["heal"] == 100
+    assert ret["attrWeight"]["speed"] == 100
+
+
+def test_calc_mark_zhongli_custom_rule(gs_avatars):
+    # 钟离走 artis.js 自定义规则：评分不能因规则异常退化为 0
+    avatar = gs_avatars["10000030"]
+    mark = calc_mark(avatar, calc_attr(avatar, "gs"), "gs")
+    assert mark["classTitle"] == "钟离-西风枪"
+    assert mark["mark"] == pytest.approx(103.38869640003644, rel=1e-9)
+    assert mark["markClass"] == "B"
+    assert len(mark["artis"]) == 5
+
+
 def test_char_weight_default():
     # usefulAttr 与 artis.js 都没有的角色走默认权重
     from nonebot_plugin_miao.core.artis_mark import _useful_attr
