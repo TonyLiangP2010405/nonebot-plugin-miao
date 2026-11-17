@@ -340,6 +340,15 @@ def test_profile_list_regex(cmds):
         assert not re.match(p.RE_LIST, text), text
 
 
+def test_profile_quota_regex(cmds):
+    p = cmds.profile
+    assert re.match(p.RE_PANEL_QUOTA, "/面板次数")
+    for text in ("面板次数", "#面板次数", "/面板次数 123", "/面板"):
+        assert not re.match(p.RE_PANEL_QUOTA, text)
+    # 不能被角色详情正则吃掉
+    assert not re.match(p.RE_DETAIL, "/面板次数")
+
+
 def test_profile_artis_list_regex(cmds):
     p = cmds.profile
     for text in ("/圣遗物列表", "/星铁遗器列表", "/圣遗物列表 800055548"):

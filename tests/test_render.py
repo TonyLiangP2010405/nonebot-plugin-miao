@@ -8,11 +8,21 @@ import skia
 from nonebot_plugin_miao.core import meta, store
 from nonebot_plugin_miao.core.artis_mark import calc_mark
 from nonebot_plugin_miao.core.attr_calc import calc_attr
+from nonebot_plugin_miao.core.player import Player
 from nonebot_plugin_miao.datasource.enka import parse_enka
 from nonebot_plugin_miao.datasource.mihomo import parse_mihomo
 from nonebot_plugin_miao.dmg import calc_dmg
 from nonebot_plugin_miao.gacha import analyse, simulate
-from nonebot_plugin_miao.render import base, encyclopedia, gacha_detail, gacha_stat, gacha_trial, profile_detail
+from nonebot_plugin_miao.render import (
+    artis_list,
+    base,
+    encyclopedia,
+    gacha_detail,
+    gacha_stat,
+    gacha_trial,
+    profile_detail,
+    profile_list,
+)
 
 FIXTURE_DIR = Path(__file__).resolve().parent.parent / "tools" / "fixtures"
 AVATAR_FIXTURES = Path(__file__).resolve().parent / "fixtures"
@@ -192,7 +202,9 @@ async def test_profile_damage_card_without_crit_rows(no_images, game, avatar_id)
     mark = calc_mark(avatar, attr, game)
     dmg = calc_dmg(avatar, game)
     assert any("dmg" not in row for row in dmg["dmgData"])
-    _check_png(await profile_detail.render_profile_detail(avatar, attr, mark, game, dmg))
+    png = await profile_detail.render_profile_detail(avatar, attr, mark, game, dmg)
+    _check_png(png)
+    assert skia.Image.MakeFromEncoded(png).height() > 600
 
 
 @pytest.mark.parametrize(("game", "avatar_id"), [("gs", "10000030"), ("sr", "1211")])
@@ -213,3 +225,19 @@ def test_dmg_row_text():
     )
     assert profile_detail.dmg_row_text({"title": "测试", "avg": None, "dmg": 100}) == "测试：暴击 100"
     assert profile_detail.dmg_row_text({"title": "测试"}) == "测试：-"
+
+
+async def test_profile_list_card(no_images):
+    player = Player("800055548", "gs", {"name": "测试玩家", "avatars": _avatars("gs")})
+    png = await profile_list.render_profile_list(player, "gs")
+    _check_png(png)
+    assert skia.Image.MakeFromEncoded(png).height() >= 430
+
+
+async def test_artis_list_card(no_images):
+    player = Player("800055548", "gs", {"name": "测试玩家", "avatars": _avatars("gs")})
+    png = await artis_list.render_artis_list(player, "gs")
+    _check_png(png)
+    image = skia.Image.MakeFromEncoded(png)
+    assert image.height() > 1000
+    assert image.width() == 960

@@ -14,6 +14,7 @@ from nonebot.adapters.onebot.v11 import MessageEvent
 from ..core import meta
 from ..core.artis_mark import calc_mark, format_value, key_title
 from ..core.attr_calc import calc_attr, elem_name
+from ..core.panel_quota import authorize_panel_call, panel_status
 from ..core.player import Player
 from ..datasource.errors import ProfileError
 from ..datasource.mys import update_profile_mys
@@ -32,6 +33,7 @@ RE_UPDATE = r"^/(星铁|原神)?(全部面板更新|更新全部面板|获取游
 RE_MYS_UPDATE = r"^/(星铁|原神)?(米游社|mys)(更新面板|面板更新)\s*(\d{9,10})?$"
 RE_LIST = r"^/(星铁|原神)?(面板角色|角色面板|面板)(列表)?\s*(\d{9,10})?$"
 RE_ARTIS_LIST = r"^/(星铁|原神)?(圣遗物|遗器)列表\s*(\d{9,10})?$"
+RE_PANEL_QUOTA = r"^/面板次数$"
 # 角色名面板：负向前瞻排除 更新面板/面板列表/圣遗物列表/米游社更新面板 等指令（另有优先级兜底）
 RE_DETAIL = (
     r"^/(?!(?:星铁|原神)?(?:(?:米游社|mys)(?:更新面板|面板更新)|全部面板更新|更新全部面板|获取游戏角色详情|"
@@ -43,6 +45,7 @@ update_m = on_regex(RE_UPDATE, priority=5, block=True)
 mys_update_m = on_regex(RE_MYS_UPDATE, priority=5, block=True)
 list_m = on_regex(RE_LIST, priority=5, block=True)
 artis_list_m = on_regex(RE_ARTIS_LIST, priority=5, block=True)
+quota_m = on_regex(RE_PANEL_QUOTA, priority=5, block=True)
 # 角色名面板为正则兜底，优先级低于上面三条，避免吃掉更新、列表指令
 detail_m = on_regex(RE_DETAIL, priority=10, block=True)
 
@@ -128,6 +131,17 @@ async def _(event: MessageEvent):
         await list_m.finish(_update_tip(game))
     await send_image(list_m, await render_profile_list(player, game))
     await list_m.finish()
+
+
+# ---------------------------------------------------------------------------
+# /面板次数
+# ---------------------------------------------------------------------------
+
+
+@quota_m.handle()
+@guard(quota_m)
+async def _(event: MessageEvent):
+    await quota_m.finish(await panel_status(event))
 
 
 # ---------------------------------------------------------------------------
@@ -218,6 +232,9 @@ async def _(event: MessageEvent):
     avatar = player.get_avatar(name)
     if not avatar:
         await detail_m.finish(f"本地没有 {char.name} 的面板数据，{_update_tip(game)}")
+    check = await authorize_panel_call(event)
+    if not check.allowed:
+        await detail_m.finish(check.message)
     attr = calc_attr(avatar, game)
     detail_type = m.group(2)
     if detail_type.startswith("伤害"):
@@ -225,7 +242,7 @@ async def _(event: MessageEvent):
         dmg = calc_dmg(avatar, game, int(tail) if tail else None)
     mark = calc_mark(avatar, attr, game)
     dmg_data = dmg if detail_type.startswith("伤害") else None
-    await send_image(detail_m, await render_profile_detail(avatar, attr, mark, game, dmg_data))
+    await send_image(detail_m, await render_profile_detail(avatar, attr, mark, game, dmg_data, uid=player.uid))
     await detail_m.finish()
 
 

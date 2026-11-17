@@ -146,6 +146,57 @@ def del_cookie(user_id: str | int) -> bool:
     return True
 
 
+# ---------------- 面板调用限流（data/panel_usage.json：{group_id: [时间戳]}） ----------------
+
+_PANEL_USAGE_FILE = "panel_usage.json"
+
+
+def _prune_panel_calls(values: Any, now: float, window: int) -> list[float]:
+    calls: list[float] = []
+    for value in values or []:
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            continue
+        stamp = float(value)
+        if now - stamp < window:
+            calls.append(stamp)
+    return calls
+
+
+def panel_group_used(group_id: str | int, window: int = 3600) -> int:
+    """本群在 window 秒内调用面板的次数（滑动窗口）"""
+    now = time.time()
+    data = load_json(_data_dir() / _PANEL_USAGE_FILE, {}) or {}
+    return len(_prune_panel_calls(data.get(str(group_id)), now, window))
+
+
+def panel_group_wait(group_id: str | int, limit: int, window: int = 3600) -> int:
+    """本群还需等待多少秒才能再次调用面板（0 表示现在可用）"""
+    if limit <= 0:
+        return 0
+    now = time.time()
+    data = load_json(_data_dir() / _PANEL_USAGE_FILE, {}) or {}
+    calls = _prune_panel_calls(data.get(str(group_id)), now, window)
+    if len(calls) < limit:
+        return 0
+    oldest = min(calls[len(calls) - limit:])
+    return max(0, math.ceil(window - (now - oldest)))
+
+
+def record_panel_group_call(group_id: str | int, window: int = 3600) -> None:
+    """记录一次面板调用，并顺手清理已过期的记录"""
+    group_id = str(group_id)
+    now = time.time()
+    with _LOCK:
+        data = load_json(_data_dir() / _PANEL_USAGE_FILE, {}) or {}
+        usage: dict[str, list[float]] = {}
+        for key, values in data.items():
+            calls = _prune_panel_calls(values, now, window)
+            if calls:
+                usage[str(key)] = calls
+        usage.setdefault(group_id, []).append(now)
+        save_json(_data_dir() / _PANEL_USAGE_FILE, usage)
+
+
 # ---------------- 冷却（data/cd.json：{key: 到期时间戳}） ----------------
 
 

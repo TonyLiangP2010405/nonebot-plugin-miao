@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from ..core import meta
 from ..core.artis_mark import calc_mark
-from ..core.attr_calc import calc_attr
+from ..core.attr_calc import calc_attr, elem_name
 from ..core.player import Player
 from . import base
+from .profile_detail import _CLASS_COLOR
 
 W, M, COL_W, CARD_H = 760, 18, 174, 152
 
@@ -38,12 +39,16 @@ async def render_profile_list(player: Player, game: str) -> bytes:
             x = M + (i % cols) * (COL_W + 10)
             yy = y + (i // cols) * (CARD_H + 10)
             base.draw_shadow(canvas, base.rrect(x, yy, COL_W, CARD_H, 10), blur=8)
-            base.draw_rounded(canvas, x, yy, COL_W, CARD_H, 10, base.color("#99000000"))
-            base.draw_image_or_placeholder(canvas, image, (x + 10, yy + 10, COL_W - 20, 76), name)
-            base.draw_text_ellipsis(canvas, name, x + 10, yy + 108, COL_W - 20, base.font(18), base.color(base.TEXT_MAIN))
-            base.draw_text(canvas, f"Lv{avatar.get('level') or '?'}  C{avatar.get('cons') or 0}", x + 10, yy + 130, base.font(13), base.color(base.TEXT_SUB))
-            score = f"评分 {mark['mark']:.1f}  {mark.get('markClass') or '-'}"
-            base.draw_text(canvas, score, x + 10, yy + 148, base.font(13), base.color(base.NUM_GOLD))
+            cls = mark.get("markClass")
+            edge = _CLASS_COLOR.get(cls) or "#33FFFFFF"
+            base.draw_rounded(canvas, x - 1, yy - 1, COL_W + 2, CARD_H + 2, 11, base.color(edge))
+            base.draw_rounded(canvas, x + 1, yy + 1, COL_W - 2, CARD_H - 2, 9, base.color("#E0000000"))
+            base.draw_image_or_placeholder(canvas, image, (x + 10, yy + 10, COL_W - 20, 74), name)
+            base.draw_text_ellipsis(canvas, name, x + 10, yy + 106, COL_W - 20, base.font(18), base.color(base.TEXT_MAIN))
+            elem = elem_name(avatar.get("elem"), game) or "—"
+            base.draw_text(canvas, f"Lv{avatar.get('level') or '?'}  C{avatar.get('cons') or 0}  {elem}", x + 10, yy + 128, base.font(12), base.color(base.TEXT_SUB))
+            score = f"评分 {mark['mark']:.1f}  {cls or '-'}"
+            base.draw_text(canvas, score, x + 10, yy + 147, base.font(13), base.color(_CLASS_COLOR.get(cls) or base.NUM_GOLD))
         rows = max(1, (len(cards) + cols - 1) // cols)
         return int(y + rows * (CARD_H + 10) + 18)
 

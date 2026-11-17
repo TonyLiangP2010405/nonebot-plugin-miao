@@ -514,3 +514,56 @@ def weapon_img(name: str, kind: str, game: str) -> str:
     if kind not in files:
         raise ValueError(f"未知的武器图片 kind: {kind!r}（game={game}）")
     return f"{base}/{files[kind]}"
+
+
+def artis_img(set_name: str, idx: int | str, game: str) -> str:
+    """圣遗物 / 遗器部位图标相对 resources 的路径（不检查存在性）
+
+    gs：meta-gs/artifact/imgs/{套装}/{部位 1-5}.webp
+    sr：meta-sr/artifact/{套装}/arti-{部位 1-6}.webp
+    """
+    _check_game(game)
+    set_name = str(set_name or "").strip()
+    if not set_name:
+        raise ValueError("圣遗物套装名为空")
+    if game == "gs":
+        return f"meta-gs/artifact/imgs/{set_name}/{int(idx)}.webp"
+    return f"meta-sr/artifact/{set_name}/arti-{int(idx)}.webp"
+
+
+def talent_img(name: str, key: str, game: str) -> str:
+    """角色天赋图标相对 resources 的路径
+
+    gs 普攻用武器类型图标（common/item/atk-{武器}），战技/爆发优先用提升该天赋的
+    命座图标（talentCons），没有命座加成时才用 icons/talent-{key}.webp；
+    sr 直接使用 imgs/talent-{key}.webp。
+    """
+    _check_game(game)
+    kind = str(key or "").strip().lower()
+    char = get_character(name, game)
+    if not char:
+        raise ValueError(f"未找到角色 meta: {name}")
+    if game == "gs":
+        if kind == "a":
+            return f"common/item/atk-{char.get('weapon') or 'sword'}.webp"
+        cons = (char.get("talentCons") or {}).get(kind) or 0
+        if cons:
+            return f"meta-gs/character/{char.name}/icons/cons-{cons}.webp"
+        return f"meta-gs/character/{char.name}/icons/talent-{kind}.webp"
+    return f"meta-sr/character/{char.name}/imgs/talent-{kind}.webp"
+
+
+def cons_img(name: str, idx: int | str, game: str) -> str:
+    """命座图标相对 resources 的路径（星铁 3/5 命使用被强化的天赋图标）"""
+    _check_game(game)
+    char = get_character(name, game)
+    if not char:
+        raise ValueError(f"未找到角色 meta: {name}")
+    idx = int(idx)
+    if game == "gs":
+        return f"meta-gs/character/{char.name}/icons/cons-{idx}.webp"
+    if idx in (3, 5):
+        key = (char.get("talentCons") or {}).get(str(idx))
+        if key:
+            return f"meta-sr/character/{char.name}/imgs/talent-{key}.webp"
+    return f"meta-sr/character/{char.name}/imgs/cons-{idx}.webp"
