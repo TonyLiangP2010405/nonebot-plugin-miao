@@ -1,11 +1,13 @@
-"""角色面板查看配额：与 nonebot-plugin-mantou-affection 联动。
+"""角色面板 / 群面板排名配额：与 nonebot-plugin-mantou-affection 联动。
 
 规则（群聊）：
-- 每人每小时前 ``MIAO_PANEL_FREE_PER_HOUR`` 次（默认 2）免费；
-- 每人每小时最多 ``MIAO_PANEL_USER_HOURLY_LIMIT`` 次（默认 4）；
-- 馒头命运齿轮转盘抽到的面板次数优先消耗，且不占用免费额度；
-- 免费次数用完后，第 3、4 次每次消耗 ``MIAO_PANEL_AFFECTION_COST`` 点好感度
+- 面板功能每天 ``MIAO_PANEL_OPEN_HOUR`` 点到 ``MIAO_PANEL_CLOSE_HOUR`` 点开放
+  （默认 08:00–17:00，Asia/Shanghai）；
+- 角色面板、群面板排名**各自独立**：每人每小时免费 1 次、最多 2 次；
+- 免费次数用完后，第 2 次消耗 ``MIAO_PANEL_AFFECTION_COST`` 点好感度
   （默认 10），并且需要调用者回复「确认」才会扣费出图；
+- 馒头命运齿轮转盘抽到的面板 / 群排名次数优先消耗，**不占用免费额度，
+  也不计入每小时 2 次上限**；
 - 私聊免费；SUPERUSER 免费、不限次数；
 - 未安装或未加载馒头好感度插件时不做限制，保证本插件可以独立使用。
 """
@@ -16,13 +18,29 @@ import math
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from nonebot import logger
 
 from . import store
 
+try:  # Windows 未安装 tzdata 时退回固定 UTC+8
+    from zoneinfo import ZoneInfo
+
+    _PANEL_TZ: Any = ZoneInfo("Asia/Shanghai")
+except Exception:  # pragma: no cover - 取决于运行环境
+    _PANEL_TZ = timezone(timedelta(hours=8))
+
 _MANTOU_PLUGIN = "nonebot_plugin_mantou_affection"
+
+FEATURE_DETAIL = "detail"
+FEATURE_RANK = "rank"
+_FEATURE_NAME = {FEATURE_DETAIL: "角色面板", FEATURE_RANK: "群面板排名"}
+_PAID_SOURCE = {
+    FEATURE_DETAIL: "nonebot_plugin_miao:panel",
+    FEATURE_RANK: "nonebot_plugin_miao:panel_rank",
+}
 
 
 @dataclass(frozen=True)
@@ -33,6 +51,9 @@ class MantouAPI:
     consume_panel_draw: Callable[..., Awaitable[int | None]]
     get_affection: Callable[..., Awaitable[int]]
     spend_affection: Callable[..., Awaitable[tuple[bool, int]]]
+    # 0.44.0 起提供；旧版本没有群排名账本时按 0 次处理
+    get_panel_rank_draws: Callable[..., Awaitable[int]] | None = None
+    consume_panel_rank_draw: Callable[..., Awaitable[int | None]] | None = None
 
 
 @dataclass(frozen=True)
@@ -44,19 +65,17 @@ class PanelCheck:
     needs_confirm: bool = False
     used_draw: bool = False
     paid: bool = False
+    feature: str = FEATURE_DETAIL
 
 
 @dataclass
 class PendingPanel:
-    """等待调用者回复「确认」的付费面板请求。"""
+    """等待调用者回复「确认」的付费请求。"""
 
     group_id: str
     user_id: str
-    avatar: dict[str, Any]
-    game: str
-    uid: str
-    show_dmg: bool
-    dmg_idx: int | None
+    feature: str
+    payload: dict[str, Any]
     created_at: float = field(default_factory=time.time)
 
 
@@ -91,6 +110,8 @@ def mantou_api() -> MantouAPI | None:
             consume_panel_draw=module.consume_panel_draw,
             get_affection=module.get_affection,
             spend_affection=module.spend_affection,
+            get_panel_rank_draws=getattr(module, "get_panel_rank_draws", None),
+            consume_panel_rank_draw=getattr(module, "consume_panel_rank_draw", None),
         )
     except Exception:
         _API = False
@@ -138,6 +159,65 @@ def _nickname(event: Any) -> str:
     return str(card or nick or "")
 
 
+# ---------------------------------------------------------------------------
+# 开放时段
+# ---------------------------------------------------------------------------
+
+
+def panel_window(config: Any | None = None) -> tuple[int, int]:
+    """面板开放时段 (开启小时, 关闭小时)，默认 08:00–17:00。"""
+    config = config or _plugin_config()
+    open_hour = min(23, max(0, _int_attr(config, "miao_panel_open_hour", 8)))
+    close_hour = min(23, max(0, _int_attr(config, "miao_panel_close_hour", 17)))
+    return open_hour, close_hour
+
+
+def _local_now(now: datetime | None = None) -> datetime:
+    current = now or datetime.now(_PANEL_TZ)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=_PANEL_TZ)
+    return current.astimezone(_PANEL_TZ)
+
+
+def panel_time_allowed(config: Any | None = None, now: datetime | None = None) -> bool:
+    """当前是否处于面板开放时段；起止相同表示全天开放。"""
+    open_hour, close_hour = panel_window(config)
+    if open_hour == close_hour:
+        return True
+    hour = _local_now(now).hour
+    if open_hour < close_hour:
+        return open_hour <= hour < close_hour
+    # 跨天，例如 22:00–06:00
+    return hour >= open_hour or hour < close_hour
+
+
+def panel_window_text(config: Any | None = None) -> str:
+    open_hour, close_hour = panel_window(config)
+    if open_hour == close_hour:
+        return "全天开放"
+    return f"{open_hour:02d}:00–{close_hour:02d}:00"
+
+
+def panel_closed_message(config: Any | None = None, now: datetime | None = None) -> str:
+    """不在开放时段时的提示，包含下一次开启时间。"""
+    config = config or _plugin_config()
+    open_hour, _ = panel_window(config)
+    current = _local_now(now)
+    next_open = current.replace(hour=open_hour, minute=0, second=0, microsecond=0)
+    if next_open <= current:
+        next_open += timedelta(days=1)
+    day = "今天" if next_open.date() == current.date() else "明天"
+    return (
+        f"面板功能每天 {panel_window_text(config)} 开放，当前已关闭，"
+        f"{day} {open_hour:02d}:00 后再试。"
+    )
+
+
+# ---------------------------------------------------------------------------
+# 总开关
+# ---------------------------------------------------------------------------
+
+
 def panel_enabled(config: Any | None = None) -> bool:
     """面板功能当前是否开启：运行时覆盖优先，否则读取配置默认值。"""
     override = store.get_panel_enabled_override()
@@ -171,31 +251,50 @@ def confirm_timeout(config: Any | None = None) -> int:
     return max(5, _int_attr(config, "miao_panel_confirm_timeout", 30))
 
 
+def update_interval(config: Any | None = None) -> int:
+    """更新面板命令冷却秒数（默认 3600；0 表示不限制）。"""
+    config = config or _plugin_config()
+    return max(0, _int_attr(config, "miao_panel_update_interval", 60)) * 60
+
+
+def update_wait(user_id: str | int, game: str, config: Any | None = None) -> int:
+    """距离下次可用 /更新面板 还有多少秒。"""
+    return store.panel_update_wait(user_id, game, update_interval(config))
+
+
+def mark_update(user_id: str | int, game: str, config: Any | None = None) -> None:
+    """记录一次成功的更新面板。"""
+    store.mark_panel_update(user_id, game, update_interval(config))
+
+
+def update_limit_message(wait: int, config: Any | None = None) -> str:
+    interval = update_interval(config)
+    if interval == 3600:
+        rule = "每小时"
+    elif interval > 0 and interval % 60 == 0:
+        rule = f"每 {interval // 60} 分钟"
+    else:
+        rule = f"每 {max(1, interval)} 秒"
+    minutes = max(1, math.ceil(wait / 60))
+    return f"更新面板{rule}只能使用 1 次，请 {minutes} 分钟后再试"
+
+
 # ---------------------------------------------------------------------------
 # 待确认请求
 # ---------------------------------------------------------------------------
 
 
 def register_pending(
-    event: Any,
-    *,
-    avatar: dict[str, Any],
-    game: str,
-    uid: str,
-    show_dmg: bool,
-    dmg_idx: int | None,
+    event: Any, *, feature: str = FEATURE_DETAIL, payload: dict[str, Any] | None = None
 ) -> PendingPanel:
-    """登记一次等待「确认」的付费面板请求（同一个人只保留最新一条）。"""
+    """登记一次等待「确认」的付费请求（同一个人只保留最新一条）。"""
     group_id = str(getattr(event, "group_id", ""))
     user_id = str(event.get_user_id())
     pending = PendingPanel(
         group_id=group_id,
         user_id=user_id,
-        avatar=avatar,
-        game=game,
-        uid=uid,
-        show_dmg=show_dmg,
-        dmg_idx=dmg_idx,
+        feature=feature,
+        payload=dict(payload or {}),
     )
     _PENDING[(group_id, user_id)] = pending
     return pending
@@ -232,121 +331,155 @@ def pop_pending(group_id: str | int, user_id: str | int, timeout: int) -> Pendin
 # ---------------------------------------------------------------------------
 
 
-async def authorize_panel_call(event: Any, config: Any | None = None, *, confirmed: bool = False) -> PanelCheck:
-    """群聊面板查看授权：本小时上限 → 转盘次数 → 免费次数 → 付费确认。"""
+def _draw_calls(api: MantouAPI, feature: str) -> tuple[Any, Any]:
+    if feature == FEATURE_RANK:
+        return api.get_panel_rank_draws, api.consume_panel_rank_draw
+    return api.get_panel_draws, api.consume_panel_draw
+
+
+async def authorize_panel_call(
+    event: Any,
+    config: Any | None = None,
+    *,
+    confirmed: bool = False,
+    feature: str = FEATURE_DETAIL,
+) -> PanelCheck:
+    """群聊面板授权：转盘次数 → 小时上限 → 免费次数 → 付费确认。"""
+    if feature not in (FEATURE_DETAIL, FEATURE_RANK):
+        feature = FEATURE_DETAIL
+    label = _FEATURE_NAME[feature]
     group_id = getattr(event, "group_id", None)
     user_id = str(event.get_user_id())
     if group_id is None:
         # 私聊免费
-        return PanelCheck(True)
+        return PanelCheck(True, feature=feature)
     if is_superuser(user_id):
         # SUPERUSER 免费不限，且不占本群额度
-        return PanelCheck(True)
+        return PanelCheck(True, feature=feature)
     api = mantou_api()
     if api is None:
-        return PanelCheck(True)
+        return PanelCheck(True, feature=feature)
 
     config = config or _plugin_config()
-    free = _int_attr(config, "miao_panel_free_per_hour", 2)
-    limit = _int_attr(config, "miao_panel_user_hourly_limit", 4)
+    free = _int_attr(config, "miao_panel_free_per_hour", 1)
+    limit = _int_attr(config, "miao_panel_user_hourly_limit", 2)
     cost = _int_attr(config, "miao_panel_affection_cost", 10)
     timeout = confirm_timeout(config)
 
-    calls = store.panel_user_calls(group_id, user_id)
-    if limit > 0 and calls >= limit:
-        wait = store.panel_user_wait(group_id, user_id, limit)
-        minutes = max(1, math.ceil(wait / 60))
-        return PanelCheck(
-            False,
-            f"你本小时已查看 {calls} 次角色面板，请约 {minutes} 分钟后再试",
-        )
-
     try:
-        draws = int(await api.get_panel_draws(group_id, user_id) or 0)
-        if draws > 0:
-            remaining = await api.consume_panel_draw(group_id, user_id)
-            if remaining is not None:
-                store.record_panel_user_call(group_id, user_id, "draw")
-                return PanelCheck(True, used_draw=True)
+        # 转盘次数优先，且不受每小时上限限制
+        get_draws, consume_draw = _draw_calls(api, feature)
+        if get_draws is not None and consume_draw is not None:
+            draws = int(await get_draws(group_id, user_id) or 0)
+            if draws > 0:
+                remaining = await consume_draw(group_id, user_id)
+                if remaining is not None:
+                    return PanelCheck(True, used_draw=True, feature=feature)
 
-        free_used = store.panel_user_free_used(group_id, user_id)
+        calls = store.panel_user_calls(group_id, user_id, feature=feature)
+        if limit > 0 and calls >= limit:
+            wait = store.panel_user_wait(group_id, user_id, limit, feature=feature)
+            minutes = max(1, math.ceil(wait / 60))
+            return PanelCheck(
+                False,
+                f"你本小时已查看 {calls} 次{label}，请约 {minutes} 分钟后再试",
+                feature=feature,
+            )
+
+        free_used = store.panel_user_free_used(group_id, user_id, feature=feature)
         if free_used < free:
-            store.record_panel_user_call(group_id, user_id, "free")
-            return PanelCheck(True)
+            store.record_panel_user_call(group_id, user_id, "free", feature=feature)
+            return PanelCheck(True, feature=feature)
 
         affection = int(await api.get_affection(group_id, user_id) or 0)
         if cost <= 0:
-            return PanelCheck(False, "本小时免费次数已用完")
+            return PanelCheck(False, "本小时免费次数已用完", feature=feature)
         if affection < cost:
+            chance = "5%" if feature == FEATURE_DETAIL else "3%"
+            command = "面板次数" if feature == FEATURE_DETAIL else "群面板排名次数"
             return PanelCheck(
                 False,
                 f"本小时免费次数已用完，且好感度不足 {cost} 点（当前 {affection}）。"
-                "参与馒头命运齿轮转盘有 5% 概率抽到面板次数。",
+                f"参与馒头命运齿轮转盘有 {chance} 概率抽到{command}。",
+                feature=feature,
             )
         if not confirmed:
             return PanelCheck(
                 False,
                 needs_confirm=True,
                 message=(
-                    f"本小时免费次数已用完。本次查看将消耗 {cost} 点好感度（当前 {affection}），"
-                    f"回复「确认」继续，回复「取消」放弃（{timeout} 秒内有效）。"
+                    f"本小时免费次数已用完。本次查看{label}将消耗 {cost} 点好感度"
+                    f"（当前 {affection}），回复「确认」继续，回复「取消」放弃"
+                    f"（{timeout} 秒内有效）。"
                 ),
+                feature=feature,
             )
         ok, current = await api.spend_affection(
             group_id,
             user_id,
             cost,
             nickname=_nickname(event),
-            source="nonebot_plugin_miao:panel",
+            source=_PAID_SOURCE[feature],
         )
         if ok:
-            store.record_panel_user_call(group_id, user_id, "paid")
-            return PanelCheck(True, paid=True)
+            store.record_panel_user_call(group_id, user_id, "paid", feature=feature)
+            return PanelCheck(True, paid=True, feature=feature)
         return PanelCheck(
             False,
-            f"好感度不足 {cost} 点（当前 {current}），本次面板查看已取消。",
+            f"好感度不足 {cost} 点（当前 {current}），本次{label}查看已取消。",
+            feature=feature,
         )
     except Exception:
         logger.warning("[miao] 面板配额检查失败，本次放行", exc_info=True)
-        return PanelCheck(True)
+        return PanelCheck(True, feature=feature)
 
 
 async def panel_status(event: Any, config: Any | None = None) -> str:
     """`/面板次数` 的状态文案。"""
+    config = config or _plugin_config()
+    window = panel_window_text(config)
+    opened = panel_time_allowed(config)
+    time_line = f"面板开放时间：{window}（当前{'开放' if opened else '已关闭'}）"
     group_id = getattr(event, "group_id", None)
     user_id = str(event.get_user_id())
     if group_id is None:
-        return "私聊查看角色面板免费，不消耗面板次数。"
+        return f"{time_line}\n私聊查看角色面板与群排名免费，不消耗面板次数。"
     if is_superuser(user_id):
-        return "SUPERUSER 不限次数，免费查看角色面板。"
+        return f"{time_line}\nSUPERUSER 不限次数，免费查看角色面板与群面板排名。"
     api = mantou_api()
     if api is None:
-        return "未加载馒头好感度插件，角色面板次数与好感度限制暂未启用。"
+        return f"{time_line}\n未加载馒头好感度插件，面板次数与好感度限制暂未启用。"
 
-    config = config or _plugin_config()
-    free = _int_attr(config, "miao_panel_free_per_hour", 2)
-    limit = _int_attr(config, "miao_panel_user_hourly_limit", 4)
+    free = _int_attr(config, "miao_panel_free_per_hour", 1)
+    limit = _int_attr(config, "miao_panel_user_hourly_limit", 2)
     cost = _int_attr(config, "miao_panel_affection_cost", 10)
     try:
         draws = int(await api.get_panel_draws(group_id, user_id) or 0)
+        rank_draws = 0
+        if api.get_panel_rank_draws is not None:
+            rank_draws = int(await api.get_panel_rank_draws(group_id, user_id) or 0)
         affection = int(await api.get_affection(group_id, user_id) or 0)
     except Exception:
         logger.warning("[miao] 读面板次数失败", exc_info=True)
         return "面板次数暂时读取失败，请稍后再试。"
 
-    calls = store.panel_user_calls(group_id, user_id)
-    free_left = max(0, free - store.panel_user_free_used(group_id, user_id))
-    wait = store.panel_user_wait(group_id, user_id, limit)
-    quota_line = f"本小时已查看：{calls}/{limit} 次" if limit > 0 else f"本小时已查看：{calls} 次"
-    if wait > 0:
-        quota_line += f"（约 {max(1, math.ceil(wait / 60))} 分钟后恢复）"
-    return "\n".join(
-        [
-            f"转盘面板次数：{draws} 次（优先消耗）",
-            f"本小时免费次数：{free_left}/{free} 次",
-            quota_line,
-            f"当前好感度：{affection} 点"
-            + (f"（免费次数用完后每次消耗 {cost} 点，需回复「确认」）" if cost > 0 else ""),
-            "面板次数获取：参与馒头命运齿轮转盘，有 5% 概率抽到 ×1。",
+    def _feature_line(name: str, feature: str, draw_count: int) -> list[str]:
+        calls = store.panel_user_calls(group_id, user_id, feature=feature)
+        free_left = max(0, free - store.panel_user_free_used(group_id, user_id, feature=feature))
+        wait = store.panel_user_wait(group_id, user_id, limit, feature=feature)
+        quota = f"已查看 {calls}/{limit} 次" if limit > 0 else f"已查看 {calls} 次"
+        if wait > 0:
+            quota += f"（约 {max(1, math.ceil(wait / 60))} 分钟后恢复）"
+        return [
+            f"{name}：转盘次数 {draw_count} 次（优先消耗，不占额度）",
+            f"{name}：免费剩余 {free_left}/{free} 次，{quota}",
         ]
-    )
+
+    lines = [time_line]
+    lines.extend(_feature_line("角色面板", FEATURE_DETAIL, draws))
+    lines.extend(_feature_line("群面板排名", FEATURE_RANK, rank_draws))
+    lines.append(f"当前好感度：{affection} 点")
+    if cost > 0:
+        lines.append(f"免费次数用完后每次消耗 {cost} 点好感度，需回复「确认」")
+    lines.append("面板次数获取：参与馒头命运齿轮转盘，角色面板 5%、群面板排名 3%。")
+    return "\n".join(lines)

@@ -9,7 +9,7 @@ import re
 from typing import Any
 
 from nonebot import on_message, on_regex
-from nonebot.adapters.onebot.v11 import GroupMessageEvent, MessageEvent
+from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, MessageEvent
 
 from ..core import meta
 from ..core.artis_mark import calc_mark, format_value, key_title
@@ -20,21 +20,31 @@ from ..core.panel_quota import (
     confirm_timeout,
     has_pending,
     is_superuser,
+    mark_update,
     panel_enabled,
     panel_enabled_source,
     panel_status,
     pop_pending,
     register_pending,
     set_panel_enabled,
+    update_limit_message,
+    update_wait,
 )
 from ..core.player import Player
+from ..core.profile_rank import MODE_DMG, MODE_MARK, collect_rank
 from ..datasource.errors import ProfileError
 from ..datasource.mys import update_profile_mys
 from ..datasource.profile_service import update_profile
 from ..dmg import calc_dmg
-from ..render import render_artis_list, render_profile_detail, render_profile_list
+from ..render import (
+    render_artis_list,
+    render_profile_detail,
+    render_profile_list,
+    render_profile_rank,
+    render_profile_update,
+)
 from ..render.profile_detail import dmg_row_text
-from .common import ensure_panel_enabled, game_of, guard, resolve_uid, send_image
+from .common import ensure_panel_available, ensure_panel_enabled, game_of, guard, resolve_uid, send_image
 
 _GAME_NAME = {"gs": "原神", "sr": "星铁"}
 # 部位简称（花羽沙杯冠 / 头手衣鞋球绳）
@@ -47,6 +57,7 @@ RE_LIST = r"^/(星铁|原神)?(面板角色|角色面板|面板)(列表)?\s*(\d{
 RE_ARTIS_LIST = r"^/(星铁|原神)?(圣遗物|遗器)列表\s*(\d{9,10})?$"
 RE_PANEL_QUOTA = r"^/面板次数$"
 RE_PANEL_SWITCH = r"^/面板开关(?:\s+(开|关|启用|停用|重置|on|off))?$"
+RE_RANK = r"^/(星铁|原神)?(.*?)(排名|排行|榜单)\s*(\d{9,10})?$"
 # 角色名面板：负向前瞻排除 更新面板/面板列表/圣遗物列表/米游社更新面板 等指令（另有优先级兜底）
 RE_DETAIL = (
     r"^/(?!(?:星铁|原神)?(?:(?:米游社|mys)(?:更新面板|面板更新)|全部面板更新|更新全部面板|获取游戏角色详情|"
@@ -60,6 +71,7 @@ list_m = on_regex(RE_LIST, priority=5, block=True)
 artis_list_m = on_regex(RE_ARTIS_LIST, priority=5, block=True)
 quota_m = on_regex(RE_PANEL_QUOTA, priority=5, block=True)
 switch_m = on_regex(RE_PANEL_SWITCH, priority=5, block=True)
+rank_m = on_regex(RE_RANK, priority=5, block=True)
 # 角色名面板为正则兜底，优先级低于上面三条，避免吃掉更新、列表指令
 detail_m = on_regex(RE_DETAIL, priority=10, block=True)
 
@@ -85,10 +97,6 @@ def _update_tip(game: str) -> str:
     return f"暂无本地面板数据，请先发送 /{'星铁' if game == 'sr' else ''}更新面板"
 
 
-def _avatar_line(avatar: dict[str, Any], fallback: str = "") -> str:
-    return f"{avatar.get('name') or fallback} Lv{avatar.get('level') or '?'} C{avatar.get('cons') or 0}"
-
-
 # ---------------------------------------------------------------------------
 # /更新面板
 # ---------------------------------------------------------------------------
@@ -97,20 +105,25 @@ def _avatar_line(avatar: dict[str, Any], fallback: str = "") -> str:
 @update_m.handle()
 @guard(update_m)
 async def _(event: MessageEvent):
-    await ensure_panel_enabled(update_m)
+    await ensure_panel_available(update_m, event)
     text = event.get_plaintext()
     game = game_of(text)
     uid = resolve_uid(event, text, game)
     if not uid:
         await update_m.finish(_bind_tip(game))
+    wait = update_wait(event.get_user_id(), game)
+    if wait > 0:
+        await update_m.finish(update_limit_message(wait))
     ret = await update_profile(event.get_user_id(), uid, game)
     if ret["code"] == "cd":
         await update_m.finish(f"面板数据更新冷却中，请 {ret['wait']} 秒后再试")
+    mark_update(event.get_user_id(), game)
     player: Player = ret["player"]
-    lines = [f"{_GAME_NAME[game]} UID {uid} 面板更新成功，本次更新 {len(ret['new_chars'])} 个角色："]
-    for name in ret["new_chars"]:
-        lines.append(_avatar_line(player.get_avatar(name) or {}, name))
-    await update_m.finish("\n".join(lines))
+    await send_image(
+        update_m,
+        await render_profile_update(player, game, ret["new_chars"], uid, player.data_source),
+    )
+    await update_m.finish()
 
 
 # ---------------------------------------------------------------------------
@@ -121,12 +134,15 @@ async def _(event: MessageEvent):
 @mys_update_m.handle()
 @guard(mys_update_m)
 async def _(event: MessageEvent):
-    await ensure_panel_enabled(mys_update_m)
+    await ensure_panel_available(mys_update_m, event)
     text = event.get_plaintext()
     game = game_of(text)
     uid = resolve_uid(event, text, game)
     if not uid:
         await mys_update_m.finish(_bind_tip(game))
+    wait = update_wait(event.get_user_id(), game)
+    if wait > 0:
+        await mys_update_m.finish(update_limit_message(wait))
     try:
         ret = await update_profile_mys(event.get_user_id(), uid, game)
     except ProfileError as e:
@@ -135,11 +151,13 @@ async def _(event: MessageEvent):
         await mys_update_m.finish(ret["msg"])
     if ret["code"] == "cd":
         await mys_update_m.finish(f"面板数据更新冷却中，请 {ret['wait']} 秒后再试")
+    mark_update(event.get_user_id(), game)
     player: Player = ret["player"]
-    lines = [f"{_GAME_NAME[game]} UID {uid} 米游社面板更新成功，本次更新 {len(ret['new_chars'])} 个角色："]
-    for name in ret["new_chars"]:
-        lines.append(_avatar_line(player.get_avatar(name) or {}, name))
-    await mys_update_m.finish("\n".join(lines))
+    await send_image(
+        mys_update_m,
+        await render_profile_update(player, game, ret["new_chars"], uid, "米游社"),
+    )
+    await mys_update_m.finish()
 
 
 # ---------------------------------------------------------------------------
@@ -150,7 +168,7 @@ async def _(event: MessageEvent):
 @list_m.handle()
 @guard(list_m)
 async def _(event: MessageEvent):
-    await ensure_panel_enabled(list_m)
+    await ensure_panel_available(list_m, event)
     text = event.get_plaintext()
     game = game_of(text)
     uid = resolve_uid(event, text, game)
@@ -272,7 +290,7 @@ def _fmt_dmg_text(dmg: dict[str, Any]) -> str:
 @detail_m.handle()
 @guard(detail_m)
 async def _(event: MessageEvent):
-    await ensure_panel_enabled(detail_m)
+    await ensure_panel_available(detail_m, event)
     text = event.get_plaintext()
     m = re.match(RE_DETAIL, text)
     if not m:
@@ -298,11 +316,14 @@ async def _(event: MessageEvent):
     if check.needs_confirm:
         register_pending(
             event,
-            avatar=avatar,
-            game=game,
-            uid=player.uid,
-            show_dmg=show_dmg,
-            dmg_idx=dmg_idx,
+            feature="detail",
+            payload={
+                "avatar": avatar,
+                "game": game,
+                "uid": player.uid,
+                "show_dmg": show_dmg,
+                "dmg_idx": dmg_idx,
+            },
         )
         await detail_m.finish(check.message)
     if not check.allowed:
@@ -322,8 +343,8 @@ async def _send_detail_card(matcher, avatar: dict, game: str, uid: str, show_dmg
 
 @confirm_m.handle()
 @guard(confirm_m)
-async def _(event: MessageEvent):
-    await ensure_panel_enabled(confirm_m)
+async def _(event: MessageEvent, bot: Bot):
+    await ensure_panel_available(confirm_m, event)
     # guard 的 functools.wraps 会让 NoneBot 用 common.py 的 globals 解析注解，
     # 这里统一用 MessageEvent，运行时再确认是群消息。
     if not isinstance(event, GroupMessageEvent):
@@ -334,19 +355,92 @@ async def _(event: MessageEvent):
     if pending is None:
         await confirm_m.finish()
     if event.get_plaintext().strip() == "取消":
-        await confirm_m.finish("已取消本次面板查看。")
-    check = await authorize_panel_call(event, confirmed=True)
+        await confirm_m.finish("已取消本次查看。")
+    check = await authorize_panel_call(event, confirmed=True, feature=pending.feature)
     if not check.allowed:
         await confirm_m.finish(check.message)
-    await _send_detail_card(
-        confirm_m,
-        pending.avatar,
-        pending.game,
-        pending.uid,
-        pending.show_dmg,
-        pending.dmg_idx,
-    )
+    if pending.feature == "rank":
+        await _send_rank_card(confirm_m, bot, event, pending.payload)
+    else:
+        payload = pending.payload
+        await _send_detail_card(
+            confirm_m,
+            payload.get("avatar") or {},
+            str(payload.get("game") or "gs"),
+            str(payload.get("uid") or ""),
+            bool(payload.get("show_dmg")),
+            payload.get("dmg_idx"),
+        )
     await confirm_m.finish()
+
+
+# ---------------------------------------------------------------------------
+# /面板排名（群面板排名 / 角色名面板排名 / 角色名伤害排名）
+# ---------------------------------------------------------------------------
+
+
+def _parse_rank_body(text: str) -> tuple[str, str]:
+    """从「/优菈伤害排名」里解析 (角色名, 模式)；空角色名表示群友综合榜。"""
+    m = re.match(RE_RANK, text)
+    body = (m.group(2) if m else "").strip()
+    mode = MODE_DMG if "伤害" in body else MODE_MARK
+    body = re.sub(r"(面板|角色|评分|伤害|双爆|词条|圣遗物|遗器)$", "", body).strip()
+    body = re.sub(r"^(群内|群友|群|本群)", "", body).strip()
+    body = re.sub(r"^(面板|角色)", "", body).strip()
+    return body, mode
+
+
+async def _send_rank_card(matcher, bot: Bot, event: MessageEvent, payload: dict[str, Any]) -> None:
+    """收集群成员面板并发送排名卡。"""
+    game = str(payload.get("game") or "gs")
+    char_name = payload.get("char") or None
+    mode = str(payload.get("mode") or MODE_MARK)
+    entries = await collect_rank(bot, event.group_id, game, char_name, mode)
+    await send_image(
+        matcher,
+        await render_profile_rank(
+            entries,
+            game,
+            char_name=char_name,
+            mode=mode,
+            group_label=f"群 {event.group_id}",
+            member_count=len(entries),
+        ),
+    )
+
+
+@rank_m.handle()
+@guard(rank_m)
+async def _(event: MessageEvent, bot: Bot):
+    await ensure_panel_available(rank_m, event)
+    text = event.get_plaintext()
+    m = re.match(RE_RANK, text)
+    if not m:
+        await rank_m.finish()
+    game = game_of(text)
+    char_name, mode = _parse_rank_body(text)
+    char = meta.get_character(char_name, game) if char_name else None
+    if char_name and not char:
+        await rank_m.finish(f"未找到角色【{char_name}】，请检查角色名")
+    if char is not None:
+        char_name = char.name
+    else:
+        # 综合榜（每人取最高分角色）只按评分排序
+        char_name, mode = None, MODE_MARK
+
+    check = await authorize_panel_call(event, feature="rank")
+    if check.needs_confirm:
+        register_pending(
+            event,
+            feature="rank",
+            payload={"game": game, "char": char_name, "mode": mode},
+        )
+        await rank_m.finish(check.message)
+    if not check.allowed:
+        await rank_m.finish(check.message)
+    clear_pending(event.group_id, event.get_user_id())
+    await _send_rank_card(rank_m, bot, event, {"game": game, "char": char_name, "mode": mode})
+    await rank_m.finish()
 
 
 # ---------------------------------------------------------------------------
@@ -357,7 +451,7 @@ async def _(event: MessageEvent):
 @artis_list_m.handle()
 @guard(artis_list_m)
 async def _(event: MessageEvent):
-    await ensure_panel_enabled(artis_list_m)
+    await ensure_panel_available(artis_list_m, event)
     text = event.get_plaintext()
     game = game_of(text)
     uid = resolve_uid(event, text, game)

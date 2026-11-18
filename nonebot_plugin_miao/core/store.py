@@ -100,6 +100,14 @@ def get_uid(user_id: str | int, game: str) -> str | None:
     return binds.get(game, {}).get(str(user_id))
 
 
+def all_binds(game: str) -> dict[str, str]:
+    """某游戏的全部绑定 {user_id: uid}（群成员接口不可用时的排名兜底）"""
+    _check_game(game)
+    binds = load_json(_data_dir() / "bind.json", {}) or {}
+    members = binds.get(game, {}) or {}
+    return {str(qq): str(uid) for qq, uid in members.items() if uid}
+
+
 def del_bind(user_id: str | int, game: str | None = None) -> bool:
     """解绑 UID。game 为 None 时解绑该用户所有游戏，返回是否有改动"""
     user_id = str(user_id)
@@ -174,8 +182,9 @@ def set_panel_enabled_override(value: bool | None) -> None:
 
 # ---------------- 面板调用限流（data/panel_usage.json） ----------------
 #
-# v2 结构：{"version": 2, "groups": {group_id: {user_id: [{"t": 时间戳, "k": kind}]}}}
-# kind: draw（转盘次数）/ free（每小时免费）/ paid（好感度付费）
+# v2 结构：{"version": 2, "groups": {group_id: {user_id: [{"t": 时间戳, "k": kind, "f": feature}]}}}
+# kind: free（每小时免费）/ paid（好感度付费）；转盘次数不再计入小时额度
+# feature: detail（角色面板）/ rank（群面板排名）；旧记录没有 f 字段时按 detail 处理
 # 旧版按群的纯时间戳列表会被忽略并重建。
 
 _PANEL_USAGE_FILE = "panel_usage.json"
@@ -192,7 +201,12 @@ def _panel_usage_load() -> dict[str, Any]:
 
 
 def _panel_records(
-    data: dict[str, Any], group_id: str | int, user_id: str | int, now: float, window: int
+    data: dict[str, Any],
+    group_id: str | int,
+    user_id: str | int,
+    now: float,
+    window: int,
+    feature: str | None = "detail",
 ) -> list[dict[str, Any]]:
     members = (data.get("groups") or {}).get(str(group_id)) or {}
     records = members.get(str(user_id)) or []
@@ -203,33 +217,55 @@ def _panel_records(
         stamp = rec.get("t")
         if isinstance(stamp, bool) or not isinstance(stamp, (int, float)):
             continue
-        if now - float(stamp) < window:
-            ret.append({"t": float(stamp), "k": str(rec.get("k") or "free")})
+        if now - float(stamp) >= window:
+            continue
+        kind = str(rec.get("k") or "free")
+        # 旧版本把转盘次数也记进小时额度；新规则下转盘次数不占额度，直接忽略
+        if kind == "draw":
+            continue
+        feat = str(rec.get("f") or "detail")
+        if feature is not None and feat != feature:
+            continue
+        ret.append({"t": float(stamp), "k": kind, "f": feat})
     return ret
 
 
-def panel_user_usage(group_id: str | int, user_id: str | int, window: int = 3600) -> list[dict[str, Any]]:
-    """某群某人在 window 秒内的面板调用记录（滑动窗口）"""
+def panel_user_usage(
+    group_id: str | int, user_id: str | int, window: int = 3600, feature: str = "detail"
+) -> list[dict[str, Any]]:
+    """某群某人在 window 秒内的面板调用记录（滑动窗口，按功能分开）"""
     now = time.time()
-    return _panel_records(_panel_usage_load(), group_id, user_id, now, window)
+    return _panel_records(_panel_usage_load(), group_id, user_id, now, window, feature)
 
 
-def panel_user_calls(group_id: str | int, user_id: str | int, window: int = 3600) -> int:
+def panel_user_calls(
+    group_id: str | int, user_id: str | int, window: int = 3600, feature: str = "detail"
+) -> int:
     """某群某人在 window 秒内的面板调用总次数"""
-    return len(panel_user_usage(group_id, user_id, window))
+    return len(panel_user_usage(group_id, user_id, window, feature))
 
 
-def panel_user_free_used(group_id: str | int, user_id: str | int, window: int = 3600) -> int:
+def panel_user_free_used(
+    group_id: str | int, user_id: str | int, window: int = 3600, feature: str = "detail"
+) -> int:
     """某群某人在 window 秒内已经用掉的免费次数"""
-    return sum(1 for rec in panel_user_usage(group_id, user_id, window) if rec["k"] == "free")
+    return sum(
+        1 for rec in panel_user_usage(group_id, user_id, window, feature) if rec["k"] == "free"
+    )
 
 
-def panel_user_wait(group_id: str | int, user_id: str | int, limit: int, window: int = 3600) -> int:
+def panel_user_wait(
+    group_id: str | int,
+    user_id: str | int,
+    limit: int,
+    window: int = 3600,
+    feature: str = "detail",
+) -> int:
     """本小时还需等待多少秒才能再次调用面板（0 表示现在可用）"""
     if limit <= 0:
         return 0
     now = time.time()
-    records = panel_user_usage(group_id, user_id, window)
+    records = panel_user_usage(group_id, user_id, window, feature)
     if len(records) < limit:
         return 0
     oldest = min(rec["t"] for rec in records[len(records) - limit:])
@@ -237,9 +273,13 @@ def panel_user_wait(group_id: str | int, user_id: str | int, limit: int, window:
 
 
 def record_panel_user_call(
-    group_id: str | int, user_id: str | int, kind: str = "free", window: int = 3600
+    group_id: str | int,
+    user_id: str | int,
+    kind: str = "free",
+    window: int = 3600,
+    feature: str = "detail",
 ) -> None:
-    """记录一次面板调用（draw/free/paid），并清理过期记录"""
+    """记录一次面板调用（free/paid），并清理过期记录"""
     group_id, user_id = str(group_id), str(user_id)
     now = time.time()
     with _LOCK:
@@ -252,12 +292,14 @@ def record_panel_user_call(
             for uid, records in members.items():
                 if not isinstance(records, list):
                     continue
-                kept = _panel_records(data, gid, uid, now, window)
+                kept = _panel_records(data, gid, uid, now, window, None)
                 if kept:
                     cleaned_members[str(uid)] = kept
             if cleaned_members:
                 groups[str(gid)] = cleaned_members
-        groups.setdefault(group_id, {}).setdefault(user_id, []).append({"t": now, "k": kind})
+        groups.setdefault(group_id, {}).setdefault(user_id, []).append(
+            {"t": now, "k": kind, "f": feature}
+        )
         save_json(_data_dir() / _PANEL_USAGE_FILE, {"version": _PANEL_USAGE_VERSION, "groups": groups})
 
 
@@ -281,6 +323,21 @@ def set_cd(key: str, seconds: int) -> None:
         cd_data = {k: v for k, v in cd_data.items() if v > now}
         cd_data[key] = now + seconds
         save_json(_data_dir() / "cd.json", cd_data)
+
+
+def panel_update_wait(user_id: str | int, game: str, seconds: int = 3600) -> int:
+    """某人在某游戏距离下次可用 /更新面板 还有多少秒（0 表示可用）"""
+    _check_game(game)
+    if seconds <= 0:
+        return 0
+    return check_cd(f"panel_update:{game}:{user_id}", seconds)
+
+
+def mark_panel_update(user_id: str | int, game: str, seconds: int = 3600) -> None:
+    """记录一次成功的 /更新面板，开始计时"""
+    _check_game(game)
+    if seconds > 0:
+        set_cd(f"panel_update:{game}:{user_id}", seconds)
 
 
 # ---------------- 抽卡记录（data/gacha/{game}/{user_id}/{uid}/{gacha_type}.json） ----------------

@@ -11,10 +11,12 @@ from nonebot_plugin_miao.core import panel_quota, store
 
 
 class FakeMantou:
-    def __init__(self, draws: int = 0, affection: int = 0):
+    def __init__(self, draws: int = 0, affection: int = 0, rank_draws: int = 0):
         self.draws = draws
+        self.rank_draws = rank_draws
         self.affection = affection
         self.consumed = 0
+        self.rank_consumed = 0
         self.spent: list[tuple[int, str]] = []
 
     async def get_panel_draws(self, group_id, user_id) -> int:
@@ -26,6 +28,18 @@ class FakeMantou:
         self.draws -= amount
         self.consumed += 1
         return self.draws
+
+    async def get_panel_rank_draws(self, group_id, user_id) -> int:
+        return self.rank_draws
+
+    async def consume_panel_rank_draw(
+        self, group_id, user_id, amount: int = 1
+    ) -> int | None:
+        if self.rank_draws < amount:
+            return None
+        self.rank_draws -= amount
+        self.rank_consumed += 1
+        return self.rank_draws
 
     async def get_affection(self, group_id, user_id) -> int:
         return self.affection
@@ -55,12 +69,22 @@ def make_event(group_id: int | None = 571494255, user_id: str = "10001"):
     )
 
 
-def make_config(free: int = 2, limit: int = 4, cost: int = 10, timeout: int = 30):
+def make_config(
+    free: int = 1,
+    limit: int = 2,
+    cost: int = 10,
+    timeout: int = 30,
+    open_hour: int = 8,
+    close_hour: int = 17,
+):
     return SimpleNamespace(
         miao_panel_free_per_hour=free,
         miao_panel_user_hourly_limit=limit,
         miao_panel_affection_cost=cost,
         miao_panel_confirm_timeout=timeout,
+        miao_panel_open_hour=open_hour,
+        miao_panel_close_hour=close_hour,
+        miao_panel_update_interval=60,
     )
 
 
@@ -90,93 +114,139 @@ async def test_superuser_bypasses_everything(monkeypatch):
     assert "SUPERUSER" in await panel_quota.panel_status(make_event(), make_config())
 
 
-async def test_first_two_are_free(monkeypatch):
+async def test_first_call_is_free(monkeypatch):
     fake = FakeMantou(draws=0, affection=50)
     use_mantou(monkeypatch, fake)
-    for _ in range(2):
-        check = await panel_quota.authorize_panel_call(make_event(), make_config())
-        assert check.allowed is True
-        assert check.paid is False
-        assert check.used_draw is False
+    check = await panel_quota.authorize_panel_call(make_event(), make_config())
+    assert check.allowed is True
+    assert check.paid is False
+    assert check.used_draw is False
     assert fake.affection == 50
-    assert store.panel_user_calls(571494255, "10001") == 2
-    assert store.panel_user_free_used(571494255, "10001") == 2
+    assert store.panel_user_calls(571494255, "10001") == 1
+    assert store.panel_user_free_used(571494255, "10001") == 1
+
+    second = await panel_quota.authorize_panel_call(make_event(), make_config())
+    assert second.allowed is False
+    assert second.needs_confirm is True
 
 
-async def test_third_call_needs_confirmation(monkeypatch):
+async def test_second_call_needs_confirmation(monkeypatch):
     fake = FakeMantou(draws=0, affection=50)
     use_mantou(monkeypatch, fake)
-    for _ in range(2):
-        await panel_quota.authorize_panel_call(make_event(), make_config())
+    await panel_quota.authorize_panel_call(make_event(), make_config())
     check = await panel_quota.authorize_panel_call(make_event(), make_config())
     assert check.allowed is False
     assert check.needs_confirm is True
     assert "消耗 10 点好感度" in check.message
     assert "回复「确认」" in check.message
     assert fake.affection == 50
-    assert store.panel_user_calls(571494255, "10001") == 2
+    assert store.panel_user_calls(571494255, "10001") == 1
 
 
-async def test_confirmed_third_and_fourth_call_charge_affection(monkeypatch):
+async def test_confirmed_second_call_charges_affection(monkeypatch):
     fake = FakeMantou(draws=0, affection=50)
     use_mantou(monkeypatch, fake)
-    for _ in range(2):
-        await panel_quota.authorize_panel_call(make_event(), make_config())
-    for _ in range(2):
-        check = await panel_quota.authorize_panel_call(make_event(), make_config(), confirmed=True)
-        assert check.allowed is True
-        assert check.paid is True
-    assert fake.affection == 30
-    assert fake.spent == [(10, "nonebot_plugin_miao:panel"), (10, "nonebot_plugin_miao:panel")]
-    assert store.panel_user_calls(571494255, "10001") == 4
+    await panel_quota.authorize_panel_call(make_event(), make_config())
+    check = await panel_quota.authorize_panel_call(make_event(), make_config(), confirmed=True)
+    assert check.allowed is True
+    assert check.paid is True
+    assert fake.affection == 40
+    assert fake.spent == [(10, "nonebot_plugin_miao:panel")]
+    assert store.panel_user_calls(571494255, "10001") == 2
 
     blocked = await panel_quota.authorize_panel_call(make_event(), make_config(), confirmed=True)
     assert blocked.allowed is False
-    assert "已查看 4 次" in blocked.message
-    assert fake.affection == 30
+    assert "已查看 2 次" in blocked.message
+    assert fake.affection == 40
 
 
 async def test_insufficient_affection_denies_without_confirm(monkeypatch):
     fake = FakeMantou(draws=0, affection=5)
     use_mantou(monkeypatch, fake)
-    for _ in range(2):
-        await panel_quota.authorize_panel_call(make_event(), make_config())
+    await panel_quota.authorize_panel_call(make_event(), make_config())
     check = await panel_quota.authorize_panel_call(make_event(), make_config())
     assert check.allowed is False
     assert check.needs_confirm is False
     assert "好感度不足 10 点" in check.message
     assert fake.spent == []
-    assert store.panel_user_calls(571494255, "10001") == 2
-
-
-async def test_wheel_draw_is_consumed_first_without_using_free(monkeypatch):
-    fake = FakeMantou(draws=2, affection=50)
-    use_mantou(monkeypatch, fake)
-    first = await panel_quota.authorize_panel_call(make_event(), make_config())
-    assert first.allowed is True and first.used_draw is True
-    assert fake.draws == 1
-    assert store.panel_user_free_used(571494255, "10001") == 0
     assert store.panel_user_calls(571494255, "10001") == 1
 
-    second = await panel_quota.authorize_panel_call(make_event(), make_config())
-    assert second.used_draw is True
-    third = await panel_quota.authorize_panel_call(make_event(), make_config())
-    assert third.allowed is True and third.paid is False
+
+async def test_wheel_draw_is_consumed_first_without_using_free_or_limit(monkeypatch):
+    fake = FakeMantou(draws=2, affection=50)
+    use_mantou(monkeypatch, fake)
+    for _ in range(2):
+        check = await panel_quota.authorize_panel_call(make_event(), make_config())
+        assert check.allowed is True and check.used_draw is True
+    assert fake.draws == 0
+    assert store.panel_user_free_used(571494255, "10001") == 0
+    assert store.panel_user_calls(571494255, "10001") == 0
+
+    free = await panel_quota.authorize_panel_call(make_event(), make_config())
+    assert free.allowed is True and free.used_draw is False
     assert store.panel_user_free_used(571494255, "10001") == 1
+    assert store.panel_user_calls(571494255, "10001") == 1
 
 
-async def test_draws_still_count_toward_hourly_limit(monkeypatch):
+async def test_wheel_draws_are_not_limited(monkeypatch):
     fake = FakeMantou(draws=10, affection=50)
     use_mantou(monkeypatch, fake)
-    for _ in range(4):
+    for _ in range(10):
         assert (await panel_quota.authorize_panel_call(make_event(), make_config())).allowed is True
-    blocked = await panel_quota.authorize_panel_call(make_event(), make_config())
-    assert blocked.allowed is False
-    assert "已查看 4 次" in blocked.message
+    assert store.panel_user_calls(571494255, "10001") == 0
+    # 转盘次数用完后，仍然有本小时的 1 次免费
+    assert (await panel_quota.authorize_panel_call(make_event(), make_config())).allowed is True
+
+
+async def test_rank_quota_is_independent_from_detail(monkeypatch):
+    fake = FakeMantou(draws=0, affection=50)
+    use_mantou(monkeypatch, fake)
+    assert (
+        await panel_quota.authorize_panel_call(make_event(), make_config(), feature="rank")
+    ).allowed is True
+    assert (
+        await panel_quota.authorize_panel_call(make_event(), make_config(), feature="rank")
+    ).needs_confirm is True
+    assert (
+        await panel_quota.authorize_panel_call(make_event(), make_config())
+    ).allowed is True
+    assert (
+        await panel_quota.authorize_panel_call(make_event(), make_config())
+    ).needs_confirm is True
+    assert store.panel_user_calls(571494255, "10001", feature="rank") == 1
+    assert store.panel_user_calls(571494255, "10001", feature="detail") == 1
+
+
+async def test_rank_draw_does_not_consume_detail_draw(monkeypatch):
+    fake = FakeMantou(draws=0, rank_draws=3, affection=50)
+    use_mantou(monkeypatch, fake)
+    for _ in range(3):
+        check = await panel_quota.authorize_panel_call(
+            make_event(), make_config(), feature="rank"
+        )
+        assert check.allowed is True and check.used_draw is True
+    assert fake.rank_consumed == 3
+    assert fake.consumed == 0
+    assert store.panel_user_calls(571494255, "10001", feature="rank") == 0
+    assert (
+        await panel_quota.authorize_panel_call(make_event(), make_config())
+    ).allowed is True
+
+
+async def test_rank_paid_uses_rank_source(monkeypatch):
+    fake = FakeMantou(draws=0, affection=50)
+    use_mantou(monkeypatch, fake)
+    await panel_quota.authorize_panel_call(make_event(), make_config(), feature="rank")
+    check = await panel_quota.authorize_panel_call(
+        make_event(), make_config(), confirmed=True, feature="rank"
+    )
+    assert check.allowed is True and check.paid is True
+    assert fake.spent == [(10, "nonebot_plugin_miao:panel_rank")]
+    assert store.panel_user_calls(571494255, "10001", feature="rank") == 2
 
 
 async def test_limit_is_per_user(monkeypatch):
-    fake = FakeMantou(draws=10, affection=50)
+    fake = FakeMantou(draws=0, affection=50)
     use_mantou(monkeypatch, fake)
     config = make_config(limit=1)
     assert (await panel_quota.authorize_panel_call(make_event(user_id="10001"), config)).allowed is True
@@ -192,45 +262,108 @@ async def test_missing_mantou_plugin_is_free(monkeypatch):
 
 
 async def test_panel_status(monkeypatch):
-    fake = FakeMantou(draws=3, affection=20)
+    fake = FakeMantou(draws=3, rank_draws=2, affection=20)
     use_mantou(monkeypatch, fake)
     await panel_quota.authorize_panel_call(make_event(), make_config())
     status = await panel_quota.panel_status(make_event(), make_config())
-    assert "转盘面板次数：2 次（优先消耗）" in status
-    assert "本小时免费次数：2/2 次" in status
-    assert "本小时已查看：1/4 次" in status
+    assert "面板开放时间：08:00–17:00" in status
+    assert "角色面板：转盘次数 2 次" in status
+    assert "角色面板：免费剩余 1/1 次，已查看 0/2 次" in status
+    assert "群面板排名：转盘次数 2 次" in status
+    assert "群面板排名：免费剩余 1/1 次，已查看 0/2 次" in status
     assert "当前好感度：20 点" in status
     assert "需回复「确认」" in status
 
 
+def test_panel_time_window():
+    from datetime import datetime, timedelta, timezone
+
+    tz = timezone(timedelta(hours=8))
+    config = make_config(open_hour=8, close_hour=17)
+    assert panel_quota.panel_time_allowed(config, datetime(2026, 1, 1, 8, 0, tzinfo=tz))
+    assert panel_quota.panel_time_allowed(config, datetime(2026, 1, 1, 16, 59, tzinfo=tz))
+    assert not panel_quota.panel_time_allowed(config, datetime(2026, 1, 1, 7, 59, tzinfo=tz))
+    assert not panel_quota.panel_time_allowed(config, datetime(2026, 1, 1, 17, 0, tzinfo=tz))
+
+    overnight = make_config(open_hour=22, close_hour=6)
+    assert panel_quota.panel_time_allowed(overnight, datetime(2026, 1, 1, 23, 0, tzinfo=tz))
+    assert panel_quota.panel_time_allowed(overnight, datetime(2026, 1, 1, 5, 59, tzinfo=tz))
+    assert not panel_quota.panel_time_allowed(overnight, datetime(2026, 1, 1, 12, 0, tzinfo=tz))
+
+    always = make_config(open_hour=0, close_hour=0)
+    assert panel_quota.panel_time_allowed(always, datetime(2026, 1, 1, 3, 0, tzinfo=tz))
+    assert "全天开放" in panel_quota.panel_window_text(always)
+
+
+def test_update_panel_hourly_limit():
+    config = make_config()
+    assert panel_quota.update_wait("10001", "gs", config) == 0
+    panel_quota.mark_update("10001", "gs", config)
+    wait = panel_quota.update_wait("10001", "gs", config)
+    assert 3500 <= wait <= 3600
+    assert "每小时只能使用 1 次" in panel_quota.update_limit_message(wait)
+    assert "60 分钟" in panel_quota.update_limit_message(wait)
+    # 另一个游戏单独计时，另一个群友不受影响
+    assert panel_quota.update_wait("10001", "sr", config) == 0
+    assert panel_quota.update_wait("10002", "gs", config) == 0
+
+
+def test_update_panel_limit_can_be_disabled():
+    config = make_config()
+    config.miao_panel_update_interval = 0
+    panel_quota.mark_update("10001", "gs", config)
+    assert panel_quota.update_wait("10001", "gs", config) == 0
+
+
+def test_panel_closed_message():
+    from datetime import datetime, timedelta, timezone
+
+    tz = timezone(timedelta(hours=8))
+    config = make_config(open_hour=8, close_hour=17)
+    morning = panel_quota.panel_closed_message(config, datetime(2026, 1, 1, 7, 0, tzinfo=tz))
+    assert "今天 08:00 后" in morning
+    evening = panel_quota.panel_closed_message(config, datetime(2026, 1, 1, 18, 0, tzinfo=tz))
+    assert "明天 08:00 后" in evening
+
+
+def _detail_payload() -> dict:
+    return {
+        "avatar": {"id": "10000051", "name": "优菈"},
+        "game": "gs",
+        "uid": "800055548",
+        "show_dmg": True,
+        "dmg_idx": 2,
+    }
+
+
 def test_pending_lifecycle():
     event = make_event()
-    panel_quota.register_pending(
-        event,
-        avatar={"id": "10000051", "name": "优菈"},
-        game="gs",
-        uid="800055548",
-        show_dmg=True,
-        dmg_idx=2,
-    )
+    panel_quota.register_pending(event, feature="detail", payload=_detail_payload())
     assert panel_quota.has_pending(571494255, "10001", 30) is True
     pending = panel_quota.pop_pending(571494255, "10001", 30)
     assert pending is not None
-    assert pending.avatar["name"] == "优菈"
-    assert pending.show_dmg is True
-    assert pending.dmg_idx == 2
+    assert pending.feature == "detail"
+    assert pending.payload["avatar"]["name"] == "优菈"
+    assert pending.payload["show_dmg"] is True
+    assert pending.payload["dmg_idx"] == 2
     assert panel_quota.has_pending(571494255, "10001", 30) is False
+
+
+def test_rank_pending_lifecycle():
+    event = make_event()
+    panel_quota.register_pending(
+        event, feature="rank", payload={"game": "gs", "char": "优菈", "mode": "dmg"}
+    )
+    pending = panel_quota.pop_pending(571494255, "10001", 30)
+    assert pending is not None
+    assert pending.feature == "rank"
+    assert pending.payload == {"game": "gs", "char": "优菈", "mode": "dmg"}
 
 
 def test_pending_expires():
     event = make_event()
     pending = panel_quota.register_pending(
-        event,
-        avatar={},
-        game="gs",
-        uid="800055548",
-        show_dmg=False,
-        dmg_idx=None,
+        event, feature="detail", payload={"avatar": {}, "game": "gs", "uid": "800055548"}
     )
     pending.created_at -= 31
     assert panel_quota.has_pending(571494255, "10001", 30) is False
@@ -239,9 +372,7 @@ def test_pending_expires():
 
 def test_clear_pending():
     event = make_event()
-    panel_quota.register_pending(
-        event, avatar={}, game="gs", uid="800055548", show_dmg=False, dmg_idx=None
-    )
+    panel_quota.register_pending(event, feature="detail", payload=_detail_payload())
     assert panel_quota.clear_pending(571494255, "10001") is not None
     assert panel_quota.has_pending(571494255, "10001", 30) is False
 
@@ -260,6 +391,28 @@ def test_usage_window_and_legacy_data(tmp_path):
     )
     assert store.panel_user_calls(571494255, "10001") == 0
     assert store.panel_user_wait(571494255, "10001", limit=4) == 0
+
+    # 旧版把转盘次数记进额度；新规则应忽略 draw，只保留 free/paid
+    recent = time.time()
+    path.write_text(
+        json.dumps(
+            {
+                "version": 2,
+                "groups": {
+                    "571494255": {
+                        "10001": [
+                            {"t": recent, "k": "draw"},
+                            {"t": recent, "k": "free"},
+                        ]
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert store.panel_user_calls(571494255, "10001") == 1
+    assert store.panel_user_free_used(571494255, "10001") == 1
+    assert store.panel_user_calls(571494255, "10001", feature="rank") == 0
 
     # 旧版按群的纯时间戳结构应被忽略，不参与新规则
     path.write_text(json.dumps({"571494255": [time.time()]}), encoding="utf-8")
@@ -287,9 +440,7 @@ def test_panel_enabled_switch(monkeypatch):
 
 def test_disable_cancels_pending():
     event = make_event()
-    panel_quota.register_pending(
-        event, avatar={}, game="gs", uid="800055548", show_dmg=False, dmg_idx=None
-    )
+    panel_quota.register_pending(event, feature="detail", payload=_detail_payload())
     assert panel_quota.set_panel_enabled(False) == 1
     assert panel_quota.has_pending(571494255, "10001", 30) is False
     panel_quota.set_panel_enabled(None)
@@ -297,9 +448,7 @@ def test_disable_cancels_pending():
 
 def test_enable_keeps_pending():
     event = make_event()
-    panel_quota.register_pending(
-        event, avatar={}, game="gs", uid="800055548", show_dmg=False, dmg_idx=None
-    )
+    panel_quota.register_pending(event, feature="detail", payload=_detail_payload())
     assert panel_quota.set_panel_enabled(True) == 0
     assert panel_quota.has_pending(571494255, "10001", 30) is True
     panel_quota.set_panel_enabled(None)
@@ -318,3 +467,20 @@ async def test_ensure_panel_enabled_gate(monkeypatch):
 
     monkeypatch.setattr(common, "panel_enabled", lambda: True)
     assert await common.ensure_panel_enabled(FakeMatcher()) is None
+
+
+async def test_ensure_panel_available_gate(monkeypatch):
+    from nonebot_plugin_miao.commands import common
+
+    class FakeMatcher:
+        async def finish(self, message: str = ""):
+            raise RuntimeError(str(message))
+
+    monkeypatch.setattr(common, "panel_enabled", lambda: True)
+    monkeypatch.setattr(common, "panel_time_allowed", lambda: False)
+    monkeypatch.setattr(common, "panel_closed_message", lambda: "面板已关闭")
+    with pytest.raises(RuntimeError, match="面板已关闭"):
+        await common.ensure_panel_available(FakeMatcher(), object())
+
+    monkeypatch.setattr(common, "panel_time_allowed", lambda: True)
+    assert await common.ensure_panel_available(FakeMatcher(), object()) is None

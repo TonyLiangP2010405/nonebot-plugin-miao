@@ -82,8 +82,13 @@ def test_matchers_registered(cmds):
         cmds.help.profile_help_m,
         cmds.help.gacha_help_m,
         cmds.profile.update_m,
+        cmds.profile.mys_update_m,
         cmds.profile.list_m,
         cmds.profile.artis_list_m,
+        cmds.profile.quota_m,
+        cmds.profile.switch_m,
+        cmds.profile.rank_m,
+        cmds.profile.confirm_m,
         cmds.profile.detail_m,
     ):
         assert m in all_matchers
@@ -348,6 +353,30 @@ def test_profile_switch_regex(cmds):
         assert not re.match(p.RE_PANEL_SWITCH, text), text
     # 不能被角色详情正则吃掉
     assert not re.match(p.RE_DETAIL, "/面板开关")
+
+
+def test_profile_rank_regex(cmds):
+    p = cmds.profile
+    for text in (
+        "/面板排名",
+        "/群面板排名",
+        "/面板排行",
+        "/排名",
+        "/优菈面板排名",
+        "/优菈伤害排名",
+        "/星铁镜流排名",
+        "/优菈圣遗物排行",
+        "/群榜单",
+    ):
+        assert re.match(p.RE_RANK, text), text
+    # 排名指令不会被详情正则吃掉
+    for text in ("/面板排名", "/优菈面板排名", "/优菈伤害排名", "/群面板排名"):
+        assert not re.match(p.RE_DETAIL, text), text
+    assert p._parse_rank_body("/面板排名") == ("", p.MODE_MARK)
+    assert p._parse_rank_body("/群面板排名") == ("", p.MODE_MARK)
+    assert p._parse_rank_body("/优菈面板排名") == ("优菈", p.MODE_MARK)
+    assert p._parse_rank_body("/优菈伤害排名") == ("优菈", p.MODE_DMG)
+    assert p._parse_rank_body("/星铁镜流圣遗物排行") == ("镜流", p.MODE_MARK)
 
 
 def test_profile_quota_regex(cmds):

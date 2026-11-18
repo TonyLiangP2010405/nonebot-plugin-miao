@@ -19,11 +19,17 @@ class Config(BaseModel):
     miao_res_auto_update: bool = True
     # 面板功能总开关（SUPERUSER 也可用 /面板开关 运行时切换）
     miao_panel_enabled: bool = True
+    # 面板功能开放时段（整点，Asia/Shanghai）：08:00 开启，17:00 关闭
+    # 两个值相同表示全天开放；支持跨天（如 22 到 6）
+    miao_panel_open_hour: int = Field(default=8, ge=0, le=23)
+    miao_panel_close_hour: int = Field(default=17, ge=0, le=23)
+    # /更新面板、/米游社更新面板 的命令冷却（分钟，原神/星铁分别计算；0 表示不限制）
+    miao_panel_update_interval: int = Field(default=60, ge=0)
     # 面板查看限流（与 nonebot-plugin-mantou-affection 联动）
-    # 每人每小时免费查看次数
-    miao_panel_free_per_hour: int = Field(default=2, ge=0)
-    # 每人每小时最多查看次数（含免费、转盘次数和付费次数）
-    miao_panel_user_hourly_limit: int = Field(default=4, ge=0)
+    # 每人每小时免费查看次数（角色面板与群排名各自独立计算）
+    miao_panel_free_per_hour: int = Field(default=1, ge=0)
+    # 每人每小时最多查看次数（含免费与付费；转盘次数不占额度）
+    miao_panel_user_hourly_limit: int = Field(default=2, ge=0)
     # 免费次数用完后，每次查看消耗的好感度（0 表示不允许用好感度抵扣）
     miao_panel_affection_cost: int = Field(default=10, ge=0)
     # 付费查看的确认有效期（秒）

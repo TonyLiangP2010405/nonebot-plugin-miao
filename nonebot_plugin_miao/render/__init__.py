@@ -7,6 +7,8 @@ from .gacha_stat import render_gacha_stat
 from .gacha_trial import render_gacha_trial
 from .profile_detail import render_profile_detail
 from .profile_list import render_profile_list
+from .profile_rank import render_profile_rank
+from .profile_update import render_profile_update
 
 __all__ = [
     "ELEM_COLORS",
@@ -24,4 +26,6 @@ __all__ = [
     "render_artis_list",
     "render_profile_detail",
     "render_profile_list",
+    "render_profile_rank",
+    "render_profile_update",
 ]
