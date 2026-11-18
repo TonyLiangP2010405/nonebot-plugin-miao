@@ -26,6 +26,7 @@ import time
 from typing import Any
 
 import httpx
+from nonebot import logger
 
 from ..core import meta
 from .errors import ProfileError
@@ -135,6 +136,10 @@ def _parse_avatar(ds: dict[str, Any]) -> dict[str, Any] | None:
                 skill["pointId"] = int(point_id.replace("1" + old_id, str(new_id), 1))
     char = meta.get_character(ds.get("avatarId"), "sr")
     if not char:
+        logger.warning(
+            f"[miao] mihomo 角色 {ds.get('avatarId')} 不在本地 meta 中，已跳过；"
+            "如展示柜有该角色，请执行 /更新面板资源"
+        )
         return None
     talent, trees = _parse_talent(ds.get("skillTreeList") or [], char)
     return {
