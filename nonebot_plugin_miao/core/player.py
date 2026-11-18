@@ -70,11 +70,11 @@ class Player:
 
     def get_avatar(self, name_or_alias: str | int) -> dict[str, Any] | None:
         """按 名字/别名/id 取角色面板数据，找不到返回 None（经 meta 别名解析）"""
-        char = meta.get_character(name_or_alias, self.game)
+        char = meta.get_character(name_or_alias, self.game) or meta.resolve_character(name_or_alias, self.game)
         if not char:
             # meta 查不到时，允许直接按已存 id 查
             return self.avatars.get(str(name_or_alias).strip())
-        candidates = [str(char.id)]
+        candidates = meta.character_id_candidates(char.id, self.game)
         # 旅行者（gs）：兄妹两个 id 取存在的那个（对齐 miao Player.js getAvatar）
         if char.name == "旅行者":
             candidates = ["10000005", "10000007"]

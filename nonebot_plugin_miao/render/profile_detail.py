@@ -24,7 +24,7 @@ INNER = W - M * 2
 
 # 属性行：(key, 是否百分比)
 _GS_STATS = ("hp", "atk", "def", "mastery", "cpct", "cdmg", "recharge", "dmg")
-_SR_STATS = ("hp", "atk", "def", "speed", "cpct", "cdmg", "recharge", "dmg")
+_SR_STATS = ("hp", "atk", "def", "speed", "cpct", "cdmg", "recharge", "stance", "dmg", "heal")
 _PCT_KEYS = {"cpct", "cdmg", "recharge", "dmg", "phy", "stance", "effPct", "effDef", "heal", "joy"}
 _ATTR_LABEL = {
     "hp": "生命值",
@@ -179,10 +179,13 @@ def stat_rows(avatar: dict[str, Any], attr: dict[str, Any], mark: dict[str, Any]
         else:
             value_text = f"{value:,.0f}"
             sub_text = f"{base_v:,.0f} +{value - base_v:,.0f}"
+        label = _ATTR_LABEL.get(real if key == "dmg" else key, real)
+        if game == "sr" and real == "recharge":
+            label = "能量恢复效率"
         rows.append(
             {
                 "key": real,
-                "label": _ATTR_LABEL.get(real if key == "dmg" else key, real),
+                "label": label,
                 "value": value_text,
                 "sub": sub_text,
                 "weight": float(cw.get(real) or 0),
@@ -574,6 +577,16 @@ async def render_profile_detail(
 
     def builder(canvas: Any, w: int, h: int) -> int:
         if h:
+            # 详情卡整卡深色底；否则 PNG 透明区域在浅色客户端上会把白字吞掉
+            base.draw_gradient(
+                canvas,
+                0,
+                0,
+                w,
+                h,
+                [base.color("#171A21"), base.color("#0E1015")],
+                diagonal=False,
+            )
             base.draw_gradient(canvas, 0, 0, w, HEADER_H, base.elem_gradient(elem), diagonal=False)
             splash = img(meta.char_img(name, "splash", game))
             if splash is not None:
@@ -618,13 +631,15 @@ async def render_profile_detail(
                 if not item["on"]:
                     base.draw_rounded(canvas, ix, cy, 32, 32, 6, base.color("#B3141619"))
 
-            # 属性（2 列 × 4 行）
+            # 属性（原神 2×4；星铁 2×5，额外展示击破特攻/治疗加成）
             sx = px
             cell_w = (pw - 8) / 2
-            for i, row in enumerate(stats[:8]):
+            grid_y = 278 if game == "sr" else 286
+            row_h = 31 if game == "sr" else 38
+            for i, row in enumerate(stats[: 10 if game == "sr" else 8]):
                 col, line = i % 2, i // 2
                 x = sx + col * (cell_w + 8)
-                y = 286 + line * 38
+                y = grid_y + line * row_h
                 if line:
                     base.draw_rounded(canvas, x, y - 20, cell_w, 1, 0, base.color("#1AFFFFFF"))
                 _text(canvas, row["label"], x, y, 12, base.TEXT_SUB)

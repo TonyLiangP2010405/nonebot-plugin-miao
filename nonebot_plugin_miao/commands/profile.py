@@ -97,6 +97,12 @@ def _update_tip(game: str) -> str:
     return f"暂无本地面板数据，请先发送 /{'星铁' if game == 'sr' else ''}更新面板"
 
 
+def _char_not_found(name: str, game: str) -> str:
+    tips = meta.suggest_characters(name, game)
+    hint = f"，你是不是想找：{'、'.join(tips)}" if tips else ""
+    return f"未找到角色【{name}】{hint}。支持角色名、别名，也会尝试纠正常见错字。"
+
+
 # ---------------------------------------------------------------------------
 # /更新面板
 # ---------------------------------------------------------------------------
@@ -297,9 +303,9 @@ async def _(event: MessageEvent):
         await detail_m.finish()
     game = game_of(text)
     name = re.sub(r"^(星铁|原神)", "", m.group(1)).strip()
-    char = meta.get_character(name, game)
+    char = meta.resolve_character(name, game)
     if not char:
-        await detail_m.finish(f"未找到角色【{name}】，请检查角色名")
+        await detail_m.finish(_char_not_found(name, game))
     uid = resolve_uid(event, text, game)
     if not uid:
         await detail_m.finish(_bind_tip(game))
@@ -419,9 +425,9 @@ async def _(event: MessageEvent, bot: Bot):
         await rank_m.finish()
     game = game_of(text)
     char_name, mode = _parse_rank_body(text)
-    char = meta.get_character(char_name, game) if char_name else None
+    char = meta.resolve_character(char_name, game) if char_name else None
     if char_name and not char:
-        await rank_m.finish(f"未找到角色【{char_name}】，请检查角色名")
+        await rank_m.finish(_char_not_found(char_name, game))
     if char is not None:
         char_name = char.name
     else:

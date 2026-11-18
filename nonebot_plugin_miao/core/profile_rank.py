@@ -139,7 +139,7 @@ async def collect_rank(
 ) -> list[RankEntry]:
     """收集群排名；char_name 为空时每人取评分最高的角色。"""
     mode = MODE_DMG if mode == MODE_DMG else MODE_MARK
-    char = meta.get_character(char_name, game) if char_name else None
+    char = meta.resolve_character(char_name, game) if char_name else None
     members = await group_members(bot, group_id, game)
     entries: list[RankEntry] = []
     for qq, nickname in members.items():

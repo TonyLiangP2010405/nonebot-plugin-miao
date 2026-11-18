@@ -8,9 +8,16 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
+from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any
+
+try:
+    from pypinyin import lazy_pinyin
+except Exception:  # pragma: no cover - 依赖缺失时退回纯字形匹配
+    lazy_pinyin = None
 
 from .jseval import eval_js
 from .store import GAMES
@@ -214,6 +221,206 @@ def get_character(name_or_alias: str | int, game: str) -> CharacterMeta | None:
     return CharacterMeta(game=game, data=data)
 
 
+# 星铁「加强角色」：mihomo 的 enhancedId=1 会把 1310 流萤解析成 2310 流萤Pro。
+# 查询基础角色时允许回落到 Pro 数据，查询 Pro 时也允许回落到基础数据。
+SR_ENHANCED_BASE_IDS = frozenset({1212, 1205, 1005, 1006, 1004, 1102, 1217, 1310, 1306, 1307})
+
+
+def character_id_candidates(char_id: str | int, game: str) -> list[str]:
+    """角色 id 查询顺序：自身 → 星铁加强/基础变体。"""
+    try:
+        cid = int(char_id)
+    except (TypeError, ValueError):
+        return [str(char_id)]
+    ids = [str(cid)]
+    if game == "sr":
+        if cid in SR_ENHANCED_BASE_IDS:
+            ids.append(str(cid + 1000))
+        elif cid - 1000 in SR_ENHANCED_BASE_IDS:
+            ids.append(str(cid - 1000))
+    return ids
+
+
+_CHAR_NORM_CACHE: dict[str, list[tuple[str, str, str]]] = {}
+_PINYIN_CACHE: dict[str, tuple[str, ...]] = {}
+
+
+def _pinyin_syllables(text: str) -> tuple[str, ...]:
+    """按字/词取无声调拼音；依赖缺失时退回原字符，纯字形匹配仍可用。"""
+    if text in _PINYIN_CACHE:
+        return _PINYIN_CACHE[text]
+    if lazy_pinyin is None:
+        value = tuple(text)
+    else:
+        try:
+            value = tuple(str(item).lower() for item in lazy_pinyin(text))
+        except Exception:
+            value = tuple(text)
+    _PINYIN_CACHE[text] = value
+    return value
+
+
+def _is_pinyin_prefix(a: Sequence[str], b: Sequence[str]) -> bool:
+    if len(a) > len(b):
+        a, b = b, a
+    return bool(a) and tuple(b[: len(a)]) == tuple(a)
+
+# 指令关键词不做错字猜测，否则「抽卡」会被纠成「米卡」
+_RESOLVE_STOPWORDS = {
+    "抽卡", "抽奖", "更新", "面板", "列表", "伤害", "圣遗物", "遗器", "图鉴",
+    "攻略", "角色", "武器", "卡池", "十连", "单抽", "记录", "统计", "分析",
+    "排名", "排行", "绑定", "帮助", "确认", "取消", "参与", "模拟", "定轨",
+    "导入", "导出", "签到", "面板次数", "面板开关",
+}
+
+
+def _norm_char_key(text: object) -> str:
+    """角色名归一化：去空格/标点/分隔符，统一大小写，去掉“的/角色/酱”等尾巴。"""
+    key = str(text or "").strip().lower()
+    key = key.replace("　", " ")
+    key = re.sub(r"\s+", "", key)
+    key = re.sub(r"[·・•\-—–_/\\|.,，。!！?？:：;；'\"“”‘’()（）\[\]【】<>《》]", "", key)
+    key = re.sub(r"(的|角色|人物|酱|亲)$", "", key)
+    return key
+
+
+def _char_candidates(game: str) -> list[tuple[str, str, str]]:
+    """(归一化 key, 目录名, 展示名) 列表，用于别名与错字匹配。"""
+    if game in _CHAR_NORM_CACHE:
+        return _CHAR_NORM_CACHE[game]
+    index = _char_index(game)
+    names: dict[str, str] = {}
+    for name, dir_name in index.by_name.items():
+        names.setdefault(dir_name, name)
+    candidates: dict[tuple[str, str], tuple[str, str, str]] = {}
+    for key, dir_name in list(index.by_name.items()) + list(index.by_alias.items()):
+        norm = _norm_char_key(key)
+        if len(norm) < 2:
+            continue
+        candidates[(norm, dir_name)] = (norm, dir_name, names.get(dir_name, dir_name))
+    result = list(candidates.values())
+    _CHAR_NORM_CACHE[game] = result
+    return result
+
+
+def _levenshtein(a: Sequence[str], b: Sequence[str]) -> int:
+    if a == b:
+        return 0
+    if len(a) < len(b):
+        a, b = b, a
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+        prev = cur
+    return prev[-1]
+
+
+def resolve_character(name_or_alias: str | int, game: str) -> CharacterMeta | None:
+    """角色名解析：精确名字/别名/id → 归一化别名 → 常见错字容错。
+
+    只在命令层使用；渲染/计算内部仍用 get_character 精确查找，避免海量头像
+    重复做模糊匹配。数字 id 不做模糊匹配。
+    """
+    exact = get_character(name_or_alias, game)
+    if exact is not None:
+        return exact
+    raw = str(name_or_alias or "").strip()
+    if not raw or raw.isdigit():
+        return None
+    query = _norm_char_key(raw)
+    if len(query) < 2 or query in _RESOLVE_STOPWORDS:
+        return None
+
+    candidates = _char_candidates(game)
+    index = _char_index(game)
+    name_norms = {_norm_char_key(key) for key in index.by_name}
+    name_dirs = {
+        dir_name for key, dir_name in index.by_name.items() if _norm_char_key(key) == query
+    }
+    if len(name_dirs) == 1:
+        return get_character(next(iter(name_dirs)), game)
+    if len(name_dirs) > 1:
+        return None
+
+    alias_dirs = {dir_name for norm, dir_name, _ in candidates if norm == query}
+    if len(alias_dirs) == 1:
+        return get_character(next(iter(alias_dirs)), game)
+    if len(alias_dirs) > 1:
+        return None
+
+    py_query = _pinyin_syllables(query)
+    scored: dict[str, tuple[int, int, int, float, int, int, str]] = {}
+    for norm, dir_name, name in candidates:
+        distance = _levenshtein(query, norm)
+        ratio = SequenceMatcher(None, query, norm).ratio()
+        py_candidate = _pinyin_syllables(norm)
+        py_distance = _levenshtein(py_query, py_candidate)
+        py_prefix = _is_pinyin_prefix(py_query, py_candidate)
+        # 两字查询必须是同音字/同音前缀，避免把「可以」纠成「可莉」
+        if len(query) == 2 and not py_prefix and py_query != py_candidate:
+            continue
+        # 两字短词只允许扩展规范角色名，不做「长别名前缀」，避免「那个」命中「那个女人」
+        if len(query) == 2 and py_prefix and len(norm) > len(query) and norm not in name_norms:
+            continue
+        if distance > 1 and ratio < 0.74 and py_distance > 0 and not py_prefix:
+            continue
+        # 同等字形距离下优先同音、再优先规范角色名，避免被别人的两字别名抢走
+        is_alias = 0 if norm in name_norms else 1
+        score = (
+            distance,
+            py_distance,
+            is_alias,
+            -ratio,
+            abs(len(query) - len(norm)),
+            len(norm),
+            name,
+        )
+        old = scored.get(dir_name)
+        if old is None or score[:6] < old[:6]:
+            scored[dir_name] = score
+    if not scored:
+        return None
+    ranked = sorted(scored.items(), key=lambda item: item[1][:6])
+    if len(ranked) > 1 and ranked[0][1][:3] == ranked[1][1][:3]:
+        # 两个角色同样接近时不猜，交给调用方提示
+        return None
+    return get_character(ranked[0][0], game)
+
+
+def suggest_characters(name_or_alias: str | int, game: str, limit: int = 3) -> list[str]:
+    """错字/别名未命中时给出候选角色名（用于错误提示）。"""
+    raw = str(name_or_alias or "").strip()
+    if not raw:
+        return []
+    query = _norm_char_key(raw)
+    if len(query) < 2 or query in _RESOLVE_STOPWORDS:
+        return []
+    index = _char_index(game)
+    name_norms = {_norm_char_key(key) for key in index.by_name}
+    py_query = _pinyin_syllables(query)
+    scored: dict[str, tuple[float, int, int, int, str]] = {}
+    for norm, dir_name, name in _char_candidates(game):
+        ratio = SequenceMatcher(None, query, norm).ratio()
+        distance = _levenshtein(query, norm)
+        py_distance = _levenshtein(py_query, _pinyin_syllables(norm))
+        if ratio < 0.5 and distance > 1 and py_distance > 1:
+            continue
+        score = (-ratio, py_distance, distance, 0 if norm in name_norms else 1, name)
+        old = scored.get(dir_name)
+        if old is None or score[:4] < old[:4]:
+            scored[dir_name] = score
+    ranked = sorted(scored.values(), key=lambda item: item[:4])
+    result: list[str] = []
+    for _, _, _, _, name in ranked:
+        if name not in result:
+            result.append(name)
+        if len(result) >= max(1, limit):
+            break
+    return result
+
+
 def list_characters(game: str) -> list[dict[str, Any]]:
     """返回全部角色的规范元数据，按星级降序、名称升序排列。"""
     index = _char_index(game)
@@ -406,6 +613,8 @@ def clear_cache() -> None:
     """
     _JSON_CACHE.clear()
     _CHAR_INDEX.clear()
+    _CHAR_NORM_CACHE.clear()
+    _PINYIN_CACHE.clear()
     _WEAPON_INDEX.clear()
     _WEAPON_ID_INDEX.clear()
     _EXTRA_CACHE.clear()

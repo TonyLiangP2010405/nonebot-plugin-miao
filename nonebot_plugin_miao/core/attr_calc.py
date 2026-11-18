@@ -785,6 +785,9 @@ def calc_attr(avatar: dict[str, Any], game: str) -> dict[str, Any]:
         ad.add("recharge", 100, True)
         ad.add("cpct", 5, True)
         ad.add("cdmg", 50, True)
+    else:
+        # 星铁面板同样有 100% 基础能量恢复效率，角色 meta 的 baseAttr 未列出
+        ad.add("recharge", 100, True)
     _set_char_attr(ad, avatar, char, game)
     _set_weapon_attr(ad, avatar, char, game)
     pieces = resolve_artis(avatar, game)

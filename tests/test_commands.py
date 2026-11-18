@@ -260,6 +260,8 @@ def test_encyclopedia_lookup(cmds):
     assert kind == "character" and character.name == "芙宁娜"
     kind, weapon = find("雾切")
     assert kind == "weapon" and weapon["name"] == "雾切之回光"
+    kind, character = find("芙琳娜")
+    assert kind == "character" and character.name == "芙宁娜"
     assert find("不存在的图鉴条目") is None
 
 
@@ -320,6 +322,8 @@ def test_strategy_role_resolution(cmds):
     assert resolve("饮月君", "sr") == "丹恒•饮月"
     assert resolve("水神", "gs") == "芙宁娜"
     assert resolve("星见雅", "zzz") == "星见雅"
+    assert resolve("优拉", "gs") == "优菈"
+    assert resolve("神里凌华", "gs") == "神里绫华"
     assert resolve("不存在的铁道角色", "sr") is None
 
 
@@ -377,6 +381,12 @@ def test_profile_rank_regex(cmds):
     assert p._parse_rank_body("/优菈面板排名") == ("优菈", p.MODE_MARK)
     assert p._parse_rank_body("/优菈伤害排名") == ("优菈", p.MODE_DMG)
     assert p._parse_rank_body("/星铁镜流圣遗物排行") == ("镜流", p.MODE_MARK)
+
+
+def test_profile_char_not_found_hint(cmds):
+    text = cmds.profile._char_not_found("神里绫", "gs")
+    assert "你是不是想找" in text
+    assert "神里绫华" in text and "神里绫人" in text
 
 
 def test_profile_quota_regex(cmds):

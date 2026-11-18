@@ -1800,6 +1800,18 @@ files = [
 ]
 
 [[package]]
+name = "pypinyin"
+version = "0.55.0"
+description = "汉字拼音转换模块/工具."
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,<4,>=2.6"
+groups = ["main"]
+files = [
+    {file = "pypinyin-0.55.0-py2.py3-none-any.whl", hash = "sha256:d53b1e8ad2cdb815fb2cb604ed3123372f5a28c6f447571244aca36fc62a286f"},
+    {file = "pypinyin-0.55.0.tar.gz", hash = "sha256:b5711b3a0c6f76e67408ec6b2e3c4987a3a806b7c528076e7c7b86fcf0eaa66b"},
+]
+
+[[package]]
 name = "pyreadline3"
 version = "3.5.6"
 description = "A python implementation of GNU readline."
@@ -2487,4 +2499,4 @@ quickjs = ["quickjs"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<4.0"
-content-hash = "a4c97d77e0757eab96f019f9ca26a7daea3cc7654bf820e9619d0cf649b8cb27"
+content-hash = "e69184d68c0b12ff664a06f6339fc8fc5c54f84fbf18ad20da34210ea4275779"

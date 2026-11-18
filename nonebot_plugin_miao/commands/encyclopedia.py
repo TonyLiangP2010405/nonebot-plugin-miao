@@ -27,7 +27,7 @@ def parse_encyclopedia_query(text: str) -> str:
 
 def find_encyclopedia_entry(query: str):
     """按角色优先、武器其次查找图鉴条目。"""
-    character = meta.get_character(query, "gs")
+    character = meta.resolve_character(query, "gs")
     if character:
         return "character", character
     weapon = meta.get_weapon(query, "gs")

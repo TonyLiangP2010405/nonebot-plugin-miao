@@ -115,7 +115,7 @@ def _resolve_role_name(role_query: str, game: str) -> str | None:
     if game == "zzz":
         # 插件没有绝区零本地元数据；直接按正式角色名匹配，使新角色无需等待资源更新。
         return role_query.strip() or None
-    role = meta.get_character(role_query, game)
+    role = meta.resolve_character(role_query, game)
     return role.name if role else None
 
 

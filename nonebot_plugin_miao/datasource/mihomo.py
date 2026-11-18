@@ -36,7 +36,7 @@ TIMEOUT = 20
 
 # 含加强数据的角色 id（移植 Character.js enhancedCharIds）：
 # mihomo 返回 avatarId=原 id + enhancedId=1 时，面板归入 2 开头的加强角色 id
-ENHANCED_CHAR_IDS = {1212, 1205, 1005, 1006, 1004, 1102, 1217, 1310, 1306, 1307}
+ENHANCED_CHAR_IDS = meta.SR_ENHANCED_BASE_IDS
 
 # 星铁天赋 id 后缀映射（移植 Character.js getTalentKey）：
 # pointId 去掉前缀「可选的1 + 角色 id」后按后缀判定天赋类型
