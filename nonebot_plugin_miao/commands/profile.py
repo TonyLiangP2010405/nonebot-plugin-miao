@@ -330,6 +330,7 @@ async def _(event: MessageEvent):
                 "show_dmg": show_dmg,
                 "dmg_idx": dmg_idx,
             },
+            cost=check.cost,
         )
         await detail_m.finish(check.message)
     if not check.allowed:
@@ -350,7 +351,8 @@ async def _send_detail_card(matcher, avatar: dict, game: str, uid: str, show_dmg
 @confirm_m.handle()
 @guard(confirm_m)
 async def _(event: MessageEvent, bot: Bot):
-    await ensure_panel_available(confirm_m, event)
+    # 待确认请求可能是在非开放时段登记的，确认时不再重复时段检查
+    await ensure_panel_enabled(confirm_m)
     # guard 的 functools.wraps 会让 NoneBot 用 common.py 的 globals 解析注解，
     # 这里统一用 MessageEvent，运行时再确认是群消息。
     if not isinstance(event, GroupMessageEvent):
@@ -362,7 +364,9 @@ async def _(event: MessageEvent, bot: Bot):
         await confirm_m.finish()
     if event.get_plaintext().strip() == "取消":
         await confirm_m.finish("已取消本次查看。")
-    check = await authorize_panel_call(event, confirmed=True, feature=pending.feature)
+    check = await authorize_panel_call(
+        event, confirmed=True, feature=pending.feature, quoted_cost=pending.cost
+    )
     if not check.allowed:
         await confirm_m.finish(check.message)
     if pending.feature == "rank":
@@ -440,6 +444,7 @@ async def _(event: MessageEvent, bot: Bot):
             event,
             feature="rank",
             payload={"game": game, "char": char_name, "mode": mode},
+            cost=check.cost,
         )
         await rank_m.finish(check.message)
     if not check.allowed:

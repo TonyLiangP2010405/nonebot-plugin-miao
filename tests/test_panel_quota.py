@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import time
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -54,10 +55,20 @@ class FakeMantou:
         return True, self.affection
 
 
+_TZ = timezone(timedelta(hours=8))
+
+
+def use_clock(monkeypatch, hour: int = 12, minute: int = 0):
+    """固定面板判断用的当前时间，默认开放时段内 12:00。"""
+    fixed = datetime(2026, 1, 1, hour, minute, tzinfo=_TZ)
+    monkeypatch.setattr(panel_quota, "_local_now", lambda now=None: now or fixed)
+
+
 @pytest.fixture(autouse=True)
 def data_dir(tmp_path, monkeypatch):
     monkeypatch.setattr(store, "_data_dir", lambda: tmp_path)
     panel_quota._PENDING.clear()
+    use_clock(monkeypatch)
     return tmp_path
 
 
@@ -76,11 +87,13 @@ def make_config(
     timeout: int = 30,
     open_hour: int = 8,
     close_hour: int = 17,
+    offhour_cost: int = 50,
 ):
     return SimpleNamespace(
         miao_panel_free_per_hour=free,
         miao_panel_user_hourly_limit=limit,
         miao_panel_affection_cost=cost,
+        miao_panel_offhour_affection_cost=offhour_cost,
         miao_panel_confirm_timeout=timeout,
         miao_panel_open_hour=open_hour,
         miao_panel_close_hour=close_hour,
@@ -210,6 +223,133 @@ async def test_has_panel_draws(monkeypatch):
     assert await panel_quota.has_panel_draws(make_event(), feature="rank") is True
 
 
+async def test_offhour_paid_requires_confirm(monkeypatch):
+    use_clock(monkeypatch, hour=22)
+    fake = FakeMantou(draws=0, affection=100)
+    use_mantou(monkeypatch, fake)
+    check = await panel_quota.authorize_panel_call(make_event(), make_config())
+    assert check.allowed is False
+    assert check.needs_confirm is True
+    assert check.cost == 50
+    assert "非面板开放时段" in check.message
+    assert "50 点好感度" in check.message
+    assert "回复「确认」" in check.message
+    assert fake.affection == 100
+    assert store.panel_user_calls(571494255, "10001") == 0
+    assert store.panel_user_free_used(571494255, "10001") == 0
+
+    done = await panel_quota.authorize_panel_call(
+        make_event(), make_config(), confirmed=True, quoted_cost=check.cost
+    )
+    assert done.allowed is True and done.paid is True
+    assert fake.affection == 50
+    assert fake.spent == [(50, "nonebot_plugin_miao:panel_offhour")]
+    # 非开放时段付费不占免费额度 / 本小时次数
+    assert store.panel_user_calls(571494255, "10001") == 0
+    assert store.panel_user_free_used(571494255, "10001") == 0
+
+
+async def test_offhour_insufficient_affection(monkeypatch):
+    use_clock(monkeypatch, hour=22)
+    fake = FakeMantou(draws=0, affection=40)
+    use_mantou(monkeypatch, fake)
+    check = await panel_quota.authorize_panel_call(make_event(), make_config())
+    assert check.allowed is False
+    assert check.needs_confirm is False
+    assert "需消耗 50 点好感度" in check.message
+    assert "当前 40" in check.message
+    assert fake.spent == []
+
+
+async def test_offhour_draw_still_priority(monkeypatch):
+    use_clock(monkeypatch, hour=22)
+    fake = FakeMantou(draws=1, affection=100)
+    use_mantou(monkeypatch, fake)
+    check = await panel_quota.authorize_panel_call(make_event(), make_config())
+    assert check.allowed is True and check.used_draw is True
+    assert fake.affection == 100
+    assert fake.draws == 0
+
+
+async def test_offhour_private_still_closed(monkeypatch):
+    use_clock(monkeypatch, hour=22)
+    fake = FakeMantou(affection=100)
+    use_mantou(monkeypatch, fake)
+    check = await panel_quota.authorize_panel_call(make_event(group_id=None), make_config())
+    assert check.allowed is False
+    assert "面板功能每天" in check.message
+
+
+async def test_offhour_disabled_by_zero_cost(monkeypatch):
+    use_clock(monkeypatch, hour=22)
+    fake = FakeMantou(affection=100)
+    use_mantou(monkeypatch, fake)
+    check = await panel_quota.authorize_panel_call(
+        make_event(), make_config(offhour_cost=0)
+    )
+    assert check.allowed is False
+    assert check.needs_confirm is False
+    assert fake.spent == []
+
+
+async def test_offhour_rank_uses_rank_source(monkeypatch):
+    use_clock(monkeypatch, hour=22)
+    fake = FakeMantou(draws=0, rank_draws=0, affection=100)
+    use_mantou(monkeypatch, fake)
+    prompt = await panel_quota.authorize_panel_call(
+        make_event(), make_config(), feature="rank"
+    )
+    assert prompt.needs_confirm is True and prompt.cost == 50
+    assert "群面板排名" in prompt.message
+    done = await panel_quota.authorize_panel_call(
+        make_event(), make_config(), confirmed=True, feature="rank", quoted_cost=prompt.cost
+    )
+    assert done.allowed is True and done.paid is True
+    assert fake.spent == [(50, "nonebot_plugin_miao:panel_rank_offhour")]
+
+
+async def test_offhour_quote_not_increased_after_close(monkeypatch):
+    # 开放时段报价 10，确认时已过 17:00，仍按 10 扣
+    use_clock(monkeypatch, hour=17, minute=10)
+    fake = FakeMantou(affection=100)
+    use_mantou(monkeypatch, fake)
+    done = await panel_quota.authorize_panel_call(
+        make_event(), make_config(), confirmed=True, quoted_cost=10
+    )
+    assert done.allowed is True and done.paid is True
+    assert fake.affection == 90
+
+
+async def test_offhour_quote_not_charged_when_open(monkeypatch):
+    # 非开放时段报价 50，确认时已到开放时段，优先用免费次数
+    use_clock(monkeypatch, hour=12)
+    fake = FakeMantou(affection=100)
+    use_mantou(monkeypatch, fake)
+    done = await panel_quota.authorize_panel_call(
+        make_event(), make_config(), confirmed=True, quoted_cost=50
+    )
+    assert done.allowed is True and done.paid is False
+    assert fake.affection == 100
+
+
+def test_panel_offhour_access(monkeypatch):
+    use_mantou(monkeypatch, FakeMantou())
+    assert panel_quota.panel_offhour_access(make_event()) is True
+    assert panel_quota.panel_offhour_access(make_event(group_id=None)) is False
+    assert panel_quota.panel_offhour_access(make_event(user_id="99999")) is True
+
+    monkeypatch.setattr(panel_quota, "is_superuser", lambda user_id: True)
+    assert panel_quota.panel_offhour_access(make_event()) is True
+    monkeypatch.setattr(panel_quota, "is_superuser", lambda user_id: False)
+
+    monkeypatch.setattr(panel_quota, "_plugin_config", lambda: make_config(offhour_cost=0))
+    assert panel_quota.panel_offhour_access(make_event()) is False
+    monkeypatch.setattr(panel_quota, "_plugin_config", lambda: make_config())
+
+    use_mantou(monkeypatch, None)
+    assert panel_quota.panel_offhour_access(make_event()) is False
+
+
 async def test_rank_quota_is_independent_from_detail(monkeypatch):
     fake = FakeMantou(draws=0, affection=50)
     use_mantou(monkeypatch, fake)
@@ -285,6 +425,7 @@ async def test_panel_status(monkeypatch):
     assert "群面板排名：免费剩余 1/1 次，已查看 0/2 次" in status
     assert "当前好感度：20 点" in status
     assert "需回复「确认」" in status
+    assert "非开放时段每次消耗 50 点好感度" in status
     assert "不受开放时段限制" in status
 
 
@@ -361,6 +502,12 @@ def test_pending_lifecycle():
     assert pending.payload["show_dmg"] is True
     assert pending.payload["dmg_idx"] == 2
     assert panel_quota.has_pending(571494255, "10001", 30) is False
+
+
+def test_pending_records_quoted_cost():
+    pending = panel_quota.register_pending(make_event(), cost=50)
+    assert pending.cost == 50
+    assert panel_quota.register_pending(make_event(), cost=-5).cost == 0
 
 
 def test_rank_pending_lifecycle():
@@ -530,5 +677,10 @@ async def test_ensure_panel_available_allows_wheel_draws(monkeypatch):
         return False
 
     monkeypatch.setattr(common, "has_panel_draws", no_draws)
+    monkeypatch.setattr(common, "panel_offhour_access", lambda event: False)
     with pytest.raises(RuntimeError, match="面板已关闭"):
         await common.ensure_panel_available(FakeMatcher(), event, feature="detail")
+
+    # 非开放时段可付费查看时放行，交给授权阶段扣好感度
+    monkeypatch.setattr(common, "panel_offhour_access", lambda event: True)
+    assert await common.ensure_panel_available(FakeMatcher(), event, feature="detail") is None

@@ -18,6 +18,7 @@ from ..core.panel_quota import (
     has_panel_draws,
     panel_closed_message,
     panel_enabled,
+    panel_offhour_access,
     panel_time_allowed,
 )
 from ..datasource.errors import ProfileError
@@ -56,12 +57,15 @@ async def ensure_panel_available(
     """总开关 + 开放时段检查；不在开放时段时直接结束当前指令。
 
     传入 ``feature``（角色面板 / 群面板排名）时，若调用者还有转盘抽到的对应
-    次数，则不受开放时段限制，交给 ``authorize_panel_call`` 优先消耗。
+    次数，或可在非开放时段用好感度付费查看，则交给 ``authorize_panel_call``
+    继续判断，而不是直接提示已关闭。
     """
     await ensure_panel_enabled(matcher)
     if event is None or panel_time_allowed():
         return
-    if feature is not None and await has_panel_draws(event, feature):
+    if feature is not None and (
+        await has_panel_draws(event, feature) or panel_offhour_access(event)
+    ):
         return
     await matcher.finish(panel_closed_message())
 

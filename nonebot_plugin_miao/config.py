@@ -32,6 +32,8 @@ class Config(BaseModel):
     miao_panel_user_hourly_limit: int = Field(default=2, ge=0)
     # 免费次数用完后，每次查看消耗的好感度（0 表示不允许用好感度抵扣）
     miao_panel_affection_cost: int = Field(default=10, ge=0)
+    # 非开放时段每次查看消耗的好感度（0 表示非开放时段不可用；转盘次数仍然优先）
+    miao_panel_offhour_affection_cost: int = Field(default=50, ge=0)
     # 付费查看的确认有效期（秒）
     miao_panel_confirm_timeout: int = Field(default=30, ge=5, le=300)
     # 各游戏角色攻略图默认来源（可用“设置默认攻略”类指令持久化覆盖）
