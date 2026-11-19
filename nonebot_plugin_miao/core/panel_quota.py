@@ -7,7 +7,7 @@
 - 免费次数用完后，第 2 次消耗 ``MIAO_PANEL_AFFECTION_COST`` 点好感度
   （默认 10），并且需要调用者回复「确认」才会扣费出图；
 - 馒头命运齿轮转盘抽到的面板 / 群排名次数优先消耗，**不占用免费额度，
-  也不计入每小时 2 次上限**；
+  也不计入每小时 2 次上限**，且**不受开放时段限制**；
 - 私聊免费；SUPERUSER 免费、不限次数；
 - 未安装或未加载馒头好感度插件时不做限制，保证本插件可以独立使用。
 """
@@ -209,8 +209,30 @@ def panel_closed_message(config: Any | None = None, now: datetime | None = None)
     day = "今天" if next_open.date() == current.date() else "明天"
     return (
         f"面板功能每天 {panel_window_text(config)} 开放，当前已关闭，"
-        f"{day} {open_hour:02d}:00 后再试。"
+        f"{day} {open_hour:02d}:00 后再试。\n"
+        "提示：转盘抽到的面板 / 群排名次数不受时段限制，可直接使用。"
     )
+
+
+async def has_panel_draws(event: Any, feature: str = FEATURE_DETAIL) -> bool:
+    """是否还有转盘抽到的对应面板次数（有则不受开放时段限制）。"""
+    group_id = getattr(event, "group_id", None)
+    if group_id is None:
+        return False
+    user_id = str(event.get_user_id())
+    if is_superuser(user_id):
+        return False
+    api = mantou_api()
+    if api is None:
+        return False
+    get_draws, _ = _draw_calls(api, feature)
+    if get_draws is None:
+        return False
+    try:
+        return int(await get_draws(group_id, user_id) or 0) > 0
+    except Exception:
+        logger.warning("[miao] 读取转盘面板次数失败", exc_info=True)
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -481,5 +503,6 @@ async def panel_status(event: Any, config: Any | None = None) -> str:
     lines.append(f"当前好感度：{affection} 点")
     if cost > 0:
         lines.append(f"免费次数用完后每次消耗 {cost} 点好感度，需回复「确认」")
+    lines.append("转盘抽到的面板 / 群排名次数不受开放时段限制，任何时间都可以使用。")
     lines.append("面板次数获取：参与馒头命运齿轮转盘，角色面板 5%、群面板排名 3%。")
     return "\n".join(lines)

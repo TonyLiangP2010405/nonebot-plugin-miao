@@ -198,6 +198,18 @@ async def test_wheel_draws_are_not_limited(monkeypatch):
     assert (await panel_quota.authorize_panel_call(make_event(), make_config())).allowed is True
 
 
+async def test_has_panel_draws(monkeypatch):
+    fake = FakeMantou(draws=1, rank_draws=0)
+    use_mantou(monkeypatch, fake)
+    assert await panel_quota.has_panel_draws(make_event()) is True
+    assert await panel_quota.has_panel_draws(make_event(), feature="rank") is False
+    assert await panel_quota.has_panel_draws(make_event(group_id=None)) is False
+
+    use_mantou(monkeypatch, FakeMantou(draws=0, rank_draws=2))
+    assert await panel_quota.has_panel_draws(make_event()) is False
+    assert await panel_quota.has_panel_draws(make_event(), feature="rank") is True
+
+
 async def test_rank_quota_is_independent_from_detail(monkeypatch):
     fake = FakeMantou(draws=0, affection=50)
     use_mantou(monkeypatch, fake)
@@ -273,6 +285,7 @@ async def test_panel_status(monkeypatch):
     assert "群面板排名：免费剩余 1/1 次，已查看 0/2 次" in status
     assert "当前好感度：20 点" in status
     assert "需回复「确认」" in status
+    assert "不受开放时段限制" in status
 
 
 def test_panel_time_window():
@@ -322,6 +335,7 @@ def test_panel_closed_message():
     config = make_config(open_hour=8, close_hour=17)
     morning = panel_quota.panel_closed_message(config, datetime(2026, 1, 1, 7, 0, tzinfo=tz))
     assert "今天 08:00 后" in morning
+    assert "转盘抽到的面板 / 群排名次数不受时段限制" in morning
     evening = panel_quota.panel_closed_message(config, datetime(2026, 1, 1, 18, 0, tzinfo=tz))
     assert "明天 08:00 后" in evening
 
@@ -484,3 +498,37 @@ async def test_ensure_panel_available_gate(monkeypatch):
 
     monkeypatch.setattr(common, "panel_time_allowed", lambda: True)
     assert await common.ensure_panel_available(FakeMatcher(), object()) is None
+
+
+async def test_ensure_panel_available_allows_wheel_draws(monkeypatch):
+    from nonebot_plugin_miao.commands import common
+
+    class FakeMatcher:
+        async def finish(self, message: str = ""):
+            raise RuntimeError(str(message))
+
+    monkeypatch.setattr(common, "panel_enabled", lambda: True)
+    monkeypatch.setattr(common, "panel_time_allowed", lambda: False)
+    monkeypatch.setattr(common, "panel_closed_message", lambda: "面板已关闭")
+
+    seen: list[str | None] = []
+
+    async def has_draws(event, feature="detail"):
+        seen.append(feature)
+        return True
+
+    event = make_event()
+    monkeypatch.setattr(common, "has_panel_draws", has_draws)
+    assert await common.ensure_panel_available(FakeMatcher(), event, feature="detail") is None
+    assert await common.ensure_panel_available(FakeMatcher(), event, feature="rank") is None
+    assert seen == ["detail", "rank"]
+    # 不消耗面板次数的指令仍然受时段限制
+    with pytest.raises(RuntimeError, match="面板已关闭"):
+        await common.ensure_panel_available(FakeMatcher(), event)
+
+    async def no_draws(event, feature="detail"):
+        return False
+
+    monkeypatch.setattr(common, "has_panel_draws", no_draws)
+    with pytest.raises(RuntimeError, match="面板已关闭"):
+        await common.ensure_panel_available(FakeMatcher(), event, feature="detail")

@@ -42,7 +42,7 @@ poetry add nonebot-plugin-miao-genshin
 | `MIAO_PANEL_OPEN_HOUR` | `8` | 面板每天开放时间（整点，Asia/Shanghai） |
 | `MIAO_PANEL_CLOSE_HOUR` | `17` | 面板每天关闭时间（整点）；与开启时间相同表示全天 |
 | `MIAO_PANEL_FREE_PER_HOUR` | `1` | 角色面板 / 群排名各自每小时的免费次数 |
-| `MIAO_PANEL_USER_HOURLY_LIMIT` | `2` | 角色面板 / 群排名各自每小时最多查看次数（含免费与付费；转盘次数不占额度） |
+| `MIAO_PANEL_USER_HOURLY_LIMIT` | `2` | 角色面板 / 群排名各自每小时最多查看次数（含免费与付费；转盘次数不占额度、不受开放时段限制） |
 | `MIAO_PANEL_AFFECTION_COST` | `10` | 免费次数用完后每次查看消耗的好感度（0 表示不允许用好感度抵扣） |
 | `MIAO_PANEL_CONFIRM_TIMEOUT` | `30` | 付费查看确认的有效秒数 |
 | `MIAO_STRATEGY_DEFAULT_SOURCE` | `1` | 原神角色攻略图默认来源（1-7，可被设置指令覆盖） |
@@ -111,6 +111,7 @@ poetry add nonebot-plugin-miao-genshin
 ### 面板开放时间
 
 面板功能默认每天 **08:00–17:00**（Asia/Shanghai）开放，`/面板开关` 与 `/面板次数` 不受时段限制。
+转盘抽到的**角色面板次数 / 群面板排名次数不受开放时段限制**，任何时间都可以直接使用。
 可通过 `MIAO_PANEL_OPEN_HOUR` / `MIAO_PANEL_CLOSE_HOUR` 修改；两者相同表示全天开放，也支持跨天时段。
 
 `/更新面板` 与 `/米游社更新面板` 另有一小时一次的硬限制：同一 QQ 在同一游戏内，成功更新后
@@ -129,6 +130,7 @@ poetry add nonebot-plugin-miao-genshin
   - 最多查看 **2 次**；
   - 免费次数用完后，第 2 次消耗 **10 点好感度**，需要回复「确认」才会扣费出图；
 - 转盘抽到的对应次数**优先消耗**，**不占用免费额度，也不计入每小时 2 次上限**；
+- 转盘次数**不受面板开放时段限制**：即使当前不在 08:00–17:00，只要对应次数还有剩余就能查看；
 - 私聊查看免费，不消耗次数；
 - SUPERUSER 免费、不限次数，也不占用额度；
 - `/绑定uid`、`/更新面板`、`/面板列表`、`/圣遗物列表` 不消耗面板次数；

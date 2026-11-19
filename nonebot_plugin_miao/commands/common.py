@@ -14,7 +14,12 @@ from nonebot.exception import MatcherException
 from nonebot.matcher import Matcher
 
 from ..core import store
-from ..core.panel_quota import panel_closed_message, panel_enabled, panel_time_allowed
+from ..core.panel_quota import (
+    has_panel_draws,
+    panel_closed_message,
+    panel_enabled,
+    panel_time_allowed,
+)
 from ..datasource.errors import ProfileError
 from ..datasource.gacha_log import GachaLogError
 
@@ -42,11 +47,23 @@ async def ensure_panel_enabled(matcher: type[Matcher]) -> None:
     await matcher.finish("面板功能已关闭，SUPERUSER 发送 /面板开关 开 可恢复")
 
 
-async def ensure_panel_available(matcher: type[Matcher], event: Any | None = None) -> None:
-    """总开关 + 开放时段检查；不在开放时段时直接结束当前指令。"""
+async def ensure_panel_available(
+    matcher: type[Matcher],
+    event: Any | None = None,
+    *,
+    feature: str | None = None,
+) -> None:
+    """总开关 + 开放时段检查；不在开放时段时直接结束当前指令。
+
+    传入 ``feature``（角色面板 / 群面板排名）时，若调用者还有转盘抽到的对应
+    次数，则不受开放时段限制，交给 ``authorize_panel_call`` 优先消耗。
+    """
     await ensure_panel_enabled(matcher)
-    if event is not None and not panel_time_allowed():
-        await matcher.finish(panel_closed_message())
+    if event is None or panel_time_allowed():
+        return
+    if feature is not None and await has_panel_draws(event, feature):
+        return
+    await matcher.finish(panel_closed_message())
 
 
 async def send_image(matcher: type[Matcher], png_bytes: bytes) -> None:

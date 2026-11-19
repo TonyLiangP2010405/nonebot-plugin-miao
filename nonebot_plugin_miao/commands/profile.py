@@ -296,7 +296,7 @@ def _fmt_dmg_text(dmg: dict[str, Any]) -> str:
 @detail_m.handle()
 @guard(detail_m)
 async def _(event: MessageEvent):
-    await ensure_panel_available(detail_m, event)
+    await ensure_panel_available(detail_m, event, feature="detail")
     text = event.get_plaintext()
     m = re.match(RE_DETAIL, text)
     if not m:
@@ -418,7 +418,7 @@ async def _send_rank_card(matcher, bot: Bot, event: MessageEvent, payload: dict[
 @rank_m.handle()
 @guard(rank_m)
 async def _(event: MessageEvent, bot: Bot):
-    await ensure_panel_available(rank_m, event)
+    await ensure_panel_available(rank_m, event, feature="rank")
     text = event.get_plaintext()
     m = re.match(RE_RANK, text)
     if not m:
