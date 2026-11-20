@@ -20,7 +20,8 @@ __plugin_meta__ = PluginMetadata(
         "/面板次数          查看开放时间、转盘次数、免费剩余与本小时额度\n"
         "/面板开关 [开/关/重置]  SUPERUSER 面板功能总开关\n"
         "面板每天 08:00–17:00 开放；角色面板/群排名各免费 1 次、最多 2 次\n"
-        "第 2 次查看消耗 10 点好感度，需回复「确认」；转盘次数不占额度\n"
+        "第 2 次查看消耗 10 点好感度，需回复「确认」；非开放时段每次 50 点好感度\n"
+        "转盘次数不占额度；开放/关闭时会在群里提醒\n"
         "/<名称>图鉴        查看原神角色或武器图鉴\n"
         "/<角色>攻略        查看原神角色攻略图\n"
         "/星铁<角色>攻略    查看星铁角色攻略图\n"
@@ -51,6 +52,20 @@ if scheduler is not None:
         from .datasource.sim_pools import refresh_all_pools
 
         await refresh_all_pools()
+
+    from .core.panel_quota import _PANEL_TZ
+
+    @scheduler.scheduled_job(
+        "cron", minute=0, id="miao_panel_window_notify", timezone=_PANEL_TZ
+    )
+    async def _miao_panel_window_notify() -> None:
+        """面板开放 / 关闭整点提醒（只发用过面板的群，默认连发 3 遍）。"""
+        from .core.panel_notify import panel_window_tick
+
+        try:
+            await panel_window_tick()
+        except Exception as e:
+            logger.warning(f"[miao] 面板开放/关闭提醒失败: {e}")
 
     @scheduler.scheduled_job("cron", hour=4, minute=20, id="miao_res_auto_update")
     async def _miao_res_auto_update() -> None:

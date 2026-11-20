@@ -217,9 +217,16 @@ def panel_closed_message(config: Any | None = None, now: datetime | None = None)
     if next_open <= current:
         next_open += timedelta(days=1)
     day = "今天" if next_open.date() == current.date() else "明天"
+    offhour = _int_attr(config, "miao_panel_offhour_affection_cost", 50)
+    offhour_hint = (
+        f"没有转盘次数时，群聊可消耗 {offhour} 点好感度查看（回复「确认」后扣费）。\n"
+        if offhour > 0
+        else ""
+    )
     return (
         f"面板功能每天 {panel_window_text(config)} 开放，当前已关闭，"
         f"{day} {open_hour:02d}:00 后再试。\n"
+        f"{offhour_hint}"
         "提示：转盘抽到的面板 / 群排名次数不受时段限制，可直接使用。"
     )
 
@@ -550,10 +557,15 @@ async def panel_status(event: Any, config: Any | None = None) -> str:
     window = panel_window_text(config)
     opened = panel_time_allowed(config)
     time_line = f"面板开放时间：{window}（当前{'开放' if opened else '已关闭'}）"
+    offhour = _int_attr(config, "miao_panel_offhour_affection_cost", 50)
     group_id = getattr(event, "group_id", None)
     user_id = str(event.get_user_id())
     if group_id is None:
-        return f"{time_line}\n私聊查看角色面板与群排名免费（仅开放时段），不消耗面板次数。"
+        hint = f"\n群聊非开放时段每次消耗 {offhour} 点好感度。" if offhour > 0 else ""
+        return (
+            f"{time_line}\n私聊查看角色面板与群排名免费（仅开放时段），"
+            f"不消耗面板次数。{hint}"
+        )
     if is_superuser(user_id):
         return f"{time_line}\nSUPERUSER 不限次数，免费查看角色面板与群面板排名。"
     api = mantou_api()
@@ -563,7 +575,6 @@ async def panel_status(event: Any, config: Any | None = None) -> str:
     free = _int_attr(config, "miao_panel_free_per_hour", 1)
     limit = _int_attr(config, "miao_panel_user_hourly_limit", 2)
     cost = _int_attr(config, "miao_panel_affection_cost", 10)
-    offhour = _int_attr(config, "miao_panel_offhour_affection_cost", 50)
     try:
         draws = int(await api.get_panel_draws(group_id, user_id) or 0)
         rank_draws = 0

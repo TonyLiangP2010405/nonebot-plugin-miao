@@ -477,6 +477,7 @@ def test_panel_closed_message():
     morning = panel_quota.panel_closed_message(config, datetime(2026, 1, 1, 7, 0, tzinfo=tz))
     assert "今天 08:00 后" in morning
     assert "转盘抽到的面板 / 群排名次数不受时段限制" in morning
+    assert "50 点好感度" in morning
     evening = panel_quota.panel_closed_message(config, datetime(2026, 1, 1, 18, 0, tzinfo=tz))
     assert "明天 08:00 后" in evening
 

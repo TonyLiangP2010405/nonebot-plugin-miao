@@ -61,7 +61,13 @@ async def ensure_panel_available(
     继续判断，而不是直接提示已关闭。
     """
     await ensure_panel_enabled(matcher)
-    if event is None or panel_time_allowed():
+    if event is None:
+        return
+    group_id = getattr(event, "group_id", None)
+    if group_id is not None:
+        # 记录用过面板的群，供开放/关闭提醒使用
+        store.mark_panel_group(group_id)
+    if panel_time_allowed():
         return
     if feature is not None and (
         await has_panel_draws(event, feature) or panel_offhour_access(event)

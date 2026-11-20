@@ -303,6 +303,37 @@ def record_panel_user_call(
         save_json(_data_dir() / _PANEL_USAGE_FILE, {"version": _PANEL_USAGE_VERSION, "groups": groups})
 
 
+# ---------------- 面板提醒群（data/panel_groups.json） ----------------
+#
+# 记录用过面板指令的群；面板开放/关闭提醒只发这些群，避免骚扰无关群。
+
+_PANEL_GROUPS_FILE = "panel_groups.json"
+
+
+def mark_panel_group(group_id: str | int) -> bool:
+    """记录一个使用过面板功能的群，返回是否新增。"""
+    gid = str(group_id).strip()
+    if not gid or not gid.lstrip("-").isdigit():
+        return False
+    with _LOCK:
+        groups = load_json(_data_dir() / _PANEL_GROUPS_FILE, []) or []
+        if not isinstance(groups, list):
+            groups = []
+        if gid in groups:
+            return False
+        groups.append(gid)
+        save_json(_data_dir() / _PANEL_GROUPS_FILE, groups)
+    return True
+
+
+def panel_groups() -> list[str]:
+    """所有使用过面板功能的群号。"""
+    groups = load_json(_data_dir() / _PANEL_GROUPS_FILE, []) or []
+    if not isinstance(groups, list):
+        return []
+    return [str(g) for g in groups if str(g).lstrip("-").isdigit()]
+
+
 # ---------------- 冷却（data/cd.json：{key: 到期时间戳}） ----------------
 
 

@@ -45,6 +45,8 @@ poetry add nonebot-plugin-miao-genshin
 | `MIAO_PANEL_USER_HOURLY_LIMIT` | `2` | 角色面板 / 群排名各自每小时最多查看次数（含免费与付费；转盘次数不占额度、不受开放时段限制） |
 | `MIAO_PANEL_AFFECTION_COST` | `10` | 免费次数用完后每次查看消耗的好感度（0 表示不允许用好感度抵扣） |
 | `MIAO_PANEL_OFFHOUR_AFFECTION_COST` | `50` | 非开放时段每次查看消耗的好感度（0 表示非开放时段不可用；转盘次数仍然优先） |
+| `MIAO_PANEL_NOTIFY_ENABLED` | `True` | 面板开放 / 关闭时在群里提醒（只发用过面板指令的群） |
+| `MIAO_PANEL_NOTIFY_REPEAT` | `3` | 每次提醒连发几遍（1-5） |
 | `MIAO_PANEL_CONFIRM_TIMEOUT` | `30` | 付费查看确认的有效秒数 |
 | `MIAO_STRATEGY_DEFAULT_SOURCE` | `1` | 原神角色攻略图默认来源（1-7，可被设置指令覆盖） |
 | `MIAO_SR_STRATEGY_DEFAULT_SOURCE` | `1` | 星铁角色攻略图默认来源（1-3，可被设置指令覆盖） |
@@ -115,6 +117,8 @@ poetry add nonebot-plugin-miao-genshin
 转盘抽到的**角色面板次数 / 群面板排名次数不受开放时段限制**，任何时间都可以直接使用。
 非开放时段也支持用好感度查看：每次消耗 **50 点好感度**（`MIAO_PANEL_OFFHOUR_AFFECTION_COST`，设为 0 则关闭），
 需要回复「确认」后扣费，不占用免费额度与每小时上限；私聊没有群好感度账本，非开放时段仍然关闭。
+面板**开启 / 关闭**时会在用过面板指令的群里提醒，默认**连发 3 遍**（`MIAO_PANEL_NOTIFY_REPEAT`），
+可用 `MIAO_PANEL_NOTIFY_ENABLED` 关闭。
 可通过 `MIAO_PANEL_OPEN_HOUR` / `MIAO_PANEL_CLOSE_HOUR` 修改；两者相同表示全天开放，也支持跨天时段。
 
 `/更新面板` 与 `/米游社更新面板` 另有一小时一次的硬限制：同一 QQ 在同一游戏内，成功更新后

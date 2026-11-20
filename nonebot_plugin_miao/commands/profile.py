@@ -11,7 +11,7 @@ from typing import Any
 from nonebot import on_message, on_regex
 from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, MessageEvent
 
-from ..core import meta
+from ..core import meta, store
 from ..core.artis_mark import calc_mark, format_value, key_title
 from ..core.attr_calc import calc_attr, elem_name
 from ..core.panel_quota import (
@@ -196,6 +196,8 @@ async def _(event: MessageEvent):
 @guard(quota_m)
 async def _(event: MessageEvent):
     await ensure_panel_enabled(quota_m)
+    if isinstance(event, GroupMessageEvent):
+        store.mark_panel_group(event.group_id)
     await quota_m.finish(await panel_status(event))
 
 

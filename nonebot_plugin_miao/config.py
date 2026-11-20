@@ -34,6 +34,10 @@ class Config(BaseModel):
     miao_panel_affection_cost: int = Field(default=10, ge=0)
     # 非开放时段每次查看消耗的好感度（0 表示非开放时段不可用；转盘次数仍然优先）
     miao_panel_offhour_affection_cost: int = Field(default=50, ge=0)
+    # 面板开放 / 关闭时在群里提醒（只发用过面板指令的群）
+    miao_panel_notify_enabled: bool = True
+    # 每次提醒连发几遍（1-5，默认 3 遍）
+    miao_panel_notify_repeat: int = Field(default=3, ge=1, le=5)
     # 付费查看的确认有效期（秒）
     miao_panel_confirm_timeout: int = Field(default=30, ge=5, le=300)
     # 各游戏角色攻略图默认来源（可用“设置默认攻略”类指令持久化覆盖）

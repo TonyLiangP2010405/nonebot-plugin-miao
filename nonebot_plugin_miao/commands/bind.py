@@ -43,6 +43,8 @@ async def _(event: MessageEvent):
     if uid:
         # 非法 UID 时 store.bind_uid 抛 ValueError，由 guard 统一回提示
         uid = store.bind_uid(event.get_user_id(), game, uid)
+        if isinstance(event, GroupMessageEvent):
+            store.mark_panel_group(event.group_id)
         await bind_uid_m.finish(f"绑定成功：{game_name} UID {uid}")
     old = store.get_uid(event.get_user_id(), game)
     if old:
