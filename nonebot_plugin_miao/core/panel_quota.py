@@ -16,7 +16,6 @@
 """
 from __future__ import annotations
 
-import importlib
 import math
 import time
 from collections.abc import Awaitable, Callable
@@ -24,7 +23,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from nonebot import logger
+from nonebot import get_loaded_plugins, logger
 
 from . import store
 
@@ -61,6 +60,8 @@ class MantouAPI:
     # 0.44.0 起提供；旧版本没有群排名账本时按 0 次处理
     get_panel_rank_draws: Callable[..., Awaitable[int]] | None = None
     consume_panel_rank_draw: Callable[..., Awaitable[int | None]] | None = None
+    add_panel_draws: Callable[..., Awaitable[int]] | None = None
+    add_panel_rank_draws: Callable[..., Awaitable[int]] | None = None
 
 
 @dataclass(frozen=True)
@@ -89,7 +90,7 @@ class PendingPanel:
     created_at: float = field(default_factory=time.time)
 
 
-_API: MantouAPI | None | bool = None
+_API: MantouAPI | None = None
 _API_LOGGED = False
 _PENDING: dict[tuple[str, str], PendingPanel] = {}
 
@@ -97,24 +98,14 @@ _PENDING: dict[tuple[str, str], PendingPanel] = {}
 def mantou_api() -> MantouAPI | None:
     """软接入馒头好感度插件；不可用时返回 None 并只记一次日志。"""
     global _API, _API_LOGGED
-    if _API is False:
-        return None
     if _API is not None:
         return _API
+    # 从已加载插件取模块，兼容通过本地 plugins 目录加载的馒头插件。
+    module = next(
+        (plugin.module for plugin in get_loaded_plugins() if plugin.name == _MANTOU_PLUGIN),
+        None,
+    )
     try:
-        from nonebot import get_plugin
-
-        if get_plugin(_MANTOU_PLUGIN) is None:
-            _API = False
-            if not _API_LOGGED:
-                logger.info("[miao] 未加载 nonebot-plugin-mantou-affection，面板次数限制不启用")
-                _API_LOGGED = True
-            return None
-    except Exception:
-        # nonebot 未初始化（脚本/测试）时继续尝试导入
-        pass
-    try:
-        module = importlib.import_module(_MANTOU_PLUGIN)
         _API = MantouAPI(
             get_panel_draws=module.get_panel_draws,
             consume_panel_draw=module.consume_panel_draw,
@@ -122,13 +113,13 @@ def mantou_api() -> MantouAPI | None:
             spend_affection=module.spend_affection,
             get_panel_rank_draws=getattr(module, "get_panel_rank_draws", None),
             consume_panel_rank_draw=getattr(module, "consume_panel_rank_draw", None),
+            add_panel_draws=getattr(module, "add_panel_draws", None),
+            add_panel_rank_draws=getattr(module, "add_panel_rank_draws", None),
         )
-    except Exception:
-        _API = False
+    except AttributeError:
         if not _API_LOGGED:
             logger.info("[miao] 未检测到可用的馒头好感度联动接口，面板次数限制不启用")
             _API_LOGGED = True
-        return None
     return _API
 
 
@@ -242,8 +233,8 @@ async def has_panel_draws(event: Any, feature: str = FEATURE_DETAIL) -> bool:
     api = mantou_api()
     if api is None:
         return False
-    get_draws, _ = _draw_calls(api, feature)
-    if get_draws is None:
+    get_draws, consume_draw = _draw_calls(api, feature)
+    if get_draws is None or consume_draw is None:
         return False
     try:
         return int(await get_draws(group_id, user_id) or 0) > 0
@@ -393,6 +384,24 @@ def _draw_calls(api: MantouAPI, feature: str) -> tuple[Any, Any]:
     return api.get_panel_draws, api.consume_panel_draw
 
 
+async def adjust_panel_draws(group_id: int, user_id: str, feature: str, delta: int) -> str:
+    """通过馒头 API 增减同一群内的转盘次数，余额不足时整笔拒绝。"""
+    label = _FEATURE_NAME[feature]
+    api = mantou_api()
+    if api is None:
+        raise ValueError("请先加载兼容版本的馒头好感度插件。")
+    get_draws, consume_draw = _draw_calls(api, feature)
+    add_draws = api.add_panel_rank_draws if feature == FEATURE_RANK else api.add_panel_draws
+    change_draws = add_draws if delta > 0 else consume_draw
+    if get_draws is None or change_draws is None:
+        raise ValueError(f"当前馒头好感度插件不支持调整{label}次数，请升级后再试。")
+    remaining = await change_draws(group_id, user_id, abs(delta))
+    if remaining is None:
+        current = await get_draws(group_id, user_id)
+        return f"{label}次数不足，扣除失败，当前剩余 {current} 次。"
+    return f"{label}次数已调整 {delta:+d}，当前剩余 {remaining} 次。"
+
+
 async def authorize_panel_call(
     event: Any,
     config: Any | None = None,
@@ -435,13 +444,11 @@ async def authorize_panel_call(
 
     try:
         # 转盘次数优先，且不受开放时段与每小时上限限制
-        get_draws, consume_draw = _draw_calls(api, feature)
-        if get_draws is not None and consume_draw is not None:
-            draws = int(await get_draws(group_id, user_id) or 0)
-            if draws > 0:
-                remaining = await consume_draw(group_id, user_id)
-                if remaining is not None:
-                    return PanelCheck(True, used_draw=True, feature=feature)
+        _, consume_draw = _draw_calls(api, feature)
+        if consume_draw is not None:
+            remaining = await consume_draw(group_id, user_id)
+            if remaining is not None:
+                return PanelCheck(True, used_draw=True, feature=feature)
 
         # 非开放时段：每次消耗固定好感度，不占免费额度与每小时上限
         if closed:
@@ -470,7 +477,7 @@ async def authorize_panel_call(
                     message=(
                         f"当前非面板开放时段（{panel_window_text(config)} 外），"
                         f"本次查看{label}将消耗 {charge} 点好感度"
-                        f"（当前 {affection}），回复「确认」继续，回复「取消」放弃"
+                        f"（当前 {affection}），回复「确认」或发送 /面板确认 继续，回复「取消」放弃"
                         f"（{timeout} 秒内有效）。"
                     ),
                     feature=feature,
@@ -526,7 +533,7 @@ async def authorize_panel_call(
                 cost=cost,
                 message=(
                     f"本小时免费次数已用完。本次查看{label}将消耗 {cost} 点好感度"
-                    f"（当前 {affection}），回复「确认」继续，回复「取消」放弃"
+                    f"（当前 {affection}），回复「确认」或发送 /面板确认 继续，回复「取消」放弃"
                     f"（{timeout} 秒内有效）。"
                 ),
                 feature=feature,
@@ -547,8 +554,8 @@ async def authorize_panel_call(
             feature=feature,
         )
     except Exception:
-        logger.warning("[miao] 面板配额检查失败，本次放行", exc_info=True)
-        return PanelCheck(True, feature=feature)
+        logger.warning("[miao] 面板配额检查失败", exc_info=True)
+        return PanelCheck(False, "暂时无法核对面板次数或好感度，请稍后重试。", feature=feature)
 
 
 async def panel_status(event: Any, config: Any | None = None) -> str:
@@ -605,6 +612,8 @@ async def panel_status(event: Any, config: Any | None = None) -> str:
         lines.append(f"免费次数用完后每次消耗 {cost} 点好感度，需回复「确认」")
     if offhour > 0:
         lines.append(f"非开放时段每次消耗 {offhour} 点好感度，需回复「确认」")
+    if cost > 0 or offhour > 0:
+        lines.append("也可以发送 /面板确认 或 /面板取消。")
     lines.append("转盘抽到的面板 / 群排名次数不受开放时段限制，任何时间都可以使用。")
     lines.append("面板次数获取：参与馒头命运齿轮转盘，角色面板 5%、群面板排名 3%。")
     return "\n".join(lines)

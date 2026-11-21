@@ -86,6 +86,7 @@ def test_matchers_registered(cmds):
         cmds.profile.list_m,
         cmds.profile.artis_list_m,
         cmds.profile.quota_m,
+        cmds.profile.adjust_m,
         cmds.profile.switch_m,
         cmds.profile.rank_m,
         cmds.profile.confirm_m,
@@ -451,6 +452,199 @@ async def test_my_bind_unbound(app, cmds, data_dir):
             "tester 的绑定信息：\n原神 UID：未绑定\n星铁 UID：未绑定\n米游社 cookie：未绑定",
         )
         ctx.should_finished()
+
+
+def panel_event(text, *, user_id=12345, group_id=88888, message_id=1):
+    from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message, PrivateMessageEvent
+    from nonebot.adapters.onebot.v11.event import Sender
+
+    message = Message(text)
+    event_type = GroupMessageEvent if group_id is not None else PrivateMessageEvent
+    return event_type(
+        time=int(time.time()), self_id=10000, post_type="message", user_id=user_id,
+        sub_type="normal" if group_id is not None else "friend",
+        message_type="group" if group_id is not None else "private",
+        message_id=message_id, message=message, original_message=message,
+        raw_message=str(message), font=0, sender=Sender(user_id=user_id, nickname="tester"),
+        **({"group_id": group_id} if group_id is not None else {}),
+    )
+
+
+@pytest.mark.parametrize("feature", ["detail", "rank"])
+@pytest.mark.parametrize("reply", ["确认", "/面板确认"])
+async def test_offhour_panel_confirmation(app, cmds, data_dir, monkeypatch, feature, reply):
+    from datetime import datetime
+    from unittest.mock import AsyncMock
+
+    from nonebot import on_message
+    from nonebot.adapters.onebot.v11 import Adapter, Bot, MessageSegment
+
+    from nonebot_plugin_miao.core import panel_quota
+
+    monkeypatch.setattr(panel_quota, "_local_now", lambda now=None: datetime(2026, 1, 1, 22))
+    monkeypatch.setattr(panel_quota, "_PENDING", {})
+    api = SimpleNamespace(
+        get_panel_draws=AsyncMock(return_value=0), consume_panel_draw=AsyncMock(return_value=None),
+        get_panel_rank_draws=AsyncMock(return_value=0), consume_panel_rank_draw=AsyncMock(return_value=None),
+        get_affection=AsyncMock(return_value=75), spend_affection=AsyncMock(return_value=(True, 25)),
+    )
+    monkeypatch.setattr(panel_quota, "_API", api)
+    profile = cmds.profile
+    store.bind_uid("12345", "gs", "800055548")
+    monkeypatch.setattr(profile.Player, "load", lambda *_: SimpleNamespace(
+        uid="800055548", get_avatar=lambda _: {"name": "刻晴"},
+    ))
+
+    async def send_card(matcher, *args):
+        await cmds.common.send_image(matcher, b"panel")
+
+    monkeypatch.setattr(profile, "_send_detail_card", send_card)
+    monkeypatch.setattr(profile, "_send_rank_card", send_card)
+    rank = feature == "rank"
+    request = panel_event("/面板排名" if rank else "/刻晴面板")
+    other_user = panel_event("/面板确认", user_id=54321, message_id=2)
+    confirm = panel_event(reply, message_id=3)
+    repeated = panel_event("/面板确认", message_id=4)
+    label = "群面板排名" if rank else "角色面板"
+    fallback = on_message(priority=0, block=True, rule=profile._panel_confirm_rule)
+    try:
+        async with app.test_matcher([profile.rank_m if rank else profile.detail_m, profile.confirm_m, fallback]) as ctx:
+            bot = ctx.create_bot(base=Bot, adapter=ctx.create_adapter(base=Adapter), self_id="10000")
+            ctx.receive_event(bot, request)
+            ctx.should_call_send(
+                request,
+                f"当前非面板开放时段（08:00–17:00 外），本次查看{label}将消耗 50 点好感度"
+                "（当前 75），回复「确认」或发送 /面板确认 继续，回复「取消」放弃（30 秒内有效）。",
+            )
+            ctx.should_finished(profile.rank_m if rank else profile.detail_m)
+            ctx.receive_event(bot, other_user)
+            ctx.should_call_send(other_user, "没有有效的待确认面板请求，请重新发送面板指令。")
+            ctx.should_finished(profile.confirm_m)
+            ctx.receive_event(bot, confirm)
+            ctx.should_call_send(confirm, MessageSegment.image(b"panel"))
+            ctx.should_finished(profile.confirm_m)
+            ctx.receive_event(bot, repeated)
+            ctx.should_call_send(repeated, "没有有效的待确认面板请求，请重新发送面板指令。")
+            ctx.should_finished(profile.confirm_m)
+    finally:
+        fallback.destroy()
+
+    source = "panel_rank_offhour" if rank else "panel_offhour"
+    api.spend_affection.assert_awaited_once_with(
+        88888, "12345", 50, nickname="tester", source=f"nonebot_plugin_miao:{source}",
+    )
+
+
+@pytest.mark.parametrize("feature", ["detail", "rank"])
+async def test_offhour_panel_uses_added_draw_when_offhour_affection_cost_is_zero(
+    app, cmds, data_dir, monkeypatch, feature,
+):
+    from datetime import datetime
+    from unittest.mock import AsyncMock
+
+    from nonebot.adapters.onebot.v11 import Adapter, Bot, MessageSegment
+
+    from nonebot_plugin_miao.config import Config
+    from nonebot_plugin_miao.core import panel_quota
+
+    monkeypatch.setattr(panel_quota, "_local_now", lambda now=None: datetime(2026, 1, 1, 22))
+    monkeypatch.setattr(panel_quota, "_plugin_config", lambda: Config(miao_panel_offhour_affection_cost=0))
+    monkeypatch.setattr(panel_quota, "_PENDING", {})
+    balance = 0
+
+    async def read(group_id, user_id):
+        assert (group_id, user_id) == (88888, "12345")
+        return balance
+
+    async def add(group_id, user_id, amount):
+        nonlocal balance
+        assert (group_id, user_id) == (88888, "12345")
+        balance += amount
+        return balance
+
+    async def consume(group_id, user_id, amount=1):
+        nonlocal balance
+        assert (group_id, user_id) == (88888, "12345")
+        if balance < amount:
+            return None
+        balance -= amount
+        return balance
+
+    rank = feature == "rank"
+    api = panel_quota.MantouAPI(
+        get_panel_draws=AsyncMock(return_value=0) if rank else read,
+        consume_panel_draw=AsyncMock(return_value=None) if rank else consume,
+        add_panel_draws=None if rank else add,
+        get_panel_rank_draws=read if rank else None,
+        consume_panel_rank_draw=consume if rank else None,
+        add_panel_rank_draws=add if rank else None,
+        get_affection=AsyncMock(), spend_affection=AsyncMock(),
+    )
+    monkeypatch.setattr(panel_quota, "_API", api)
+    profile = cmds.profile
+    monkeypatch.setattr(profile, "is_superuser", lambda user_id: user_id == "54321")
+    store.bind_uid("12345", "gs", "800055548")
+    monkeypatch.setattr(profile.Player, "load", lambda *_: SimpleNamespace(
+        uid="800055548", get_avatar=lambda _: {"name": "刻晴"},
+    ))
+
+    async def send_card(matcher, *args):
+        await cmds.common.send_image(matcher, b"panel")
+
+    monkeypatch.setattr(profile, "_send_rank_card" if rank else "_send_detail_card", send_card)
+    prefix = "/群面板排名次数调整" if rank else "/面板次数调整"
+    label = "群面板排名" if rank else "角色面板"
+    matcher = profile.rank_m if rank else profile.detail_m
+    mention = MessageSegment.at(12345)
+    grant = panel_event(f"{prefix} " + mention + " +2", user_id=54321)
+    deduct = panel_event(f"{prefix} " + mention + " -1", user_id=54321, message_id=2)
+    insufficient = panel_event(f"{prefix} " + mention + " -2", user_id=54321, message_id=3)
+    request = panel_event("/面板排名" if rank else "/刻晴面板", message_id=4)
+    async with app.test_matcher([profile.adjust_m, matcher]) as ctx:
+        bot = ctx.create_bot(base=Bot, adapter=ctx.create_adapter(base=Adapter), self_id="10000")
+        for event, result in (
+            (grant, f"{label}次数已调整 +2，当前剩余 2 次。"),
+            (deduct, f"{label}次数已调整 -1，当前剩余 1 次。"),
+            (insufficient, f"{label}次数不足，扣除失败，当前剩余 1 次。"),
+        ):
+            ctx.receive_event(bot, event)
+            ctx.should_call_send(event, mention + f" {result}")
+            ctx.should_finished(profile.adjust_m)
+        ctx.receive_event(bot, request)
+        ctx.should_call_send(request, MessageSegment.image(b"panel"))
+        ctx.should_finished(matcher)
+
+    assert balance == 0
+    assert store.panel_user_calls(88888, "12345", feature=feature) == 0
+    api.spend_affection.assert_not_awaited()
+
+
+async def test_panel_adjust_rejects_unauthorized_and_invalid_requests(app, cmds, monkeypatch):
+    from unittest.mock import AsyncMock
+
+    from nonebot.adapters.onebot.v11 import Adapter, Bot, MessageSegment
+
+    profile = cmds.profile
+    adjust = AsyncMock()
+    monkeypatch.setattr(profile, "adjust_panel_draws", adjust)
+    monkeypatch.setattr(profile, "is_superuser", lambda user_id: user_id == "54321")
+    mention = MessageSegment.at(12345)
+    cases = (
+        (panel_event("/面板次数调整 " + mention + " +2"), "仅 SUPERUSER 可以调整面板次数。"),
+        (panel_event("/面板次数调整", user_id=54321, group_id=None), "请在对应群聊里调整面板次数。"),
+        (panel_event("/面板次数调整 +2", user_id=54321), "请 @一位群友，例如 /面板次数调整 @群友 +2。"),
+        (
+            panel_event("/面板次数调整 " + mention + " +0", user_id=54321),
+            "请填写带正负号的次数（1–9999），例如 +2 或 -1。",
+        ),
+    )
+    async with app.test_matcher(profile.adjust_m) as ctx:
+        bot = ctx.create_bot(base=Bot, adapter=ctx.create_adapter(base=Adapter), self_id="10000")
+        for event, result in cases:
+            ctx.receive_event(bot, event)
+            ctx.should_call_send(event, result)
+            ctx.should_finished()
+    adjust.assert_not_awaited()
 
 
 @pytest.mark.parametrize("text,game,kind,single", [

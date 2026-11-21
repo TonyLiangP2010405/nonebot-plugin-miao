@@ -102,7 +102,19 @@ def make_config(
 
 
 def use_mantou(monkeypatch, fake: FakeMantou | None):
-    monkeypatch.setattr(panel_quota, "_API", fake if fake is not None else False)
+    monkeypatch.setattr(panel_quota, "mantou_api", lambda: fake)
+
+
+def test_mantou_api_detects_plugin_loaded_after_first_lookup(monkeypatch):
+    fake = FakeMantou()
+    loaded = []
+    monkeypatch.setattr(panel_quota, "_API", None)
+    monkeypatch.setattr(panel_quota, "_API_LOGGED", False)
+    monkeypatch.setattr(panel_quota, "get_loaded_plugins", lambda: loaded)
+
+    assert panel_quota.mantou_api() is None
+    loaded.append(SimpleNamespace(name="nonebot_plugin_mantou_affection", module=fake))
+    assert panel_quota.mantou_api().consume_panel_draw == fake.consume_panel_draw
 
 
 async def test_private_is_free(monkeypatch):

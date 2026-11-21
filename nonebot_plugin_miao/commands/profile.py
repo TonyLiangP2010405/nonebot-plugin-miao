@@ -9,12 +9,15 @@ import re
 from typing import Any
 
 from nonebot import on_message, on_regex
-from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, MessageEvent
+from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, MessageEvent, MessageSegment
 
 from ..core import meta, store
 from ..core.artis_mark import calc_mark, format_value, key_title
 from ..core.attr_calc import calc_attr, elem_name
 from ..core.panel_quota import (
+    FEATURE_DETAIL,
+    FEATURE_RANK,
+    adjust_panel_draws,
     authorize_panel_call,
     clear_pending,
     confirm_timeout,
@@ -56,6 +59,7 @@ RE_MYS_UPDATE = r"^/(星铁|原神)?(米游社|mys)(更新面板|面板更新)\s
 RE_LIST = r"^/(星铁|原神)?(面板角色|角色面板|面板)(列表)?\s*(\d{9,10})?$"
 RE_ARTIS_LIST = r"^/(星铁|原神)?(圣遗物|遗器)列表\s*(\d{9,10})?$"
 RE_PANEL_QUOTA = r"^/面板次数$"
+RE_PANEL_ADJUST = r"^/(群面板排名次数调整|面板次数调整)(?:\s|$)"
 RE_PANEL_SWITCH = r"^/面板开关(?:\s+(开|关|启用|停用|重置|on|off))?$"
 RE_RANK = r"^/(星铁|原神)?(.*?)(排名|排行|榜单)\s*(\d{9,10})?$"
 # 角色名面板：负向前瞻排除 更新面板/面板列表/圣遗物列表/米游社更新面板 等指令（另有优先级兜底）
@@ -70,6 +74,7 @@ mys_update_m = on_regex(RE_MYS_UPDATE, priority=5, block=True)
 list_m = on_regex(RE_LIST, priority=5, block=True)
 artis_list_m = on_regex(RE_ARTIS_LIST, priority=5, block=True)
 quota_m = on_regex(RE_PANEL_QUOTA, priority=5, block=True)
+adjust_m = on_regex(RE_PANEL_ADJUST, priority=5, block=True)
 switch_m = on_regex(RE_PANEL_SWITCH, priority=5, block=True)
 rank_m = on_regex(RE_RANK, priority=5, block=True)
 # 角色名面板为正则兜底，优先级低于上面三条，避免吃掉更新、列表指令
@@ -77,16 +82,16 @@ detail_m = on_regex(RE_DETAIL, priority=10, block=True)
 
 
 async def _panel_confirm_rule(event: MessageEvent) -> bool:
-    """只拦截处于面板付费确认中的「确认 / 取消」，其余消息留给其它插件。"""
     if not isinstance(event, GroupMessageEvent):
         return False
-    if event.get_plaintext().strip() not in ("确认", "取消"):
-        return False
-    return has_pending(event.group_id, event.get_user_id(), confirm_timeout())
+    text = event.get_plaintext().strip()
+    if text in ("/面板确认", "/面板取消"):
+        return True
+    return text in ("确认", "取消") and has_pending(event.group_id, event.get_user_id(), confirm_timeout())
 
 
-# 轮盘/其它插件也用「确认」，所以必须挂在有 pending 的群友身上才激活
-confirm_m = on_message(priority=1, block=True, rule=_panel_confirm_rule)
+# 在 NoneBot 等待会话回复的临时 matcher（优先级 0）之前处理面板确认。
+confirm_m = on_message(priority=-1, block=True, rule=_panel_confirm_rule)
 
 
 def _bind_tip(game: str) -> str:
@@ -199,6 +204,27 @@ async def _(event: MessageEvent):
     if isinstance(event, GroupMessageEvent):
         store.mark_panel_group(event.group_id)
     await quota_m.finish(await panel_status(event))
+
+
+@adjust_m.handle()
+@guard(adjust_m)
+async def _(event: MessageEvent):
+    if not isinstance(event, GroupMessageEvent):
+        await adjust_m.finish("请在对应群聊里调整面板次数。")
+    if not is_superuser(event.get_user_id()):
+        await adjust_m.finish("仅 SUPERUSER 可以调整面板次数。")
+
+    parts = event.get_plaintext().split(maxsplit=1)
+    command, amount = parts[0], parts[1] if len(parts) == 2 else ""
+    targets = [str(segment.data.get("qq", "")) for segment in event.get_message() if segment.type == "at"]
+    if len(targets) != 1 or not re.fullmatch(r"[1-9][0-9]*", targets[0]):
+        await adjust_m.finish("请 @一位群友，例如 /面板次数调整 @群友 +2。")
+    if not re.fullmatch(r"[+-][1-9][0-9]{0,3}", amount.strip()):
+        await adjust_m.finish("请填写带正负号的次数（1–9999），例如 +2 或 -1。")
+
+    feature = FEATURE_RANK if command == "/群面板排名次数调整" else FEATURE_DETAIL
+    result = await adjust_panel_draws(event.group_id, targets[0], feature, int(amount))
+    await adjust_m.finish(MessageSegment.at(targets[0]) + f" {result}")
 
 
 @switch_m.handle()
@@ -337,7 +363,8 @@ async def _(event: MessageEvent):
         await detail_m.finish(check.message)
     if not check.allowed:
         await detail_m.finish(check.message)
-    clear_pending(event.group_id, event.get_user_id())
+    if isinstance(event, GroupMessageEvent):
+        clear_pending(event.group_id, event.get_user_id())
     await _send_detail_card(detail_m, avatar, game, player.uid, show_dmg, dmg_idx)
     await detail_m.finish()
 
@@ -363,8 +390,8 @@ async def _(event: MessageEvent, bot: Bot):
     timeout = confirm_timeout()
     pending = pop_pending(group_id, event.get_user_id(), timeout)
     if pending is None:
-        await confirm_m.finish()
-    if event.get_plaintext().strip() == "取消":
+        await confirm_m.finish("没有有效的待确认面板请求，请重新发送面板指令。")
+    if event.get_plaintext().strip() in ("取消", "/面板取消"):
         await confirm_m.finish("已取消本次查看。")
     check = await authorize_panel_call(
         event, confirmed=True, feature=pending.feature, quoted_cost=pending.cost
@@ -424,11 +451,13 @@ async def _send_rank_card(matcher, bot: Bot, event: MessageEvent, payload: dict[
 @rank_m.handle()
 @guard(rank_m)
 async def _(event: MessageEvent, bot: Bot):
-    await ensure_panel_available(rank_m, event, feature="rank")
     text = event.get_plaintext()
     m = re.match(RE_RANK, text)
     if not m:
         await rank_m.finish()
+    if not isinstance(event, GroupMessageEvent):
+        await rank_m.finish("面板排名仅支持群聊。")
+    await ensure_panel_available(rank_m, event, feature="rank")
     game = game_of(text)
     char_name, mode = _parse_rank_body(text)
     char = meta.resolve_character(char_name, game) if char_name else None
