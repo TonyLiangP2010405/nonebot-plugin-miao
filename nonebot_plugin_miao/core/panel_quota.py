@@ -18,7 +18,8 @@ from __future__ import annotations
 
 import math
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -199,7 +200,7 @@ def panel_window_text(config: Any | None = None) -> str:
     return f"{open_hour:02d}:00–{close_hour:02d}:00"
 
 
-def panel_closed_message(config: Any | None = None, now: datetime | None = None) -> str:
+def panel_closed_message(config: Any | None = None, now: datetime | None = None, *, update: bool = False) -> str:
     """不在开放时段时的提示，包含下一次开启时间。"""
     config = config or _plugin_config()
     open_hour, _ = panel_window(config)
@@ -208,6 +209,12 @@ def panel_closed_message(config: Any | None = None, now: datetime | None = None)
     if next_open <= current:
         next_open += timedelta(days=1)
     day = "今天" if next_open.date() == current.date() else "明天"
+    message = (
+        f"面板功能每天 {panel_window_text(config)} 开放，当前已关闭，"
+        f"{day} {open_hour:02d}:00 后再试。\n"
+    )
+    if update:
+        return message + "群聊在非开放时段需要 1 次角色面板次数才能更新，发送 /面板次数 可查看余额。"
     offhour = _int_attr(config, "miao_panel_offhour_affection_cost", 50)
     offhour_hint = (
         f"没有转盘次数时，群聊可消耗 {offhour} 点好感度查看（回复「确认」后扣费）。\n"
@@ -215,8 +222,7 @@ def panel_closed_message(config: Any | None = None, now: datetime | None = None)
         else ""
     )
     return (
-        f"面板功能每天 {panel_window_text(config)} 开放，当前已关闭，"
-        f"{day} {open_hour:02d}:00 后再试。\n"
+        f"{message}"
         f"{offhour_hint}"
         "提示：转盘抽到的面板 / 群排名次数不受时段限制，可直接使用。"
     )
@@ -382,6 +388,35 @@ def _draw_calls(api: MantouAPI, feature: str) -> tuple[Any, Any]:
     if feature == FEATURE_RANK:
         return api.get_panel_rank_draws, api.consume_panel_rank_draw
     return api.get_panel_draws, api.consume_panel_draw
+
+
+@asynccontextmanager
+async def reserve_panel_update(event: Any) -> AsyncIterator[None]:
+    """群聊非开放时段预扣 1 次角色面板次数，数据更新失败时返还。"""
+    group_id = getattr(event, "group_id", None)
+    user_id = event.get_user_id()
+    if panel_time_allowed() or (group_id is not None and is_superuser(user_id)):
+        yield
+        return
+    if group_id is None:
+        raise ValueError(panel_closed_message(update=True))
+    api = mantou_api()
+    if api is None:
+        raise ValueError(panel_closed_message(update=True))
+    refund = api.add_panel_draws
+    if refund is None:
+        raise ValueError("请升级馒头好感度插件后再使用角色面板次数更新。")
+    if await api.consume_panel_draw(group_id, user_id) is None:
+        raise ValueError(panel_closed_message(update=True))
+    try:
+        yield
+    except BaseException:
+        try:
+            await refund(group_id, user_id, 1)
+        except Exception as error:
+            logger.exception("[miao] 面板更新失败后返还次数失败")
+            raise ValueError("面板更新失败，暂时无法返还本次扣除的次数，请联系管理员。") from error
+        raise
 
 
 async def adjust_panel_draws(group_id: int, user_id: str, feature: str, delta: int) -> str:
@@ -615,5 +650,6 @@ async def panel_status(event: Any, config: Any | None = None) -> str:
     if cost > 0 or offhour > 0:
         lines.append("也可以发送 /面板确认 或 /面板取消。")
     lines.append("转盘抽到的面板 / 群排名次数不受开放时段限制，任何时间都可以使用。")
+    lines.append("非开放时段更新面板需消耗 1 次角色面板次数。")
     lines.append("面板次数获取：参与馒头命运齿轮转盘，角色面板 5%、群面板排名 3%。")
     return "\n".join(lines)

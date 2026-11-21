@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from typing import Any
 
 from nonebot import on_message, on_regex
@@ -29,13 +30,13 @@ from ..core.panel_quota import (
     panel_status,
     pop_pending,
     register_pending,
+    reserve_panel_update,
     set_panel_enabled,
     update_limit_message,
     update_wait,
 )
 from ..core.player import Player
 from ..core.profile_rank import MODE_DMG, MODE_MARK, collect_rank
-from ..datasource.errors import ProfileError
 from ..datasource.mys import update_profile_mys
 from ..datasource.profile_service import update_profile
 from ..dmg import calc_dmg
@@ -50,6 +51,7 @@ from ..render.profile_detail import dmg_row_text
 from .common import ensure_panel_available, ensure_panel_enabled, game_of, guard, resolve_uid, send_image
 
 _GAME_NAME = {"gs": "原神", "sr": "星铁"}
+_UPDATES_IN_FLIGHT: set[tuple[str, str]] = set()
 # 部位简称（花羽沙杯冠 / 头手衣鞋球绳）
 _POS_NAME = {"gs": ["花", "羽", "沙", "杯", "冠"], "sr": ["头", "手", "衣", "鞋", "球", "绳"]}
 
@@ -69,16 +71,28 @@ RE_DETAIL = (
     r"([^#/]+?)\s*(详细|详情|面板|面版|圣遗物|遗器|伤害(?:[1-9]+\d*)?)\s*(\d{9,10})?$"
 )
 
-update_m = on_regex(RE_UPDATE, priority=5, block=True)
-mys_update_m = on_regex(RE_MYS_UPDATE, priority=5, block=True)
-list_m = on_regex(RE_LIST, priority=5, block=True)
+def _panel_command(pattern: str) -> Callable[[MessageEvent], bool]:
+    """匹配面板指令文本，保留 OneBot 的 @ 消息段供处理器鉴权。"""
+    command = re.compile(pattern)
+
+    def matches(event: MessageEvent) -> bool:
+        return all(segment.type in ("text", "at") for segment in event.get_message()) and (
+            command.fullmatch(event.get_plaintext().strip()) is not None
+        )
+
+    return matches
+
+
+update_m = on_message(rule=_panel_command(RE_UPDATE), priority=5, block=True)
+mys_update_m = on_message(rule=_panel_command(RE_MYS_UPDATE), priority=5, block=True)
+list_m = on_message(rule=_panel_command(RE_LIST), priority=5, block=True)
 artis_list_m = on_regex(RE_ARTIS_LIST, priority=5, block=True)
 quota_m = on_regex(RE_PANEL_QUOTA, priority=5, block=True)
 adjust_m = on_regex(RE_PANEL_ADJUST, priority=5, block=True)
 switch_m = on_regex(RE_PANEL_SWITCH, priority=5, block=True)
 rank_m = on_regex(RE_RANK, priority=5, block=True)
 # 角色名面板为正则兜底，优先级低于上面三条，避免吃掉更新、列表指令
-detail_m = on_regex(RE_DETAIL, priority=10, block=True)
+detail_m = on_message(rule=_panel_command(RE_DETAIL), priority=10, block=True)
 
 
 async def _panel_confirm_rule(event: MessageEvent) -> bool:
@@ -98,14 +112,40 @@ def _bind_tip(game: str) -> str:
     return f"请先绑定{_GAME_NAME[game]} UID：/{'星铁' if game == 'sr' else ''}绑定uid <UID>"
 
 
-def _update_tip(game: str) -> str:
-    return f"暂无本地面板数据，请先发送 /{'星铁' if game == 'sr' else ''}更新面板"
+def _update_tip(game: str, target: str | None = None) -> str:
+    command = f"/{'星铁' if game == 'sr' else ''}更新面板"
+    if target is not None:
+        command += " @群友"
+    return f"暂无本地面板数据，请先发送 {command}"
 
 
 def _char_not_found(name: str, game: str) -> str:
     tips = meta.suggest_characters(name, game)
     hint = f"，你是不是想找：{'、'.join(tips)}" if tips else ""
     return f"未找到角色【{name}】{hint}。支持角色名、别名，也会尝试纠正常见错字。"
+
+
+def _mentioned_panel_user(event: MessageEvent) -> str | None:
+    targets = [str(segment.data.get("qq", "")) for segment in event.get_message() if segment.type == "at"]
+    if not targets:
+        return None
+    if not isinstance(event, GroupMessageEvent) or not is_superuser(event.get_user_id()):
+        raise ValueError("仅 SUPERUSER 可以在群里 @群友 更新或查看对方的面板。")
+    if len(targets) != 1 or not re.fullmatch(r"[1-9][0-9]*", targets[0]):
+        raise ValueError("请只 @一位群友。")
+    return targets[0]
+
+
+def _panel_uid(event: MessageEvent, text: str, game: str, target: str | None) -> str:
+    if target is None:
+        uid = resolve_uid(event, text, game)
+        if not uid:
+            raise ValueError(_bind_tip(game))
+    else:
+        uid = store.get_uid(target, game)
+        if not uid:
+            raise ValueError(f"该群友还没有绑定{_GAME_NAME[game]} UID。")
+    return uid
 
 
 # ---------------------------------------------------------------------------
@@ -116,24 +156,7 @@ def _char_not_found(name: str, game: str) -> str:
 @update_m.handle()
 @guard(update_m)
 async def _(event: MessageEvent):
-    await ensure_panel_available(update_m, event)
-    text = event.get_plaintext()
-    game = game_of(text)
-    uid = resolve_uid(event, text, game)
-    if not uid:
-        await update_m.finish(_bind_tip(game))
-    wait = update_wait(event.get_user_id(), game)
-    if wait > 0:
-        await update_m.finish(update_limit_message(wait))
-    ret = await update_profile(event.get_user_id(), uid, game)
-    if ret["code"] == "cd":
-        await update_m.finish(f"面板数据更新冷却中，请 {ret['wait']} 秒后再试")
-    mark_update(event.get_user_id(), game)
-    player: Player = ret["player"]
-    await send_image(
-        update_m,
-        await render_profile_update(player, game, ret["new_chars"], uid, player.data_source),
-    )
+    await _run_panel_update(update_m, event)
     await update_m.finish()
 
 
@@ -145,30 +168,46 @@ async def _(event: MessageEvent):
 @mys_update_m.handle()
 @guard(mys_update_m)
 async def _(event: MessageEvent):
-    await ensure_panel_available(mys_update_m, event)
+    await _run_panel_update(mys_update_m, event, use_mys=True)
+    await mys_update_m.finish()
+
+
+async def _run_panel_update(matcher, event: MessageEvent, *, use_mys: bool = False) -> None:
+    await ensure_panel_enabled(matcher)
+    target = _mentioned_panel_user(event)
+    if use_mys and target is not None:
+        raise ValueError("替群友更新请用 /更新面板 @群友 或 /星铁更新面板 @群友。")
+    if isinstance(event, GroupMessageEvent):
+        store.mark_panel_group(event.group_id)
     text = event.get_plaintext()
     game = game_of(text)
-    uid = resolve_uid(event, text, game)
-    if not uid:
-        await mys_update_m.finish(_bind_tip(game))
-    wait = update_wait(event.get_user_id(), game)
-    if wait > 0:
-        await mys_update_m.finish(update_limit_message(wait))
+    user_id = target or event.get_user_id()
+    uid = _panel_uid(event, text, game, target)
+    key = (user_id, game)
+    if key in _UPDATES_IN_FLIGHT:
+        raise ValueError("该玩家的面板正在更新，请稍候。")
+    _UPDATES_IN_FLIGHT.add(key)
     try:
-        ret = await update_profile_mys(event.get_user_id(), uid, game)
-    except ProfileError as e:
-        await mys_update_m.finish(str(e))
-    if ret["code"] == "no_cookie":
-        await mys_update_m.finish(ret["msg"])
-    if ret["code"] == "cd":
-        await mys_update_m.finish(f"面板数据更新冷却中，请 {ret['wait']} 秒后再试")
-    mark_update(event.get_user_id(), game)
+        wait = update_wait(user_id, game)
+        if wait > 0:
+            raise ValueError(update_limit_message(wait))
+        fetch = update_profile_mys if use_mys else update_profile
+        async with reserve_panel_update(event):
+            ret = await fetch(user_id, uid, game)
+            if ret["code"] == "no_cookie":
+                raise ValueError(ret["msg"])
+            if ret["code"] == "cd":
+                raise ValueError(f"面板数据更新冷却中，请 {ret['wait']} 秒后再试")
+        mark_update(user_id, game)
+    finally:
+        _UPDATES_IN_FLIGHT.remove(key)
+
     player: Player = ret["player"]
+    source = "米游社" if use_mys else player.data_source
     await send_image(
-        mys_update_m,
-        await render_profile_update(player, game, ret["new_chars"], uid, "米游社"),
+        matcher,
+        await render_profile_update(player, game, ret["new_chars"], uid, source),
     )
-    await mys_update_m.finish()
 
 
 # ---------------------------------------------------------------------------
@@ -179,15 +218,18 @@ async def _(event: MessageEvent):
 @list_m.handle()
 @guard(list_m)
 async def _(event: MessageEvent):
-    await ensure_panel_available(list_m, event)
+    target = _mentioned_panel_user(event)
+    if target is not None:
+        await ensure_panel_enabled(list_m)
+        store.mark_panel_group(event.group_id)
+    else:
+        await ensure_panel_available(list_m, event)
     text = event.get_plaintext()
     game = game_of(text)
-    uid = resolve_uid(event, text, game)
-    if not uid:
-        await list_m.finish(_bind_tip(game))
+    uid = _panel_uid(event, text, game, target)
     player = Player.load(uid, game)
     if not player.avatars:
-        await list_m.finish(_update_tip(game))
+        await list_m.finish(_update_tip(game, target))
     await send_image(list_m, await render_profile_list(player, game))
     await list_m.finish()
 
@@ -324,8 +366,9 @@ def _fmt_dmg_text(dmg: dict[str, Any]) -> str:
 @detail_m.handle()
 @guard(detail_m)
 async def _(event: MessageEvent):
+    target = _mentioned_panel_user(event)
     await ensure_panel_available(detail_m, event, feature="detail")
-    text = event.get_plaintext()
+    text = event.get_plaintext().strip()
     m = re.match(RE_DETAIL, text)
     if not m:
         await detail_m.finish()
@@ -334,13 +377,11 @@ async def _(event: MessageEvent):
     char = meta.resolve_character(name, game)
     if not char:
         await detail_m.finish(_char_not_found(name, game))
-    uid = resolve_uid(event, text, game)
-    if not uid:
-        await detail_m.finish(_bind_tip(game))
+    uid = _panel_uid(event, text, game, target)
     player = Player.load(uid, game)
     avatar = player.get_avatar(name)
     if not avatar:
-        await detail_m.finish(f"本地没有 {char.name} 的面板数据，{_update_tip(game)}")
+        await detail_m.finish(f"本地没有 {char.name} 的面板数据，{_update_tip(game, target)}")
     detail_type = m.group(2)
     show_dmg = detail_type.startswith("伤害")
     tail = detail_type[2:] if show_dmg else ""

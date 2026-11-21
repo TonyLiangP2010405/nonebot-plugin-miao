@@ -470,6 +470,116 @@ def panel_event(text, *, user_id=12345, group_id=88888, message_id=1):
     )
 
 
+@pytest.mark.parametrize("use_mys", [False, True])
+async def test_offhour_update_consumes_one_draw_only_on_success(app, cmds, data_dir, monkeypatch, use_mys):
+    from datetime import datetime
+    from unittest.mock import AsyncMock
+
+    from nonebot.adapters.onebot.v11 import Adapter, Bot, MessageSegment
+
+    from nonebot_plugin_miao.core import panel_quota
+    from nonebot_plugin_miao.datasource.errors import ProfileError
+
+    monkeypatch.setattr(panel_quota, "_local_now", lambda now=None: datetime(2026, 1, 1, 22))
+    profile = cmds.profile
+    matcher = profile.mys_update_m if use_mys else profile.update_m
+    command = "/米游社更新面板" if use_mys else "/更新面板"
+    store.bind_uid("12345", "gs", "800055548")
+    consume = AsyncMock(side_effect=[None, 0, 0])
+    refund = AsyncMock(return_value=1)
+    monkeypatch.setattr(panel_quota, "_API", SimpleNamespace(consume_panel_draw=consume, add_panel_draws=refund))
+    player = SimpleNamespace(data_source="Enka")
+    failed = {"code": "no_cookie", "msg": "请先绑定米游社 Cookie"} if use_mys else ProfileError("数据源不可用", "enka")
+    fetch = AsyncMock(side_effect=[failed, {"code": "ok", "player": player, "new_chars": ["刻晴"]}])
+    monkeypatch.setattr(profile, "update_profile_mys" if use_mys else "update_profile", fetch)
+    monkeypatch.setattr(profile, "render_profile_update", AsyncMock(return_value=b"updated"))
+
+    async with app.test_matcher(matcher) as ctx:
+        bot = ctx.create_bot(base=Bot, adapter=ctx.create_adapter(base=Adapter), self_id="10000")
+        for index, response in enumerate((
+            "面板功能每天 08:00–17:00 开放，当前已关闭，明天 08:00 后再试。\n"
+            "群聊在非开放时段需要 1 次角色面板次数才能更新，发送 /面板次数 可查看余额。",
+            "请先绑定米游社 Cookie" if use_mys else "数据源不可用",
+            MessageSegment.image(b"updated"),
+            "更新面板每小时只能使用 1 次，请 60 分钟后再试",
+        ), 1):
+            event = panel_event(command, message_id=index)
+            ctx.receive_event(bot, event)
+            ctx.should_call_send(event, response)
+            ctx.should_finished()
+
+    assert consume.await_count == 3
+    refund.assert_awaited_once_with(88888, "12345", 1)
+    assert fetch.await_count == 2
+    fetch.assert_awaited_with("12345", "800055548", "gs")
+    assert panel_quota.update_wait("12345", "gs") > 0
+
+
+@pytest.mark.parametrize("prefix,character,game,uid", [
+    ("", "刻晴", "gs", "800055548"),
+    ("星铁", "流萤", "sr", "702762444"),
+])
+async def test_superuser_can_update_and_view_mentioned_members_after_hours(
+    app, cmds, data_dir, monkeypatch, prefix, character, game, uid,
+):
+    from datetime import datetime
+    from unittest.mock import AsyncMock
+
+    from nonebot import get_driver
+    from nonebot.adapters.onebot.v11 import Adapter, Bot, MessageSegment
+
+    from nonebot_plugin_miao.core import panel_quota
+
+    monkeypatch.setattr(get_driver().config, "superusers", {"54321"})
+    monkeypatch.setattr(panel_quota, "_local_now", lambda now=None: datetime(2026, 1, 1, 22))
+    consume = AsyncMock()
+    monkeypatch.setattr(panel_quota, "_API", SimpleNamespace(consume_panel_draw=consume))
+    profile = cmds.profile
+    store.bind_uid("12345", game, uid)
+    store.bind_uid("54321", game, "100000001")
+    avatar = {"name": character}
+    player = SimpleNamespace(uid=uid, data_source="test", avatars=[avatar], get_avatar=lambda _: avatar)
+    fetch = AsyncMock(return_value={"code": "ok", "player": player, "new_chars": [character]})
+    monkeypatch.setattr(profile, "update_profile", fetch)
+    mys_fetch = AsyncMock()
+    monkeypatch.setattr(profile, "update_profile_mys", mys_fetch)
+    monkeypatch.setattr(profile, "render_profile_update", AsyncMock(return_value=b"updated"))
+    monkeypatch.setattr(profile, "render_profile_list", AsyncMock(return_value=b"list"))
+
+    def load_player(player_uid, player_game):
+        assert (player_uid, player_game) == (uid, game)
+        return player
+
+    async def send_detail(matcher, selected, detail_game, detail_uid, *_):
+        assert (selected, detail_game, detail_uid) == (avatar, game, uid)
+        await cmds.common.send_image(matcher, b"detail")
+
+    monkeypatch.setattr(profile.Player, "load", load_player)
+    monkeypatch.setattr(profile, "_send_detail_card", send_detail)
+    mention = MessageSegment.at(12345)
+    update = f"/{prefix}更新面板 " + mention
+    async with app.test_matcher([profile.update_m, profile.detail_m, profile.list_m, profile.mys_update_m]) as ctx:
+        bot = ctx.create_bot(base=Bot, adapter=ctx.create_adapter(base=Adapter), self_id="10000")
+        for index, (message, actor, response, matcher) in enumerate((
+            (update, 54321, MessageSegment.image(b"updated"), profile.update_m),
+            (f"/{prefix}{character}面板 " + mention, 54321, MessageSegment.image(b"detail"), profile.detail_m),
+            (f"/{prefix}面板列表 " + mention, 54321, MessageSegment.image(b"list"), profile.list_m),
+            (update, 34567, "仅 SUPERUSER 可以在群里 @群友 更新或查看对方的面板。", profile.update_m),
+            (f"/{prefix}米游社更新面板 " + mention, 54321,
+             "替群友更新请用 /更新面板 @群友 或 /星铁更新面板 @群友。", profile.mys_update_m),
+        ), 1):
+            event = panel_event(message, user_id=actor, message_id=index)
+            ctx.receive_event(bot, event)
+            ctx.should_call_send(event, response)
+            ctx.should_finished(matcher)
+
+    fetch.assert_awaited_once_with("12345", uid, game)
+    mys_fetch.assert_not_awaited()
+    consume.assert_not_awaited()
+    assert panel_quota.update_wait("12345", game) > 0
+    assert panel_quota.update_wait("54321", game) == 0
+
+
 @pytest.mark.parametrize("feature", ["detail", "rank"])
 @pytest.mark.parametrize("reply", ["确认", "/面板确认"])
 async def test_offhour_panel_confirmation(app, cmds, data_dir, monkeypatch, feature, reply):

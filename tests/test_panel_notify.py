@@ -45,7 +45,8 @@ def test_panel_notify_text_mentions_offhour_price():
     assert "/面板次数" in close_text
 
     disabled = panel_notify.panel_notify_text("close", make_config(miao_panel_offhour_affection_cost=0))
-    assert "暂不可查看" in disabled
+    assert "可用转盘次数查看" in disabled
+    assert "更新面板可用 1 次角色面板次数" in disabled
 
 
 async def test_notify_sends_three_times_per_group(monkeypatch):

@@ -60,7 +60,7 @@ def panel_notify_text(kind: str, config: Any | None = None) -> str:
         offhour_line = (
             f"非开放时段每次 {offhour} 点好感度，回复「确认」后扣费。"
             if offhour > 0
-            else "非开放时段暂不可查看。"
+            else "非开放时段可用转盘次数查看。"
         )
         return (
             f"【面板提醒】面板功能已开启（{window}）。\n"
@@ -74,10 +74,11 @@ def panel_notify_text(kind: str, config: Any | None = None) -> str:
             "回复「确认」后扣费。"
         )
     else:
-        closed_line = f"非开放时段暂不可查看，{open_hour:02d}:00 后再试。"
+        closed_line = f"非开放时段可用转盘次数查看，免费查看于 {open_hour:02d}:00 恢复。"
     return (
         f"【面板提醒】面板功能已关闭（{window} 外）。\n"
         f"{closed_line}\n"
+        "群聊更新面板可用 1 次角色面板次数。\n"
         "发送 /面板次数 可查看剩余次数。"
     )
 
