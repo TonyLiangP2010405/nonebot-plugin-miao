@@ -167,6 +167,45 @@ def _meta_dir(game: str) -> Path:
     return resolve_res_dir(_res_root() / f"meta-{game}")
 
 
+def _resource_files(rel: str) -> list[Path]:
+    """同一资源在覆盖目录与打包目录中的候选文件（覆盖优先，去重）"""
+    files: list[Path] = []
+    for path in (_res_root() / rel, RES_DIR / rel):
+        if path.is_file() and path not in files:
+            files.append(path)
+    return files
+
+
+def _merged_subdirs(primary: Path, fallback: Path) -> list[Path]:
+    """合并两个目录的子目录：同名以 primary 为准，fallback 补齐缺失项"""
+    dirs: dict[str, Path] = {}
+    for base in (fallback, primary):
+        if not base.is_dir():
+            continue
+        for sub in sorted(base.iterdir()):
+            if sub.is_dir():
+                dirs[sub.name] = sub
+    return [dirs[name] for name in sorted(dirs)]
+
+
+def _game_subdirs(game: str, sub: str) -> list[Path]:
+    """覆盖目录 + 打包资源的子目录合并列表（覆盖优先）"""
+    _check_game(game)
+    rel = Path(f"meta-{game}") / sub
+    return _merged_subdirs(_res_root() / rel, RES_DIR / rel)
+
+
+def _weapon_dirs(game: str) -> list[Path]:
+    """武器目录（类型/武器两级）合并列表，覆盖目录优先"""
+    _check_game(game)
+    fallback_root = RES_DIR / f"meta-{game}" / "weapon"
+    primary_root = _res_root() / f"meta-{game}" / "weapon"
+    result: list[Path] = []
+    for type_dir in _merged_subdirs(primary_root, fallback_root):
+        result.extend(_merged_subdirs(primary_root / type_dir.name, fallback_root / type_dir.name))
+    return result
+
+
 # ---------------------------------------------------------------------------
 # 角色
 # ---------------------------------------------------------------------------
@@ -209,16 +248,15 @@ def _char_index(game: str) -> _CharIndex:
     """构建（并缓存）角色索引"""
     if game in _CHAR_INDEX:
         return _CHAR_INDEX[game]
-    char_dir = resolve_res_dir(_meta_dir(game) / "character")
     by_name: dict[str, str] = {}
     by_alias: dict[str, str] = {}
     by_id: dict[str, str] = {}
 
-    # 目录名 -> data.json 中的规范名/id/abbr
+    # 目录名 -> data.json 中的规范名/id/abbr；覆盖目录优先，打包资源补齐缺失角色
     dir_to_name: dict[str, str] = {}
-    for sub in sorted(char_dir.iterdir()):
-        data_file = sub / "data.json"
-        if not sub.is_dir() or not data_file.is_file():
+    for sub in _game_subdirs(game, "character"):
+        data_file = resolve_res_file(sub / "data.json")
+        if not data_file.is_file():
             continue
         data = _load_res_json(data_file)
         name = data.get("name") or sub.name
@@ -231,8 +269,8 @@ def _char_index(game: str) -> _CharIndex:
             by_alias[str(data["abbr"])] = sub.name
 
     # alias.js：{角色名: '别名1,别名2,...'}；sr 另有 abbr：{角色名: 简称}
-    alias_file = char_dir / "alias.js"
-    if alias_file.is_file():
+    # 覆盖目录与打包资源都读，setdefault 保证覆盖目录的别名优先
+    for alias_file in _resource_files(f"meta-{game}/character/alias.js"):
         exports = _eval_esm(alias_file, ["alias", "abbr"])
         for char_name, aliases in (exports.get("alias") or {}).items():
             dir_name = by_name.get(char_name) or dir_to_name.get(char_name)
@@ -468,7 +506,7 @@ def list_characters(game: str) -> list[dict[str, Any]]:
     index = _char_index(game)
     result: list[dict[str, Any]] = []
     for dir_name in set(index.by_name.values()):
-        data_file = _meta_dir(game) / "character" / dir_name / "data.json"
+        data_file = resolve_res_file(_meta_dir(game) / "character" / dir_name / "data.json")
         if data_file.is_file():
             result.append(dict(_load_res_json(data_file)))
     return sorted(result, key=lambda item: (-int(item.get("star") or 0), str(item.get("name") or "")))
@@ -485,22 +523,18 @@ def _weapon_index(game: str) -> dict[str, tuple[str, str]]:
     """构建（并缓存）武器索引：名字/abbr -> (类型目录, 武器目录)"""
     if game in _WEAPON_INDEX:
         return _WEAPON_INDEX[game]
-    weapon_dir = resolve_res_dir(_meta_dir(game) / "weapon")
     index: dict[str, tuple[str, str]] = {}
-    for type_dir in sorted(weapon_dir.iterdir()):
-        if not type_dir.is_dir():
+    for sub in _weapon_dirs(game):
+        data_file = resolve_res_file(sub / "data.json")
+        if not data_file.is_file():
             continue
-        for sub in sorted(type_dir.iterdir()):
-            data_file = sub / "data.json"
-            if not sub.is_dir() or not data_file.is_file():
-                continue
-            data = _load_res_json(data_file)
-            name = data.get("name") or sub.name
-            index[name] = (type_dir.name, sub.name)
-            index.setdefault(sub.name, (type_dir.name, sub.name))
-    # alias.js：gs 为 {武器名: 简称}
-    alias_file = weapon_dir / "alias.js"
-    if alias_file.is_file():
+        data = _load_res_json(data_file)
+        type_name = sub.parent.name
+        name = data.get("name") or sub.name
+        index[name] = (type_name, sub.name)
+        index.setdefault(sub.name, (type_name, sub.name))
+    # alias.js：gs 为 {武器名: 简称}；覆盖目录优先，打包资源补齐
+    for alias_file in _resource_files(f"meta-{game}/weapon/alias.js"):
         exports = _eval_esm(alias_file, ["alias", "abbr"])
         for aliases in (exports.get("alias") or {}, exports.get("abbr") or {}):
             for name, ab in aliases.items():
@@ -551,17 +585,13 @@ def get_weapon_by_id(weapon_id: str | int, game: str) -> dict[str, Any] | None:
     _check_game(game)
     if game not in _WEAPON_ID_INDEX:
         index: dict[str, tuple[str, str]] = {}
-        weapon_dir = resolve_res_dir(_meta_dir(game) / "weapon")
-        for type_dir in sorted(weapon_dir.iterdir()):
-            if not type_dir.is_dir():
+        for sub in _weapon_dirs(game):
+            data_file = resolve_res_file(sub / "data.json")
+            if not data_file.is_file():
                 continue
-            for sub in sorted(type_dir.iterdir()):
-                data_file = sub / "data.json"
-                if not sub.is_dir() or not data_file.is_file():
-                    continue
-                data = _load_res_json(data_file)
-                if data.get("id") is not None:
-                    index[str(data["id"])] = (type_dir.name, sub.name)
+            data = _load_res_json(data_file)
+            if data.get("id") is not None:
+                index[str(data["id"])] = (sub.parent.name, sub.name)
         _WEAPON_ID_INDEX[game] = index
     hit = _WEAPON_ID_INDEX[game].get(str(weapon_id).strip())
     if not hit:

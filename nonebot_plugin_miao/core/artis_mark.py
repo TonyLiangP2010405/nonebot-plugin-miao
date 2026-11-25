@@ -63,7 +63,7 @@ _USEFUL_ATTR_CACHE: dict[str, dict[str, Any]] = {}
 def _useful_attr(game: str) -> dict[str, Any]:
     if game in _USEFUL_ATTR_CACHE:
         return _USEFUL_ATTR_CACHE[game]
-    mark_file = meta._res_root() / f"meta-{game}" / "artifact" / "artis-mark.js"
+    mark_file = meta.resolve_res_file(meta._res_root() / f"meta-{game}" / "artifact" / "artis-mark.js")
     ret: dict[str, Any] = {}
     if mark_file.is_file():
         try:
@@ -151,7 +151,7 @@ def get_char_weight(
 
     # gs 旅行者评分规则在「旅行者」目录下（CharCfg.getArtisCfg）
     char_dir = "旅行者" if game == "gs" and char.name == "旅行者" else char.name
-    rule_file = meta._res_root() / f"meta-{game}" / "character" / char_dir / "artis.js"
+    rule_file = meta.resolve_res_file(meta._res_root() / f"meta-{game}" / "character" / char_dir / "artis.js")
     if rule_file.is_file():
         attr_args = {k: v for k, v in attr.items() if not str(k).startswith("_") and k != "staticAttr"}
         code = meta._strip_esm(rule_file.read_text(encoding="utf-8"))

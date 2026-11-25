@@ -36,7 +36,11 @@ async def _update():
 @res_info_m.handle()
 @guard(res_info_m)
 async def _info():
-    source = "覆盖版（/更新面板资源 拉取）" if res_update.using_override() else "打包版（插件内置）"
+    source = (
+        "覆盖版 + 打包补齐（/更新面板资源 拉取）"
+        if res_update.using_override()
+        else "打包版（插件内置）"
+    )
     lines = [f"面板资源来源：{source}"]
     info = res_update.last_update_info()
     if info:

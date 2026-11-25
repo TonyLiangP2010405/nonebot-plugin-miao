@@ -274,6 +274,17 @@ def _count_chars(staged: Path, game_dir: str) -> int:
     return sum(1 for sub in char_dir.iterdir() if sub.is_dir() and (sub / "data.json").is_file())
 
 
+def _missing_character_files(failed: list[str]) -> list[str]:
+    """下载失败的角色 data.json；缺失会让该角色从面板/图鉴里消失"""
+    return [
+        path
+        for path in failed
+        if path.startswith("resources/meta-")
+        and "/character/" in path
+        and path.endswith("/data.json")
+    ]
+
+
 def _swap(staged: Path, dest: Path) -> None:
     """原子替换覆盖目录：旧目录先改名备份，新目录就位后再删备份，失败回滚"""
     backup = dest.parent / f".{dest.name}.bak"
@@ -360,6 +371,13 @@ async def update_resources(on_progress: Callable[[int, int, str], Any] | None = 
         sr_chars = _count_chars(staged, "meta-sr")
         if gs_chars + sr_chars <= MIN_TOTAL_CHARS:
             return _error(start, f"角色元数据不完整（gs {gs_chars} + sr {sr_chars} 个，疑似拉取失败）", failed)
+        missing_chars = _missing_character_files(failed)
+        if missing_chars:
+            return _error(
+                start,
+                f"{len(missing_chars)} 个角色 data.json 下载失败，未替换覆盖目录",
+                failed,
+            )
         for rel in CRITICAL_FILES:
             if not (staged / rel).is_file():
                 return _error(start, f"缺少关键文件 {rel}", failed)

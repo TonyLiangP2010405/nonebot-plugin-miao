@@ -1,4 +1,6 @@
 """meta 元数据加载器单元测试：基于 resources 下的真实元数据文件"""
+import shutil
+
 import pytest
 
 from nonebot_plugin_miao.core import meta
@@ -264,5 +266,40 @@ def test_incomplete_override_falls_back_to_packaged(tmp_path, monkeypatch):
         assert meta.get_character("刻晴", "gs").name == "刻晴"
         assert meta.get_weapon("雾切之回光", "gs")["id"] == 11509
         assert meta.pool_data("gs")
+    finally:
+        meta.clear_cache()
+
+
+def test_partial_override_merges_packaged_characters_and_weapons(tmp_path, monkeypatch):
+    """覆盖目录只含部分角色/武器时，未覆盖项仍从打包资源补齐（丝柯克消失回归）"""
+    from nonebot_plugin_miao.datasource import res_update
+
+    expected_gs = len(meta.list_characters("gs"))
+    expected_sr = len(meta.list_characters("sr"))
+
+    override = tmp_path / "meta_override"
+    shutil.copytree(
+        meta.RES_DIR / "meta-gs" / "character" / "刻晴",
+        override / "meta-gs" / "character" / "刻晴",
+    )
+    shutil.copytree(
+        meta.RES_DIR / "meta-sr" / "character" / "流萤",
+        override / "meta-sr" / "character" / "流萤",
+    )
+    shutil.copytree(
+        meta.RES_DIR / "meta-gs" / "weapon" / "sword" / "雾切之回光",
+        override / "meta-gs" / "weapon" / "sword" / "雾切之回光",
+    )
+
+    monkeypatch.setattr(res_update, "override_dir", lambda: override)
+    meta.clear_cache()
+    try:
+        assert meta.get_character("丝柯克", "gs").name == "丝柯克"
+        assert meta.get_character("刻晴", "gs").name == "刻晴"
+        assert meta.get_character("镜流", "sr").name == "镜流"
+        assert meta.get_weapon("风鹰剑", "gs")["name"] == "风鹰剑"
+        assert meta.get_weapon("雾切之回光", "gs")["name"] == "雾切之回光"
+        assert len(meta.list_characters("gs")) == expected_gs
+        assert len(meta.list_characters("sr")) == expected_sr
     finally:
         meta.clear_cache()

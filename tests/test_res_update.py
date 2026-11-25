@@ -266,8 +266,9 @@ async def test_override_priority_and_clear_cache(override_dir, mock_jsdelivr, lo
     assert char is not None and char.id == 99000001
     # 别名（abbr）同样生效
     assert meta.get_character("测角", "gs").name == "测试角色"
-    # 覆盖目录整体替换打包资源：刻晴不在覆盖目录里，查不到
-    assert meta.get_character("刻晴", "gs") is None
+    # 覆盖目录与打包资源合并：覆盖版优先，未覆盖的角色（刻晴、丝柯克）仍可查
+    assert meta.get_character("刻晴", "gs") is not None
+    assert meta.get_character("丝柯克", "gs") is not None
     # gacha_sim_config 也走覆盖目录（pool 为 pool.js 派生数据）
     sim = meta.gacha_sim_config()
     assert sim["pool"] == DERIVED_POOLS
@@ -354,6 +355,22 @@ async def test_missing_critical_file_keeps_old(override_dir, mock_jsdelivr, low_
     ret = await res_update.update_resources()
     assert ret["code"] == "error"
     assert "meta-gs/artifact/extra.js" in ret["reason"]
+    assert (old_char / "data.json").is_file()
+    assert not (override_dir.parent / ".meta_override.work").exists()
+
+
+async def test_missing_character_file_keeps_old(override_dir, mock_jsdelivr, low_min_chars, monkeypatch):
+    """任一角色 data.json 下载失败时不替换覆盖目录（角色消失根因）"""
+    _, res_update = _modules()
+    old_char = override_dir / "meta-gs/character/旧角色"
+    old_char.mkdir(parents=True)
+    (old_char / "data.json").write_text('{"id": 1, "name": "旧角色"}', encoding="utf-8")
+
+    monkeypatch.delitem(FILES, "resources/meta-sr/character/测试星铁/data.json")
+    monkeypatch.setattr(res_update, "MIN_TOTAL_CHARS", 1)
+    ret = await res_update.update_resources()
+    assert ret["code"] == "error"
+    assert "角色 data.json" in ret["reason"]
     assert (old_char / "data.json").is_file()
     assert not (override_dir.parent / ".meta_override.work").exists()
 
