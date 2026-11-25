@@ -43,6 +43,21 @@ def sr_avatars() -> dict:
 # ---------------------------------------------------------------------------
 
 
+def test_calc_attr_with_incomplete_override(tmp_path, monkeypatch, gs_avatars):
+    """覆盖目录残缺时 calc_attr 仍回退打包元数据（面板崩溃回归）"""
+    from nonebot_plugin_miao.datasource import res_update
+
+    override = tmp_path / "meta_override"
+    (override / "meta-gs").mkdir(parents=True)
+    monkeypatch.setattr(res_update, "override_dir", lambda: override)
+    meta.clear_cache()
+    try:
+        attr = calc_attr(gs_avatars["10000051"], "gs")
+        assert attr["hp"] == pytest.approx(19994.766412626206, rel=1e-9)
+    finally:
+        meta.clear_cache()
+
+
 def test_calc_attr_eula(gs_avatars):
     attr = calc_attr(gs_avatars["10000051"], "gs")
     assert attr["_calc"] is True

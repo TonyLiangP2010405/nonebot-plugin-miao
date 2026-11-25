@@ -51,6 +51,13 @@ RETRIES = 2  # 单文件失败后的重试次数，之后跳过并记录
 TIMEOUT = 30
 # 关键文件校验：两游角色 data.json 总量必须超过该值（防止拉到残缺文件树）
 MIN_TOTAL_CHARS = 100
+# 面板属性/卡池分析必需的文件；缺失时禁止替换覆盖目录，避免半残元数据上线
+CRITICAL_FILES = (
+    "meta-gs/info/pool.js",
+    "meta-gs/artifact/extra.js",
+    "meta-sr/info/index.js",
+    "meta-sr/artifact/meta.js",
+)
 
 _UPDATE_INFO_FILE = "meta_update.json"
 
@@ -353,8 +360,9 @@ async def update_resources(on_progress: Callable[[int, int, str], Any] | None = 
         sr_chars = _count_chars(staged, "meta-sr")
         if gs_chars + sr_chars <= MIN_TOTAL_CHARS:
             return _error(start, f"角色元数据不完整（gs {gs_chars} + sr {sr_chars} 个，疑似拉取失败）", failed)
-        if not (staged / "meta-gs" / "info" / "pool.js").is_file():
-            return _error(start, "缺少关键文件 meta-gs/info/pool.js", failed)
+        for rel in CRITICAL_FILES:
+            if not (staged / rel).is_file():
+                return _error(start, f"缺少关键文件 {rel}", failed)
         for stem in ("gacha", "pool", "set"):
             if not (staged / "gacha-sim" / f"{stem}.json").is_file():
                 return _error(start, f"缺少卡池配置 gacha-sim/{stem}.json", failed)

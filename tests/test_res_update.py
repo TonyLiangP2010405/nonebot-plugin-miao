@@ -54,7 +54,9 @@ DERIVED_POOLS = [{
 FILES = {
     "resources/meta-gs/character/测试角色/data.json": json.dumps(CHAR_A, ensure_ascii=False),
     "resources/meta-gs/character/样例角色/data.json": json.dumps(CHAR_B, ensure_ascii=False),
+    "resources/meta-gs/artifact/extra.js": "export const attrMap = {}",
     "resources/meta-gs/info/pool.js": POOL_JS,
+    "resources/meta-sr/artifact/meta.js": "export const attrMap = {}",
     "resources/meta-sr/character/测试星铁/data.json": json.dumps(SR_CHAR, ensure_ascii=False),
     "resources/meta-sr/info/index.js": "export const poolNameSr = []",
 }
@@ -85,9 +87,11 @@ MIAO_TREE = {
                     _dir("样例角色", [_file("data.json")]),
                     _file("alias.js"),
                 ]),
+                _dir("artifact", [_file("extra.js")]),
                 _dir("info", [_file("pool.js")]),
             ]),
             _dir("meta-sr", [
+                _dir("artifact", [_file("meta.js")]),
                 _dir("character", [_dir("测试星铁", [_file("data.json")])]),
                 _dir("info", [_file("index.js")]),
             ]),
@@ -337,6 +341,21 @@ def test_pools_from_pool_js_invalid(tmp_path):
 # ---------------------------------------------------------------------------
 # 原子性：关键文件校验不通过时不替换旧覆盖目录
 # ---------------------------------------------------------------------------
+
+
+async def test_missing_critical_file_keeps_old(override_dir, mock_jsdelivr, low_min_chars, monkeypatch):
+    """关键文件下载失败时不替换覆盖目录（0.1.30 的崩溃根因）"""
+    _, res_update = _modules()
+    old_char = override_dir / "meta-gs/character/旧角色"
+    old_char.mkdir(parents=True)
+    (old_char / "data.json").write_text('{"id": 1, "name": "旧角色"}', encoding="utf-8")
+
+    monkeypatch.delitem(FILES, "resources/meta-gs/artifact/extra.js")
+    ret = await res_update.update_resources()
+    assert ret["code"] == "error"
+    assert "meta-gs/artifact/extra.js" in ret["reason"]
+    assert (old_char / "data.json").is_file()
+    assert not (override_dir.parent / ".meta_override.work").exists()
 
 
 async def test_atomic_keep_old_on_validation_failure(override_dir, mock_jsdelivr):

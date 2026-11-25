@@ -78,7 +78,7 @@ def _rule_file(char: meta.CharacterMeta, avatar: dict[str, Any], game: str):
     name = char.name
     if game == "gs" and name == "旅行者":
         name = f"旅行者/{avatar.get('elem') or char.get('elem') or 'anemo'}"
-    path = meta._res_root() / f"meta-{game}" / "character" / name / "calc.js"
+    path = meta.resolve_res_file(meta._res_root() / f"meta-{game}" / "character" / name / "calc.js")
     return path if path.is_file() else None
 
 
@@ -134,7 +134,7 @@ def _weapon_rule_code(game: str, w_type: str | None) -> str:
     """武器类型 calc.js 的求值脚本：__weaponBuffs = {武器名: buff|[buffs]}"""
     if not w_type:
         return "var __weaponBuffs = {}"
-    calc_file = meta._res_root() / f"meta-{game}" / "weapon" / w_type / "calc.js"
+    calc_file = meta.resolve_res_file(meta._res_root() / f"meta-{game}" / "weapon" / w_type / "calc.js")
     if not calc_file.is_file():
         return "var __weaponBuffs = {}"
     code = meta._strip_esm(calc_file.read_text(encoding="utf-8"))
@@ -147,7 +147,7 @@ def _weapon_rule_code(game: str, w_type: str | None) -> str:
 
 def _arti_rule_code(game: str) -> str:
     """圣遗物套装 calc.js 的求值脚本：__artiBuffs = default 导出"""
-    calc_file = meta._res_root() / f"meta-{game}" / "artifact" / "calc.js"
+    calc_file = meta.resolve_res_file(meta._res_root() / f"meta-{game}" / "artifact" / "calc.js")
     if not calc_file.is_file():
         return "var __artiBuffs = {}"
     code = meta._strip_esm(calc_file.read_text(encoding="utf-8"))

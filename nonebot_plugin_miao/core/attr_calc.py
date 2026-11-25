@@ -272,7 +272,7 @@ def _char_static_buffs(char: meta.CharacterMeta, game: str) -> list[dict[str, fl
     if key in _CHAR_BUFFS_CACHE:
         return _CHAR_BUFFS_CACHE[key]
     ret: list[dict[str, float]] = []
-    calc_file = meta._res_root() / f"meta-{game}" / "character" / char.name / "calc.js"
+    calc_file = meta.resolve_res_file(meta._res_root() / f"meta-{game}" / "character" / char.name / "calc.js")
     if calc_file.is_file():
         try:
             exports = meta._eval_esm(calc_file, ["buffs"])
@@ -405,7 +405,7 @@ def _weapon_buffs_gs(w_type: str | None) -> dict[str, Any]:
     if w_type in _WEAPON_BUFFS_GS_CACHE:
         return _WEAPON_BUFFS_GS_CACHE[w_type]
     ret: dict[str, Any] = {}
-    calc_file = meta._res_root() / "meta-gs" / "weapon" / w_type / "calc.js"
+    calc_file = meta.resolve_res_file(meta._res_root() / "meta-gs" / "weapon" / w_type / "calc.js")
     if calc_file.is_file():
         code = meta._strip_esm(calc_file.read_text(encoding="utf-8"))
         script = f"{_GS_WEAPON_CALC_STUBS}\n{code}\n;JSON.stringify(__default__(step, staticStep))"
@@ -455,7 +455,7 @@ def _weapon_affix_buffs_sr(
     if cache_key in _WEAPON_BUFFS_SR_CACHE:
         return _WEAPON_BUFFS_SR_CACHE[cache_key]
     if w_type not in _WEAPON_SR_CODE_CACHE:
-        calc_file = meta._res_root() / "meta-sr" / "weapon" / w_type / "calc.js"
+        calc_file = meta.resolve_res_file(meta._res_root() / "meta-sr" / "weapon" / w_type / "calc.js")
         code = meta._strip_esm(calc_file.read_text(encoding="utf-8")) if calc_file.is_file() else ""
         _WEAPON_SR_CODE_CACHE[w_type] = code
     code = _WEAPON_SR_CODE_CACHE[w_type]
@@ -684,7 +684,7 @@ def _set_abbr(game: str) -> dict[str, str]:
     """套装简称表：gs alias.js 的 setAbbr / sr 的 artiSetAbbr"""
     if game in _SET_ABBR_CACHE:
         return _SET_ABBR_CACHE[game]
-    alias_file = meta._res_root() / f"meta-{game}" / "artifact" / "alias.js"
+    alias_file = meta.resolve_res_file(meta._res_root() / f"meta-{game}" / "artifact" / "alias.js")
     ret: dict[str, str] = {}
     if alias_file.is_file():
         try:
@@ -703,7 +703,7 @@ def _arti_buffs(game: str) -> dict[str, Any]:
     """套装效果表（artifact/calc.js 的 default 导出）"""
     if game in _ARTI_BUFFS_CACHE:
         return _ARTI_BUFFS_CACHE[game]
-    calc_file = meta._res_root() / f"meta-{game}" / "artifact" / "calc.js"
+    calc_file = meta.resolve_res_file(meta._res_root() / f"meta-{game}" / "artifact" / "calc.js")
     ret: dict[str, Any] = {}
     if calc_file.is_file():
         try:

@@ -42,6 +42,48 @@ def _res_root() -> Path:
         return ov
     return RES_DIR
 
+
+def resolve_res_file(path: Path | str) -> Path:
+    """资源文件路径：覆盖目录缺少该文件时回退到打包 resources 的同名文件
+
+    覆盖目录由 /更新面板资源 拉取，个别文件下载失败时目录仍会被使用；
+    若直接 read_text 会抛 FileNotFoundError，这里按文件粒度回退，避免整块功能失效。
+    """
+    path = Path(path)
+    if path.is_file():
+        return path
+    try:
+        root = _res_root()
+    except Exception:
+        return path
+    if root == RES_DIR:
+        return path
+    try:
+        rel = path.relative_to(root)
+    except ValueError:
+        return path
+    fallback = RES_DIR / rel
+    return fallback if fallback.is_file() else path
+
+
+def resolve_res_dir(path: Path | str) -> Path:
+    """资源目录：覆盖目录缺少该子目录时回退到打包 resources 的同名目录"""
+    path = Path(path)
+    if path.is_dir():
+        return path
+    try:
+        root = _res_root()
+    except Exception:
+        return path
+    if root == RES_DIR:
+        return path
+    try:
+        rel = path.relative_to(root)
+    except ValueError:
+        return path
+    fallback = RES_DIR / rel
+    return fallback if fallback.is_dir() else path
+
 # ---------------------------------------------------------------------------
 # ESM 求值
 # ---------------------------------------------------------------------------
@@ -89,7 +131,7 @@ def _eval_esm(path: Path | str, export_names: list[str] | tuple[str, ...]) -> di
     → 在 JS 引擎（core/jseval，quickjs 或 pythonmonkey）中 eval，脚本末尾用 JSON.stringify 收集指定变量
     （不存在的变量经 typeof 守卫跳过）→ Python 侧 json.loads。
     """
-    path = Path(path)
+    path = resolve_res_file(path)
     code = path.read_text(encoding="utf-8")
     code = _strip_esm(code)
     # 末尾用 JSON.stringify 收集导出变量；typeof 守卫让缺失的导出被 JSON 序列化时丢弃
@@ -108,7 +150,7 @@ _JSON_CACHE: dict[Path, Any] = {}
 
 def _load_res_json(path: Path) -> Any:
     """加载 resources 下的 JSON 文件并缓存"""
-    path = Path(path)
+    path = resolve_res_file(path)
     if path not in _JSON_CACHE:
         with path.open(encoding="utf-8") as f:
             _JSON_CACHE[path] = json.load(f)
@@ -122,7 +164,7 @@ def _check_game(game: str) -> None:
 
 def _meta_dir(game: str) -> Path:
     _check_game(game)
-    return _res_root() / f"meta-{game}"
+    return resolve_res_dir(_res_root() / f"meta-{game}")
 
 
 # ---------------------------------------------------------------------------
@@ -167,7 +209,7 @@ def _char_index(game: str) -> _CharIndex:
     """构建（并缓存）角色索引"""
     if game in _CHAR_INDEX:
         return _CHAR_INDEX[game]
-    char_dir = _meta_dir(game) / "character"
+    char_dir = resolve_res_dir(_meta_dir(game) / "character")
     by_name: dict[str, str] = {}
     by_alias: dict[str, str] = {}
     by_id: dict[str, str] = {}
@@ -443,7 +485,7 @@ def _weapon_index(game: str) -> dict[str, tuple[str, str]]:
     """构建（并缓存）武器索引：名字/abbr -> (类型目录, 武器目录)"""
     if game in _WEAPON_INDEX:
         return _WEAPON_INDEX[game]
-    weapon_dir = _meta_dir(game) / "weapon"
+    weapon_dir = resolve_res_dir(_meta_dir(game) / "weapon")
     index: dict[str, tuple[str, str]] = {}
     for type_dir in sorted(weapon_dir.iterdir()):
         if not type_dir.is_dir():
@@ -509,7 +551,7 @@ def get_weapon_by_id(weapon_id: str | int, game: str) -> dict[str, Any] | None:
     _check_game(game)
     if game not in _WEAPON_ID_INDEX:
         index: dict[str, tuple[str, str]] = {}
-        weapon_dir = _meta_dir(game) / "weapon"
+        weapon_dir = resolve_res_dir(_meta_dir(game) / "weapon")
         for type_dir in sorted(weapon_dir.iterdir()):
             if not type_dir.is_dir():
                 continue
@@ -546,7 +588,7 @@ _EXTRA_CACHE: dict[str, dict[str, Any]] = {}
 
 def artifact_star_meta(game: str) -> dict[str, Any]:
     """遗器星级数值表 meta.json（sr 的 mainIdx/starData）；gs 无此文件返回 {}"""
-    path = _meta_dir(game) / "artifact" / "meta.json"
+    path = resolve_res_file(_meta_dir(game) / "artifact" / "meta.json")
     return _load_res_json(path) if path.is_file() else {}
 
 
@@ -558,7 +600,12 @@ def artifact_extra(game: str) -> dict[str, Any]:
     if game in _EXTRA_CACHE:
         return _EXTRA_CACHE[game]
     arti_dir = _meta_dir(game) / "artifact"
-    extra_file = arti_dir / "extra.js" if (arti_dir / "extra.js").is_file() else arti_dir / "meta.js"
+    # 原神是 extra.js、星铁是 meta.js；覆盖目录缺文件时逐个回退到打包资源
+    candidates = ("extra.js", "meta.js") if game == "gs" else ("meta.js", "extra.js")
+    extra_file = next(
+        (p for p in (resolve_res_file(arti_dir / name) for name in candidates) if p.is_file()),
+        arti_dir / candidates[0],
+    )
     result = _eval_esm(extra_file, _EXTRA_EXPORTS)
     _EXTRA_CACHE[game] = result
     return result

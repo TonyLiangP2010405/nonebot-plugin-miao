@@ -245,3 +245,24 @@ def test_eval_esm_real_alias():
     # 真实文件：meta-gs/character/alias.js
     exports = meta._eval_esm(meta.RES_DIR / "meta-gs" / "character" / "alias.js", ["alias"])
     assert "卢姥爷" in exports["alias"]["迪卢克"].split(",")
+
+
+# ---------------- 不完整覆盖目录的回退 ----------------
+
+
+def test_incomplete_override_falls_back_to_packaged(tmp_path, monkeypatch):
+    """覆盖目录只有空 meta-gs 时，元数据按文件回退打包资源而不是抛 FileNotFoundError"""
+    from nonebot_plugin_miao.datasource import res_update
+
+    override = tmp_path / "meta_override"
+    (override / "meta-gs").mkdir(parents=True)
+    monkeypatch.setattr(res_update, "override_dir", lambda: override)
+    meta.clear_cache()
+    try:
+        assert meta.artifact_extra("gs")["attrMap"]
+        assert meta.artifact_extra("sr")["attrMap"]
+        assert meta.get_character("刻晴", "gs").name == "刻晴"
+        assert meta.get_weapon("雾切之回光", "gs")["id"] == 11509
+        assert meta.pool_data("gs")
+    finally:
+        meta.clear_cache()
